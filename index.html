@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5">
+<meta name="theme-color" content="#151d2b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Charpe Suite">
+<title>Charpe Suite</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>/* the old August sync is retired: Drive sync now lives in Cases → Settings → Online sync */#nSync,#btnSync{display:none!important}</style>
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<style>
+  :root{
+    --accent:#1668e3; --ink:#111418; --mute:#5b6674;
+    --line:#d9dde3; --line-soft:#eceef1;
+    --panel:#ffffff; --desk:#eef0f4; --chrome:#151d2b;
+    --ok:#127a4b; --warn:#a35b00; --danger:#b3261e;
+    --nav-h:58px; --hdr-h:50px;
+    --safe-b:env(safe-area-inset-bottom,0px);
+    --safe-t:env(safe-area-inset-top,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;overscroll-behavior:none}
+  body{
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    color:var(--ink);background:var(--desk);
+    display:flex;flex-direction:column;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    height:calc(var(--hdr-h) + var(--safe-t));padding-top:var(--safe-t);
+    background:var(--chrome);color:#fff;display:flex;align-items:center;
+    gap:10px;padding-left:14px;padding-right:8px;flex:0 0 auto;z-index:30;
+  }
+  header .mark{
+    width:26px;height:26px;border-radius:6px;background:var(--accent);
+    display:grid;place-items:center;font-weight:700;font-size:12px;letter-spacing:.4px;flex:0 0 auto;
+  }
+  header h1{font-size:15px;font-weight:600;margin:0;letter-spacing:.2px;flex:1 1 auto;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header .sub{font-size:11px;opacity:.6;font-weight:400;margin-left:6px}
+  .hbtn{
+    background:rgba(255,255,255,.10);border:0;color:#fff;width:34px;height:34px;
+    border-radius:8px;display:grid;place-items:center;cursor:pointer;flex:0 0 auto;
+  }
+  .hbtn:active{background:rgba(255,255,255,.22)}
+  .hbtn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+  .dot{position:absolute;width:8px;height:8px;border-radius:50%;
+    transform:translate(11px,-11px);border:2px solid var(--chrome)}
+  .dot.on{background:#3ddc84}.dot.off{background:#e5484d}.dot.idle{background:#8a94a3}
+
+  /* ---------- frames ---------- */
+  main{flex:1 1 auto;position:relative;overflow:hidden}
+  .frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;display:none}
+  .frame.on{display:block}
+  .pane{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background:var(--desk);display:none;padding:16px 14px 26px}
+  .pane.on{display:block}
+
+  .boot{position:absolute;inset:0;display:grid;place-items:center;background:var(--desk);
+    z-index:5;transition:opacity .25s;text-align:center}
+  .boot.gone{opacity:0;pointer-events:none}
+  .spin{width:26px;height:26px;border:2.5px solid var(--line);border-top-color:var(--accent);
+    border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 12px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .boot p{color:var(--mute);font-size:13px;margin:0}
+
+  /* ---------- bottom nav ---------- */
+  nav{
+    flex:0 0 auto;height:calc(var(--nav-h) + var(--safe-b));padding-bottom:var(--safe-b);
+    background:var(--panel);border-top:1px solid var(--line);
+    display:grid;grid-template-columns:repeat(4,1fr);z-index:30;
+  }
+  nav button{
+    background:none;border:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;color:var(--mute);font-size:10.5px;font-weight:500;
+    cursor:pointer;padding:0;font-family:inherit;position:relative;
+  }
+  nav button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  nav button.on{color:var(--accent)}
+  nav button.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:26px;height:2.5px;border-radius:0 0 3px 3px;background:var(--accent)}
+  nav button:active{background:var(--line-soft)}
+
+  /* ---------- generic UI ---------- */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px;margin-bottom:12px}
+  .card h2{font-size:13px;margin:0 0 3px;font-weight:600;letter-spacing:.2px}
+  .card p.hint{font-size:12px;color:var(--mute);margin:0 0 12px;line-height:1.5}
+  label.fl{display:block;font-size:11px;font-weight:600;color:var(--mute);
+    text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px}
+  input[type=text],input[type=url],input[type=password],input[type=number],select,textarea{
+    width:100%;padding:10px 11px;font:14px inherit;color:var(--ink);background:#fff;
+    border:1px solid var(--line);border-radius:9px;margin-bottom:11px;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(22,104,227,.12)}
+  textarea{min-height:70px;resize:vertical}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px 15px;border-radius:9px;border:1px solid var(--line);background:#fff;
+    color:var(--ink);font:600 13.5px inherit;font-family:inherit;cursor:pointer;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.dan{background:#fff;border-color:#f0c9c6;color:var(--danger)}
+  .btn.wide{width:100%;margin-bottom:9px}
+  .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+  .btn[disabled]{opacity:.5;pointer-events:none}
+  .btnrow{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+
+  .stat{display:flex;align-items:center;gap:9px;padding:10px 0;
+    border-bottom:1px solid var(--line-soft);font-size:13px}
+  .stat:last-child{border-bottom:0}
+  .stat b{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.ok{background:#e6f4ec;color:var(--ok)}
+  .pill.no{background:#fdeceb;color:var(--danger)}
+  .pill.idle{background:#eef0f4;color:var(--mute)}
+
+  .log{font:11.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mute);
+    background:#f7f8fa;border:1px solid var(--line-soft);border-radius:9px;
+    padding:10px;max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+  .step{display:flex;gap:11px;margin-bottom:13px;font-size:13px;line-height:1.55}
+  .step .n{flex:0 0 21px;height:21px;border-radius:50%;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-size:11px;font-weight:700}
+  .step code{background:#eef0f4;padding:1px 5px;border-radius:4px;
+    font:11.5px ui-monospace,Menlo,monospace;word-break:break-all}
+  details{border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+    margin-bottom:10px;background:#fff}
+  details summary{font-size:13px;font-weight:600;cursor:pointer;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"›";float:right;transform:rotate(90deg);color:var(--mute)}
+  details[open] summary::after{transform:rotate(-90deg)}
+  details .body{padding-top:11px;font-size:13px;color:var(--mute);line-height:1.6}
+
+  /* While a tool is showing its own sign-in screen, let it have the whole
+     display — an app frame around a locked door helps nobody. */
+  body.locked header, body.locked nav{display:none}
+
+  #toast{
+    position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
+    bottom:calc(var(--nav-h) + var(--safe-b) + 14px);
+    background:#1b2331;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;
+    z-index:100;opacity:0;transition:.22s;pointer-events:none;max-width:88vw;text-align:center;
+    box-shadow:0 6px 22px rgba(0,0,0,.24)
+  }
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:var(--danger)}
+  #toast.ok{background:var(--ok)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark">SC</div>
+  <h1 id="hdrTitle">Case Manager<span class="sub" id="hdrSub"></span></h1>
+  <button class="hbtn" id="btnSync" title="Sync now" aria-label="Sync now">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4"/><path d="M21 3v5h-5M3 21v-5h5"/></svg>
+    <span class="dot idle" id="syncDot"></span>
+  </button>
+</header>
+
+<main>
+  <div class="boot" id="boot"><div><div class="spin"></div><p>Loading your tools…</p></div></div>
+
+  <iframe class="frame" id="fCases"   title="Case Manager"></iframe>
+  <iframe class="frame" id="fBilling" title="Billing"></iframe>
+
+  <!-- ============ SYNC PANE ============ -->
+  <section class="pane" id="pSync">
+    <div class="card">
+      <h2>Google Drive sync</h2>
+      <p class="hint">Your cases, invoices, clients and rate card are stored on this device.
+        Sync copies them to <b>one folder</b> in your Drive so your laptop and phone stay in step.
+        The connection can only ever see that folder — nothing else in your Drive.</p>
+
+      <div class="stat">Status <b><span class="pill idle" id="syncState">Not set up</span></b></div>
+      <div class="stat">Last sync <b id="syncWhen">never</b></div>
+      <div class="stat">Cases on this device <b id="cntCases">0</b></div>
+      <div class="stat">Invoices on this device <b id="cntInv">0</b></div>
+      <div class="stat">Clients <b id="cntCli">0</b></div>
+    </div>
+
+    <div class="card">
+      <h2>Connection</h2>
+      <p class="hint">Paste the two values from your Apps Script deployment. Setup steps are in the
+        <b>More</b> tab.</p>
+      <label class="fl" for="sUrl">Web app URL</label>
+      <input type="url" id="sUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false">
+      <label class="fl" for="sTok">Shared secret</label>
+      <input type="password" id="sTok" placeholder="the token you set in the script" autocomplete="off">
+      <label class="fl" for="sAuto">Automatic sync</label>
+      <select id="sAuto">
+        <option value="0">Off — sync only when I tap the button</option>
+        <option value="1" selected>On — sync in the background after changes</option>
+      </select>
+      <div class="btnrow">
+        <button class="btn" id="bTest">Test</button>
+        <button class="btn pri" id="bSave">Save</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Move data</h2>
+      <p class="hint">Push sends this phone's data up. Pull replaces this phone's data with the copy
+        in Drive — you'll be asked to confirm first.</p>
+      <div class="btnrow">
+        <button class="btn pri" id="bPush">Push up ↑</button>
+        <button class="btn" id="bPull">Pull down ↓</button>
+      </div>
+      <button class="btn wide" id="bExport">Export a backup file</button>
+      <button class="btn wide" id="bImport">Import a backup file</button>
+      <input type="file" id="fileIn" accept=".json,application/json" hidden>
+    </div>
+
+    <div class="card">
+      <h2>Activity</h2>
+      <div class="log" id="syncLog">No activity yet.</div>
+    </div>
+  </section>
+
+  <!-- ============ MORE PANE ============ -->
+  <section class="pane" id="pMore">
+    <div class="card">
+      <h2>Charpe Suite</h2>
+      <p class="hint" id="aboutLine">Case Manager and Billing in one app. Works offline —
+        everything is stored on this device and only leaves it when you sync.</p>
+      <div class="stat">Version <b id="vVer">1.0.0</b></div>
+      <div class="stat">Offline ready <b><span class="pill idle" id="vOff">checking…</span></b></div>
+      <div class="stat">Storage used <b id="vSize">—</b></div>
+      <div class="stat">Installed to home screen <b><span class="pill idle" id="vInst">no</span></b></div>
+      <button class="btn pri wide" id="bInstall" style="display:none;margin-top:12px">Install to home screen</button>
+      <button class="btn wide" id="bUpdate" style="margin-top:12px">Check for an update</button>
+    </div>
+
+    <div class="card">
+      <h2>Signing in</h2>
+      <p class="hint">Both tools carry their own sign-in, so out of the box the app asks you twice
+        every time it opens. Save the two sets of details here and it will sign you in to both
+        by itself.</p>
+      <label class="fl" for="cU">Case Manager — username</label>
+      <input type="text" id="cU" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="admin">
+      <label class="fl" for="cP">Case Manager — password</label>
+      <input type="password" id="cP" autocomplete="off">
+      <label class="fl" for="bU">Billing — username</label>
+      <input type="text" id="bU" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label class="fl" for="bP">Billing — password</label>
+      <input type="password" id="bP" autocomplete="off">
+      <label class="fl" for="cAuto">Automatic sign-in</label>
+      <select id="cAuto">
+        <option value="0" selected>Off — ask me every time</option>
+        <option value="1">On — open straight into the app</option>
+      </select>
+      <button class="btn pri wide" id="bCreds">Save sign-in details</button>
+      <details><summary>What this means for security</summary><div class="body">
+        With automatic sign-in on, anyone holding this phone unlocked can open your case list and
+        your billing register. The password screens stop being a barrier — your phone's own lock
+        becomes the only one. That is a reasonable trade on a phone you keep with you and a poor
+        one on a phone left around chambers. These details are kept on this device only and are
+        never included in a Drive sync or a backup file.
+      </div></details>
+    </div>
+
+    <div class="card">
+      <h2>Setting up Drive sync</h2>
+      <p class="hint">One-off, about five minutes. You only do this once, on any device.</p>
+      <div class="step"><div class="n">1</div><div>In Google Drive make a folder for this —
+        say <code>Charpe Suite Data</code>. Open it and copy the long ID from the address bar
+        (everything after <code>/folders/</code>).</div></div>
+      <div class="step"><div class="n">2</div><div>Go to <code>script.google.com</code> and start a
+        new project. Delete whatever is in the editor and paste in the script from the file
+        <code>apps-script/Code.gs</code> that came with this app.</div></div>
+      <div class="step"><div class="n">3</div><div>At the top of that script, put your folder ID into
+        <code>FOLDER_ID</code> and invent a long random password for <code>SECRET</code>.
+        Save.</div></div>
+      <div class="step"><div class="n">4</div><div>Press <b>Deploy → New deployment</b>, choose type
+        <b>Web app</b>, set <i>Execute as</i> to <b>Me</b> and <i>Who has access</i> to
+        <b>Anyone</b>. Authorise it when Google asks.</div></div>
+      <div class="step"><div class="n">5</div><div>Copy the web app URL it gives you. Paste that URL
+        and your secret into the <b>Sync</b> tab here, then tap <b>Test</b>.</div></div>
+      <details><summary>Is "Anyone" safe?</summary><div class="body">
+        "Anyone" only means Google won't ask for a Google login at the door. Every request still has
+        to carry your secret, and the script refuses anything without it. The script is also written
+        to touch only the one folder ID you gave it — it has no code path that can reach the rest of
+        your Drive. Keep the secret private and treat the URL like a password.
+      </div></details>
+    </div>
+
+    <div class="card">
+      <h2>Data &amp; privacy</h2>
+      <details><summary>Where does my data live?</summary><div class="body">
+        In this app's own storage on this device. Nothing is sent anywhere unless you set up sync,
+        and then only to your own Drive folder. There is no server of mine in the middle.
+      </div></details>
+      <details><summary>What happens if I clear the browser data?</summary><div class="body">
+        It would be erased, which is why sync and the export backup exist. Push to Drive after any
+        session where you added real work.
+      </div></details>
+      <details><summary>Danger zone</summary><div class="body">
+        <button class="btn dan wide" id="bWipe" style="margin-top:8px">Erase everything on this device</button>
+      </div></details>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button id="nCases" class="on" data-go="cases">
+    <svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>
+    Cases
+  </button>
+  <button id="nBilling" data-go="billing">
+    <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+    Billing
+  </button>
+  <button id="nSync" data-go="sync">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4"/><path d="M21 3v5h-5M3 21v-5h5"/></svg>
+    Sync
+  </button>
+  <button id="nMore" data-go="more">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>
+    More
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<script src="assets/sync.js"></script>
+<script src="assets/shell.js"></script>
+</body>
+</html>
