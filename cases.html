@@ -1,0 +1,3163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Charpe Law &mdash; Legal Case Management v5.5</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Segoe UI,Arial,sans-serif;background:#f4f1ea;color:#1a2744;font-size:13px}
+.lscreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1a2744}
+.lbox{background:#fff;border-radius:10px;padding:28px 32px;width:320px;text-align:center}
+.lbox h2{font-size:13px;color:#1a2744;margin-bottom:2px;font-weight:600}
+.lbox p{font-size:11px;color:#888;margin-bottom:14px}
+.lbox h3{font-size:16px;color:#1a2744;border-bottom:2px solid #e8c96a;padding-bottom:7px;margin-bottom:13px}
+.lerr{background:#fdecea;color:#c0392b;border-radius:5px;padding:6px;font-size:11px;margin-bottom:8px;display:none}
+.fg{margin-bottom:8px;text-align:left}
+.fg label{font-size:10px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:2px}
+.fg input,.fg select,.fg textarea{width:100%;border:1px solid #ccc;border-radius:5px;padding:7px;font-size:12px;color:#1a2744;background:#fff;font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#b8932a}
+.fg textarea{resize:vertical;min-height:55px}
+header{background:#1a2744;color:#fff;padding:0 10px;min-height:50px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.firm b{font-size:12px;color:#e8c96a;display:block}
+.firm small{font-size:9px;color:#aab}
+nav{display:flex;gap:3px;flex-wrap:wrap}
+nav button{background:transparent;border:1px solid rgba(184,147,42,.4);color:#ddd;padding:4px 8px;border-radius:15px;cursor:pointer;font-size:10px;position:relative}
+nav button:hover,nav button.on{background:#b8932a;color:#1a2744;border-color:#b8932a;font-weight:600}
+.navbdg{background:#c0392b;color:#fff;border-radius:8px;padding:0 4px;font-size:8px;font-weight:700;margin-left:3px;display:none}
+.hright{display:flex;align-items:center;gap:5px}
+.ubadge{background:#b8932a;color:#1a2744;border-radius:15px;padding:2px 8px;font-size:10px;font-weight:600}
+.lout{background:transparent;border:1px solid #e88;color:#faa;padding:2px 7px;border-radius:15px;cursor:pointer;font-size:10px}
+.lout:hover{background:#c0392b;color:#fff}
+#wrap{max-width:1400px;margin:0 auto;padding:10px}
+.page{display:none}.page.on{display:block}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:7px;border:1px solid #d4c9a8;overflow:hidden;margin-bottom:10px}
+.ch{background:#1a2744;color:#fff;padding:8px 12px;font-weight:600;font-size:11px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.ch .g{color:#e8c96a}
+.cb{padding:10px 12px}
+.btn{border:none;border-radius:5px;padding:4px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+.bn{background:#1a2744;color:#fff}.bn:hover{background:#2a3f7a}
+.bg{background:#b8932a;color:#1a2744}.bg:hover{background:#e8c96a}
+.bo{background:#fff;color:#1a2744;border:1px solid #1a2744}.bo:hover{background:#1a2744;color:#fff}
+.br{background:#c0392b;color:#fff}.br:hover{background:#a93226}
+.bgr{background:#27ae60;color:#fff}
+.bbl{background:#2980b9;color:#fff}
+.bor{background:#e67e22;color:#fff}
+.hero{background:linear-gradient(135deg,#1a2744,#2a3f7a);color:#fff;padding:12px 16px;border-radius:7px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px}
+.herodt{font-size:17px;font-weight:600;color:#e8c96a}
+.stats{display:flex;gap:7px;flex-wrap:wrap}
+.stat{background:rgba(184,147,42,.15);border:1px solid rgba(184,147,42,.4);border-radius:15px;padding:4px 12px;text-align:center;min-width:58px;cursor:pointer}
+.stat:hover{background:rgba(184,147,42,.3)}
+.stat b{font-size:17px;font-weight:600;display:block}
+.stat small{font-size:9px;color:#bbb}
+.crow{border:1px solid #d4c9a8;border-radius:6px;margin-bottom:6px;background:#fff}
+.crow:hover{border-color:#b8932a}
+.crow-head{padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;background:#f0ecdf;border-radius:6px;cursor:pointer}
+.crow.open .crow-head{border-radius:6px 6px 0 0}
+.crow-title{font-weight:600;font-size:11px;color:#1a2744;flex:1}
+.crow-sub{font-size:10px;color:#666;margin-top:1px}
+.crow-dates{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+/* always-visible actions on the collapsed row, so a case can be posted or
+   deleted straight from any list without opening it first */
+.rowacts{display:flex;flex-direction:column;gap:3px;flex:0 0 auto;border-left:1px solid #d4c9a8;padding-left:7px;margin-left:2px}
+.rowacts .btn{font-size:10px;padding:3px 8px;white-space:nowrap;width:100%}
+.dbdg{background:#1a2744;color:#e8c96a;font-size:9px;padding:2px 6px;border-radius:8px}
+.ndbdg{background:#fdecea;color:#c0392b;font-size:9px;padding:2px 6px;border-radius:8px}
+.ovbdg{background:#c0392b;color:#fff;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700}
+.pbdg{background:#e8f4fd;color:#1a5080;font-size:9px;padding:2px 6px;border-radius:8px}
+.stbdg{font-size:8px;padding:1px 6px;border-radius:8px;font-weight:700;text-transform:uppercase}
+.st-active{background:#eafaf1;color:#1e8449;border:1px solid #88d8a0}
+.st-disposed{background:#eee;color:#666;border:1px solid #bbb}
+.st-stayed{background:#fef3e2;color:#b9770e;border:1px solid #f0a060}
+.st-appeal{background:#e8f0ff;color:#2040a0;border:1px solid #90a8e8}
+.crow-body{display:none;padding:8px 10px;border-top:1px solid #d4c9a8}
+.crow.open .crow-body{display:block}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-bottom:7px}
+@media(max-width:600px){.dg{grid-template-columns:1fr}}
+.df label{font-size:9px;color:#666;text-transform:uppercase;display:block;margin-bottom:1px}
+.df span{font-size:11px;font-weight:500;color:#1a2744}
+.nbox{background:#fffbe8;border:1px solid #e8c96a;border-radius:4px;padding:6px 8px;font-size:11px;margin:4px 0}
+.nby{font-size:9px;color:#888;margin-top:1px}
+.arow{display:flex;gap:3px;flex-wrap:wrap;margin-top:7px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.caldh{text-align:center;font-size:9px;font-weight:600;color:#666;padding:2px 0}
+.cald{min-height:52px;border:1px solid #d4c9a8;border-radius:3px;padding:2px;cursor:pointer;background:#fff;font-size:10px}
+.cald:hover{background:#f0ecdf}
+.cald.tod{border-color:#b8932a;background:#fffbe8}
+.cald.sel{background:#1a2744;border-color:#1a2744;color:#fff}
+.cald.oth{opacity:.25;pointer-events:none}
+.caldn{font-size:10px;font-weight:700;margin-bottom:1px}
+.calbdg{font-size:8px;background:#1a2744;color:#e8c96a;border-radius:6px;padding:1px 4px;font-weight:600;display:inline-block}
+.calbdg.past{background:#e8f4fd;color:#1a5080;border:1px solid #90c0e8}
+.cald.sel .calbdg{background:#b8932a;color:#1a2744}
+.calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:4px;flex-wrap:wrap}
+.calsel{border:1px solid #d4c9a8;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff}
+.plgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.plcell{border:1px solid #d4c9a8;border-radius:4px;min-height:70px;padding:3px;cursor:pointer;background:#fff}
+.plcell:hover{background:#f0ecdf;border-color:#b8932a}
+.plcell.tod{border-color:#b8932a;background:#fffbe8}
+.plcell.sel{background:#1a2744;border-color:#1a2744}
+.plnum{font-size:11px;font-weight:700;margin-bottom:1px}
+.plcell.sel .plnum{color:#e8c96a}
+.plchip{background:#b8932a;color:#1a2744;font-size:7px;font-weight:600;border-radius:2px;padding:1px 2px;margin-bottom:1px;display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.plpchip{background:#e8f4fd;color:#1a5080;font-size:7px;border-radius:2px;padding:1px 2px;margin-bottom:1px;display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border:1px solid #90c0e8}
+.titem{border:1px solid #d4c9a8;border-radius:5px;padding:7px 9px;margin-bottom:5px;background:#fff;display:flex;align-items:flex-start;gap:7px}
+.titem.done{opacity:.5}
+.titem.done .tdesc{text-decoration:line-through}
+.titem.late{border-color:#e88;background:#fffafa}
+.prbdg{border-radius:8px;padding:1px 6px;font-size:9px;font-weight:600}
+.prvu{background:#fdecea;color:#c0392b;border:1px solid #e88}
+.pru{background:#fef3e2;color:#e67e22;border:1px solid #f0a060}
+.prn{background:#e8f4fd;color:#2980b9;border:1px solid #90c0e8}
+.prl{background:#eafaf1;color:#27ae60;border:1px solid #88d8a0}
+.caselink{background:#1a2744;color:#e8c96a;border-radius:8px;padding:1px 6px;font-size:9px}
+.mbub{background:#e8f4fd;border-radius:5px;padding:7px 9px;font-size:11px;margin-bottom:4px;border-left:3px solid #2980b9}
+.ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.6);z-index:500;align-items:center;justify-content:center;padding:8px}
+.ov.open{display:flex}
+.modal{background:#fff;border-radius:8px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto}
+.modalsm{max-width:430px}
+.mh{background:#1a2744;color:#fff;padding:10px 14px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:12px;position:sticky;top:0;z-index:1}
+.mh .g{color:#e8c96a}
+.mx{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;line-height:1}
+.mb{padding:14px}
+.fgr{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px}
+@media(max-width:600px){.fgr{grid-template-columns:1fr}}
+.f2{grid-column:1/-1}
+.fa{display:flex;gap:7px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.hiitem{background:#fafaf5;border:1px solid #d4c9a8;border-radius:4px;padding:6px 8px;margin-bottom:3px;font-size:11px}
+.tabs{display:flex;border-bottom:2px solid #d4c9a8;margin-bottom:10px;flex-wrap:wrap}
+.tbt{padding:6px 11px;background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;font-size:11px;color:#666;margin-bottom:-2px;font-family:inherit}
+.tbt.on{color:#b8932a;border-bottom-color:#b8932a;font-weight:600}
+.tp{display:none}.tp.on{display:block}
+.wbar{background:#fdecea;border:1px solid #e88;border-radius:5px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between;margin-top:7px;flex-wrap:wrap;gap:6px}
+.okbar{background:#eafaf1;border:1px solid #b0e8c0;border-radius:5px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between;margin-top:7px;flex-wrap:wrap;gap:6px}
+.srow{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
+.sinp{flex:1;border:1px solid #d4c9a8;border-radius:5px;padding:6px 9px;font-size:11px;min-width:120px;font-family:inherit}
+.sinp:focus{outline:none;border-color:#b8932a}
+.daylist-panel{background:#fff;border:1px solid #d4c9a8;border-radius:7px}
+.daylist-head{background:#1a2744;color:#fff;padding:9px 13px;border-radius:7px 7px 0 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.daylist-body{padding:10px 12px}
+/* BOARD TABLE */
+.bwrap{overflow-x:auto;border:1px solid #d4c9a8;border-radius:5px}
+table.board{width:100%;border-collapse:collapse;font-size:13px;min-width:960px;font-family:Georgia,serif;font-weight:600}
+table.board th{background:#1a2744;color:#e8c96a;padding:6px 7px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;font-family:Segoe UI,Arial,sans-serif;font-weight:700}
+table.board td{padding:6px 7px;border-bottom:1px solid #e4dcc4;vertical-align:top;line-height:1.35}
+table.board tr.brow:nth-child(even) td{background:#fafaf5}
+table.board tr.brow:hover td{background:#fffbe8}
+table.board .num{width:26px;opacity:.65}
+table.board .par{font-style:italic;text-decoration:underline;font-weight:700;letter-spacing:.2px}
+table.board tr.ghead td{background:#1a2744 !important;color:#fff;font-family:Segoe UI,Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:5px 8px;border-bottom:2px solid #b8932a}
+table.board tr.ghead .gdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;border:1px solid rgba(255,255,255,.6)}
+table.board tr.hcrow td{font-weight:800}
+/* action column pinned to the right edge so Post/Delete are always reachable
+   even when the board scrolls sideways */
+table.board th.act{position:sticky;right:0;z-index:4;background:#1a2744;width:84px;text-align:center}
+table.board td.act{position:sticky;right:0;z-index:3;background:#fff;box-shadow:-5px 0 7px -4px rgba(0,0,0,.22);padding:4px}
+table.board tr.brow:nth-child(even) td.act{background:#fafaf5}
+table.board tr.brow:hover td.act{background:#fffbe8}
+table.board td.act .btn{display:block;width:100%;margin-bottom:3px;font-size:10px;padding:3px 5px}
+table.board td.act .btn:last-child{margin-bottom:0}
+.fontctl{display:inline-flex;gap:3px;align-items:center;background:rgba(255,255,255,.14);padding:2px 6px;border-radius:4px}
+.fontctl select{font-size:9px;padding:1px 2px;border-radius:3px;border:none;font-family:inherit;background:#fff;color:#1a2744}
+.fontctl span{font-size:9px;color:#e8c96a;font-weight:700}
+.legend{display:flex;gap:9px;flex-wrap:wrap;font-size:9px;margin-top:7px;align-items:center}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.jinp{border:1px dashed #b8932a;border-radius:3px;padding:1px 3px;font-size:9px;width:100%;min-width:70px;background:#fffbe8;font-family:inherit;color:#1a2744}
+.jinp:focus{outline:none;border-style:solid;background:#fff}
+.jinp.set{border-color:#d4c9a8;background:transparent;border-style:solid}
+.mini{font-size:9px;color:#666}
+.grpttl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;color:#1a2744}
+#toast{position:fixed;bottom:14px;right:14px;background:#1a2744;color:#fff;padding:8px 14px;border-radius:5px;font-size:11px;font-weight:600;z-index:9999;display:none;border-left:4px solid #b8932a;max-width:320px}
+#toast.err{border-left-color:#c0392b}
+#qsbox{position:fixed;inset:0;background:rgba(10,20,50,.55);z-index:800;display:none;align-items:flex-start;justify-content:center;padding-top:70px}
+#qsbox.open{display:flex}
+.qspanel{background:#fff;border-radius:8px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.qspanel input{width:100%;border:none;border-bottom:2px solid #b8932a;padding:12px 14px;font-size:14px;font-family:inherit;color:#1a2744}
+.qspanel input:focus{outline:none}
+.qsres{max-height:340px;overflow-y:auto}
+.qsitem{padding:8px 14px;border-bottom:1px solid #eee;cursor:pointer;font-size:11px}
+.qsitem:hover,.qsitem.sel{background:#fffbe8}
+</style>
+</head>
+<body>
+
+<div id="lscr" class="lscreen">
+<div class="lbox">
+  <h2 id="lfirm">Adv. R.S. Charpe | Adv. S.R. Charpe</h2>
+  <p>Legal Case Management System</p>
+  <h3>Sign In</h3>
+  <div class="lerr" id="lerr">Invalid username or password.</div>
+  <div class="fg"><label>Username</label><input id="luser" placeholder="username" onkeydown="if(event.key==='Enter')login()"></div>
+  <div class="fg"><label>Password</label><input id="lpass" type="password" placeholder="password" onkeydown="if(event.key==='Enter')login()"></div>
+  <button onclick="login()" style="width:100%;padding:9px;font-size:13px;background:#b8932a;color:#1a2744;border:none;border-radius:5px;font-weight:700;cursor:pointer;margin-top:3px">Login</button>
+  <div id="lhint" style="margin-top:8px;font-size:11px;color:#888">Default: <b>admin</b> / <b>admin123</b></div>
+</div>
+</div>
+
+<div id="mainapp" style="display:none">
+<header>
+  <div class="firm"><b id="hfirm">Adv. R.S. Charpe &nbsp;|&nbsp; Adv. S.R. Charpe</b><small>Legal Case Management v5</small></div>
+  <nav id="nav">
+    <button data-page="dash" onclick="go('dash')" class="on">Dashboard</button>
+    <button data-page="cases" onclick="go('cases')">All Cases</button>
+    <button data-page="unupd" onclick="go('unupd')">Unupdated<span class="navbdg" id="nbUn"></span></button>
+    <button data-page="cal" onclick="go('cal')">Calendar</button>
+    <button data-page="plan" onclick="go('plan')">Planner</button>
+    <button data-page="tasks" onclick="go('tasks')">Tasks<span class="navbdg" id="nbTk"></span></button>
+    <button data-page="deleted" onclick="go('deleted')">Deleted<span class="navbdg" id="nbDl" style="background:#7a6a3a"></span></button>
+    <button data-page="reports" onclick="go('reports')">Reports</button>
+    <button data-page="sett" onclick="go('sett')" id="navSett">Settings</button>
+  </nav>
+  <div class="hright">
+    <button class="btn bo" onclick="openQS()" title="Ctrl+K" style="padding:3px 8px">&#128269; Search</button>
+    <span id="slbl" style="font-size:9px;color:#9ab">&#9679; Saved</span> <span id="cs2lbl" onclick="cs2Click()" title="Google Drive sync" style="font-size:10px;color:#9ab;cursor:pointer;margin-left:8px">&#9729; Drive sync</span>
+    <span class="ubadge" id="ubdg">Admin</span>
+    <button class="lout" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div id="wrap">
+
+<!-- DASHBOARD -->
+<div id="pdash" class="page on">
+  <div class="hero">
+    <div><div class="herodt" id="todlbl"></div><div style="font-size:10px;color:#aab">Today's cause list</div></div>
+    <div class="stats">
+      <div class="stat" onclick="go('dash')"><b id="stt" style="color:#e8c96a">0</b><small>Today</small></div>
+      <div class="stat" onclick="go('cases')"><b id="sta" style="color:#7af">0</b><small>Active</small></div>
+      <div class="stat" onclick="go('unupd')"><b id="stov" style="color:#f77">0</b><small>Overdue</small></div>
+      <div class="stat" onclick="go('unupd')"><b id="stm" style="color:#fa7">0</b><small>No date</small></div>
+    </div>
+  </div>
+  <div id="bkbar"></div>
+  <div id="wbar" style="display:none" class="wbar">
+    <span style="font-weight:600;color:#c0392b">&#9888; <span id="missn">0</span> case(s) are unupdated &mdash; no future date on record</span>
+    <button class="btn br" onclick="go('unupd')">Review now</button>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="g">Today's board &mdash; <span id="tbdate"></span></span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="todacts"></div>
+    </div>
+    <div class="cb" id="todlist"></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch">Pending tasks <span id="tbdg" style="background:#c0392b;color:#fff;border-radius:8px;padding:1px 6px;font-size:9px;margin-left:4px;display:none"></span></div>
+      <div class="cb" id="dashtsk"></div>
+    </div>
+    <div class="card">
+      <div class="ch">Messages</div>
+      <div class="cb" id="dashms"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ALL CASES -->
+<div id="pcases" class="page">
+  <div class="card">
+    <div class="ch">
+      <span class="g">All cases (<span id="ccount">0</span>)</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="casesacts"></div>
+    </div>
+    <div class="cb">
+      <div class="srow">
+        <input class="sinp" id="sq" oninput="renderC()" placeholder="Search party, court, case no., client, judge, stage, note...">
+        <select class="sinp" id="cfilter" onchange="renderC()" style="flex:0 0 auto;min-width:130px"><option value="">All courts</option></select>
+        <select class="sinp" id="sfilter" onchange="renderC()" style="flex:0 0 auto;min-width:130px">
+          <option value="open">Open matters</option>
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="stayed">Stayed</option>
+          <option value="appeal">In appeal</option>
+          <option value="disposed">Disposed</option>
+        </select>
+      </div>
+      <div id="clist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- UNUPDATED CASES -->
+<div id="punupd" class="page">
+  <div class="card">
+    <div class="ch"><span class="g">Unupdated cases &mdash; no future date on record</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="unupdacts"></div>
+    </div>
+    <div class="cb">
+      <div style="background:#fffbe8;border:1px solid #e8c96a;border-radius:5px;padding:8px 11px;font-size:11px;line-height:1.6;margin-bottom:10px">
+        These are open matters whose next date is <b>not today and not in the future</b> &mdash; either the date has already
+        passed without being updated, or no next date was ever entered. Post the fresh date against each to clear it from this list.
+      </div>
+      <div class="srow">
+        <input class="sinp" id="usq" oninput="renderUnupd()" placeholder="Search within unupdated cases...">
+        <select class="sinp" id="ufilter" onchange="renderUnupd()" style="flex:0 0 auto;min-width:150px">
+          <option value="">Both groups</option>
+          <option value="over">Date passed (overdue)</option>
+          <option value="none">No next date ever</option>
+        </select>
+      </div>
+      <div id="ulist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div id="pcal" class="page">
+  <div class="card">
+    <div class="ch"><span class="g">Calendar &mdash; click any date, past or future, to see that day's board</span>
+      <div style="display:flex;gap:3px;flex-wrap:wrap">
+        <button class="btn bo" onclick="selCalDay(td())">Today</button>
+        <button class="btn bg" onclick="qAdd('case',selcd||td())">+ Case</button>
+        <button class="btn bor" onclick="qAdd('task',selcd||td())">+ Task</button>
+      </div>
+    </div>
+    <div class="cb">
+      <div class="calnav">
+        <button class="btn bn" onclick="cnav(-1)">&#8249; Prev</button>
+        <div style="display:flex;gap:3px">
+          <select class="calsel" id="cmo" onchange="renderCal()"></select>
+          <select class="calsel" id="cyr" onchange="renderCal()"></select>
+        </div>
+        <button class="btn bn" onclick="cnav(1)">Next &#8250;</button>
+      </div>
+      <div class="calgrid" id="cgrid"></div>
+      <div style="margin-top:7px;font-size:9px;color:#666">
+        <span class="calbdg">3</span> hearings currently listed on that date &nbsp;&nbsp;
+        <span class="calbdg past">2</span> matters heard on that date earlier (from history)
+      </div>
+    </div>
+  </div>
+  <div id="cal-daylist"></div>
+</div>
+
+<!-- PLANNER -->
+<div id="pplan" class="page">
+  <div class="card">
+    <div class="ch"><span class="g">Planner</span>
+      <div style="display:flex;gap:3px;flex-wrap:wrap">
+        <button class="btn bo" onclick="selPlanDay(td())">Today</button>
+        <button class="btn bg" onclick="qAdd('case',selpd||td())">+ Case</button>
+        <button class="btn bor" onclick="qAdd('task',selpd||td())">+ Task</button>
+      </div>
+    </div>
+    <div class="cb">
+      <div class="calnav">
+        <button class="btn bn" onclick="pnav(-1)">&#8249;</button>
+        <b style="font-size:13px;color:#1a2744" id="ptitle"></b>
+        <button class="btn bn" onclick="pnav(1)">&#8250;</button>
+      </div>
+      <div class="plgrid" id="pgrid"></div>
+    </div>
+  </div>
+  <div id="plan-daylist"></div>
+</div>
+
+<!-- TASKS -->
+<div id="ptasks" class="page">
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><span class="g">Tasks</span><button class="btn bg" onclick="openTask()">+ Task</button></div>
+      <div class="cb">
+        <div class="srow">
+          <select class="sinp" id="tkfilter" onchange="renderTasks()">
+            <option value="pending">Pending only</option>
+            <option value="all">All tasks</option>
+            <option value="done">Completed</option>
+            <option value="late">Overdue</option>
+          </select>
+          <select class="sinp" id="tkcase" onchange="renderTasks()"><option value="">All cases</option></select>
+        </div>
+        <div id="alltsk"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="g">Messages</span><button class="btn bg" onclick="openM('mmsg')">+ Message</button></div>
+      <div class="cb" id="allms" style="max-height:450px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DELETED CASES -->
+<div id="pdeleted" class="page">
+  <div class="card">
+    <div class="ch"><span class="g">Deleted cases (<span id="dcount">0</span>)</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="delacts"></div>
+    </div>
+    <div class="cb">
+      <div style="background:#fffbe8;border:1px solid #e8c96a;border-radius:5px;padding:8px 11px;font-size:11px;line-height:1.6;margin-bottom:10px">
+        Deleted matters are held here for <b id="pdays">30</b> days and are excluded from every list, board, count and printout.
+        Press <b>Revive</b> to put one back exactly as it was &mdash; all dates, notes and history intact.
+      </div>
+      <div class="srow">
+        <input class="sinp" id="dsq" oninput="renderDeleted()" placeholder="Search deleted cases...">
+      </div>
+      <div id="dlist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div id="preports" class="page">
+  <div class="card">
+    <div class="ch"><span class="g">Reports, boards &amp; print</span></div>
+    <div class="cb">
+      <div class="tabs">
+        <button class="tbt on" onclick="stab(this,'rdatewise')">Day board</button>
+        <button class="tbt" onclick="stab(this,'rall')">Full case list</button>
+        <button class="tbt" onclick="stab(this,'rcustom')">Custom date range</button>
+        <button class="tbt" onclick="stab(this,'runup')">Unupdated cases</button>
+      </div>
+
+      <div id="rdatewise" class="tp on">
+        <p style="font-size:11px;color:#666;margin-bottom:10px">Pick any date &mdash; past or future &mdash; to build that day's board. Print it, save it as PDF, or download it as an editable Word file.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+          <div class="fg" style="margin:0;flex:1;min-width:150px"><label>Select date</label><input type="date" id="rpdate"></div>
+          <button class="btn bg" onclick="showDateReport()">Show board</button>
+          <button class="btn bo" onclick="setRp(-1)">&#8249; Yesterday</button>
+          <button class="btn bo" onclick="setRp(0)">Today</button>
+          <button class="btn bo" onclick="setRp(1)">Tomorrow &#8250;</button>
+        </div>
+        <div id="rdate-result"></div>
+      </div>
+
+      <div id="rall" class="tp">
+        <p style="font-size:11px;color:#666;margin-bottom:10px">Every case grouped by its next hearing date.</p>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button class="btn bn" onclick="prtAll('print')">&#128424; Print</button>
+          <button class="btn bbl" onclick="prtAll('pdf')">&#128196; Save as PDF</button>
+          <button class="btn bgr" onclick="prtAll('word')">&#128209; Save as Word</button>
+        </div>
+      </div>
+
+      <div id="rcustom" class="tp">
+        <p style="font-size:11px;color:#666;margin-bottom:10px">Cases whose next date falls within a range.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+          <div class="fg" style="margin:0;flex:1;min-width:130px"><label>From date</label><input type="date" id="rfrom"></div>
+          <div class="fg" style="margin:0;flex:1;min-width:130px"><label>To date</label><input type="date" id="rto"></div>
+          <button class="btn bg" onclick="showRangeReport()">Show list</button>
+          <button class="btn bn" onclick="prtRange('print')">&#128424; Print</button>
+          <button class="btn bbl" onclick="prtRange('pdf')">&#128196; PDF</button>
+          <button class="btn bgr" onclick="prtRange('word')">&#128209; Word</button>
+        </div>
+        <div id="rrange-result"></div>
+      </div>
+
+      <div id="runup" class="tp">
+        <p style="font-size:11px;color:#666;margin-bottom:10px">All open matters with no future date on record.</p>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button class="btn bn" onclick="prtUnupd('print')">&#128424; Print</button>
+          <button class="btn bbl" onclick="prtUnupd('pdf')">&#128196; Save as PDF</button>
+          <button class="btn bgr" onclick="prtUnupd('word')">&#128209; Save as Word</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="psett" class="page">
+  <div class="card">
+    <div class="ch"><span class="g">Settings</span></div>
+    <div class="cb">
+      <div class="tabs">
+        <button class="tbt on" onclick="stab(this,'tbk')">Backup &amp; Restore</button>
+        <button class="tbt" onclick="stab(this,'tdt')">Update dates from file</button>
+        <button class="tbt" onclick="stab(this,'tu')">Users</button>
+        <button class="tbt" onclick="stab(this,'tfirm')">Letterhead</button>
+        <button class="tbt" onclick="stab(this,'tsync')">Online sync</button>
+        <button class="tbt" onclick="stab(this,'tbin')">Deleted items</button>
+        <button class="tbt" onclick="stab(this,'tlog')">Activity log</button>
+      </div>
+      <div id="tbk" class="tp on"></div>
+      <div id="tdt" class="tp"></div>
+      <div id="tu" class="tp"></div>
+      <div id="tfirm" class="tp"></div>
+      <div id="tsync" class="tp"></div>
+      <div id="tbin" class="tp"></div>
+      <div id="tlog" class="tp"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</div><!-- /mainapp -->
+
+<!-- QUICK SEARCH -->
+<div id="qsbox" onclick="if(event.target.id==='qsbox')closeQS()">
+  <div class="qspanel">
+    <input id="qsinp" placeholder="Search any case &mdash; party, court, case no., client, judge..." oninput="qsRun()" onkeydown="qsKey(event)">
+    <div class="qsres" id="qsres"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="ov" id="mcase">
+<div class="modal">
+  <div class="mh"><span id="cmtit">Add case</span><button class="mx" onclick="closeM('mcase')">&#x2715;</button></div>
+  <div class="mb">
+    <div class="fgr">
+      <div class="fg"><label>Court</label><input id="fc" placeholder="e.g. Civil Court, Nagpur"></div>
+      <div class="fg"><label>Case no.</label><input id="fcn" placeholder="e.g. R.C.S. 123/2024"></div>
+      <div class="fg"><label>Presiding judge</label><input id="fjd" placeholder="e.g. Shri A. B. Deshmukh"></div>
+      <div class="fg"><label>Plaintiff / Petitioner</label><input id="fp" placeholder="Party name"></div>
+      <div class="fg"><label>Defendant / Respondent</label><input id="fd" placeholder="Party name"></div>
+      <div class="fg"><label>Our client</label><input id="fcl" placeholder="Client name"></div>
+      <div class="fg"><label>Status</label><select id="fst"><option value="active">Active</option><option value="stayed">Stayed</option><option value="appeal">In appeal</option><option value="disposed">Disposed</option></select></div>
+      <div class="fg"><label>Contact person</label><input id="fcp" placeholder="Name"></div>
+      <div class="fg"><label>Contact number</label><input id="fcm" placeholder="Mobile"></div>
+      <div class="fg"><label>Previous date</label><input id="fpd" type="date"></div>
+      <div class="fg"><label>Previous stage</label><input id="fps" placeholder="e.g. Arguments"></div>
+      <div class="fg"><label>Next date</label><input id="fnd" type="date"></div>
+      <div class="fg"><label>Next stage</label><input id="fns" placeholder="e.g. Evidence"></div>
+      <div class="fg f2"><label>Note</label><textarea id="fno" rows="3"></textarea></div>
+    </div>
+    <div id="dupwarn"></div>
+    <div class="fa"><button class="btn bo" onclick="closeM('mcase')">Cancel</button><button class="btn bg" onclick="saveCase()">Save case</button></div>
+  </div>
+</div>
+</div>
+
+<div class="ov" id="mupd">
+<div class="modal">
+  <div class="mh"><span>Post next date &mdash; <span class="g" id="utit"></span></span><button class="mx" onclick="closeM('mupd')">&#x2715;</button></div>
+  <div class="mb">
+    <div class="fgr">
+      <div class="fg"><label>Set as previous date</label><input id="upd" type="date"></div>
+      <div class="fg"><label>Previous stage</label><input id="ups"></div>
+      <div class="fg"><label>New next date</label><input id="und" type="date"></div>
+      <div class="fg"><label>New next stage</label><input id="uns"></div>
+      <div class="fg"><label>Judge</label><input id="ujd"></div>
+      <div class="fg"><label>Status</label><select id="ust"><option value="active">Active</option><option value="stayed">Stayed</option><option value="appeal">In appeal</option><option value="disposed">Disposed</option></select></div>
+    </div>
+    <div class="fg" style="margin-top:7px"><label>Note</label><textarea id="uno" rows="4"></textarea></div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn bo" onclick="document.getElementById('uno').value=''">Clear note</button>
+      <button class="btn bo" onclick="togPN()">Show/hide prev notes</button>
+    </div>
+    <div id="pnw" style="display:none;margin-top:7px"></div>
+    <div class="fa"><button class="btn bo" onclick="closeM('mupd')">Cancel</button><button class="btn bg" onclick="saveUpd()">Save update</button></div>
+  </div>
+</div>
+</div>
+
+<div class="ov" id="madj">
+<div class="modal modalsm">
+  <div class="mh"><span>Adjourn matters</span><button class="mx" onclick="closeM('madj')">&#x2715;</button></div>
+  <div class="mb">
+    <div id="adjinfo" style="font-size:11px;background:#fffbe8;border:1px solid #e8c96a;border-radius:5px;padding:8px;margin-bottom:9px"></div>
+    <div class="fgr">
+      <div class="fg"><label>New next date</label><input id="ajd" type="date"></div>
+      <div class="fg"><label>New next stage</label><input id="ajs" placeholder="e.g. Evidence"></div>
+    </div>
+    <div class="fg"><label>Common note (optional)</label><textarea id="ajn" rows="2"></textarea></div>
+    <div class="fa"><button class="btn bo" onclick="closeM('madj')">Cancel</button><button class="btn bg" onclick="saveAdj()">Adjourn</button></div>
+  </div>
+</div>
+</div>
+
+<div class="ov" id="mcont">
+<div class="modal modalsm">
+  <div class="mh"><span>Contact &mdash; <span class="g" id="cctit"></span></span><button class="mx" onclick="closeM('mcont')">&#x2715;</button></div>
+  <div class="mb">
+    <div class="fg"><label>Client name</label><input id="ccl"></div>
+    <div class="fg"><label>Contact person</label><input id="ccp"></div>
+    <div class="fg"><label>Contact number</label><input id="ccm"></div>
+    <div class="fa"><button class="btn bo" onclick="closeM('mcont')">Cancel</button><button class="btn bg" onclick="saveCont()">Save</button></div>
+  </div>
+</div>
+</div>
+
+<div class="ov" id="mtask">
+<div class="modal modalsm">
+  <div class="mh"><span id="tktit">Add task</span><button class="mx" onclick="closeM('mtask')">&#x2715;</button></div>
+  <div class="mb">
+    <div class="fg"><label>Description</label><textarea id="tdesc" rows="3"></textarea></div>
+    <div class="fg"><label>Link to case (optional)</label><select id="tcase"><option value="">&mdash; Not linked &mdash;</option></select></div>
+    <div class="fgr">
+      <div class="fg"><label>Priority</label><select id="tprio"><option value="vu">Very urgent</option><option value="u">Urgent</option><option value="n" selected>Normal</option><option value="l">Low</option></select></div>
+      <div class="fg"><label>Due date</label><input id="tdue" type="date"></div>
+    </div>
+    <div class="fa"><button class="btn bo" onclick="closeM('mtask')">Cancel</button><button class="btn bg" onclick="saveTask()">Save</button></div>
+  </div>
+</div>
+</div>
+
+<div class="ov" id="mmsg">
+<div class="modal modalsm">
+  <div class="mh">Send message<button class="mx" onclick="closeM('mmsg')">&#x2715;</button></div>
+  <div class="mb">
+    <div class="fgr">
+      <div class="fg"><label>From</label><select id="mfr"></select></div>
+      <div class="fg"><label>To</label><select id="mto"></select></div>
+    </div>
+    <div class="fg"><label>Message</label><textarea id="mbdy" rows="4"></textarea></div>
+    <div class="fa"><button class="btn bo" onclick="closeM('mmsg')">Cancel</button><button class="btn bg" onclick="saveMsg()">Send</button></div>
+  </div>
+</div>
+</div>
+
+<div class="ov" id="mqk">
+<div class="modal modalsm">
+  <div class="mh"><span id="qtit">Quick add</span><button class="mx" onclick="closeM('mqk')">&#x2715;</button></div>
+  <div class="mb" id="qbody"></div>
+</div>
+</div>
+
+<div class="ov" id="musr">
+<div class="modal modalsm">
+  <div class="mh">Add / edit user<button class="mx" onclick="closeM('musr')">&#x2715;</button></div>
+  <div class="mb">
+    <div class="fg"><label>Display name</label><input id="aun"></div>
+    <div class="fg"><label>Username</label><input id="auu"></div>
+    <div class="fg"><label>New password <span style="font-weight:400;font-size:9px;color:#888">(blank = keep existing)</span></label><input id="aup" type="password"></div>
+    <div class="fg"><label>Role</label><select id="aur"><option value="admin">Admin</option><option value="user" selected>User</option></select></div>
+    <div style="margin:7px 0;padding:9px;background:#f5f0e8;border-radius:5px;font-size:11px">
+      <b>Restrictions (user role only):</b>
+      <label style="display:flex;align-items:center;gap:3px;margin-top:3px;font-weight:400"><input type="checkbox" id="aundel"> Cannot delete</label>
+      <label style="display:flex;align-items:center;gap:3px;margin-top:2px;font-weight:400"><input type="checkbox" id="aunset"> Cannot access settings</label>
+      <label style="display:flex;align-items:center;gap:3px;margin-top:2px;font-weight:400"><input type="checkbox" id="aunexp"> Cannot export</label>
+      <label style="display:flex;align-items:center;gap:3px;margin-top:2px;font-weight:400"><input type="checkbox" id="auro"> Read only</label>
+    </div>
+    <div class="fa"><button class="btn bo" onclick="closeM('musr')">Cancel</button><button class="btn bg" onclick="saveUsr()">Save user</button></div>
+  </div>
+</div>
+</div>
+
+<div class="ov" id="mimp">
+<div class="modal" style="max-width:1000px">
+  <div class="mh"><span>Proposed date updates &mdash; <span class="g">nothing saved yet</span></span><button class="mx" onclick="closeM('mimp')">&#x2715;</button></div>
+  <div class="mb" id="impbody"></div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===========================================================
+   Charpe Law - Legal Case Management v5
+   =========================================================== */
+var C=[],T=[],M=[],U=[],S={},L=[];
+var cu=null,eid=null,uid2=null,ccid=null,euid=null,etid=null;
+var calY,calMo,plY,plMo,selcd=null,selpd=null,qt='case',qd='';
+var adjCtx={date:'',ids:[]};
+var stmr=null,qsSel=0,qsHits=[];
+var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var WD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var PL={vu:'Very urgent',u:'Urgent',n:'Normal',l:'Low'};
+var PC={vu:'prvu',u:'pru',n:'prn',l:'prl'};
+var STL={active:'Active',disposed:'Disposed',stayed:'Stayed',appeal:'In appeal'};
+var PURGE_DAYS=30;
+
+/* -----------------------------------------------------------
+   COURT ORDER AND COLOUR SCHEME FOR THE BOARD
+   Boards are always grouped in this sequence, with each block
+   printed in its own colour.
+   ----------------------------------------------------------- */
+var GRPS=[
+  {k:'hc',  t:'High Court',                                  c:'#c0392b', bold:true},
+  {k:'dist',t:'District Court',                              c:'#000000', bold:false},
+  {k:'cat', t:'Central Administrative Tribunal',             c:'#1546a0', bold:false},
+  {k:'mat', t:'Maharashtra Administrative Tribunal',         c:'#1546a0', bold:false},
+  {k:'sch', t:'School Tribunal, Nagpur',                     c:'#d6187f', bold:false},
+  {k:'mrt', t:'Maharashtra Revenue Tribunal, Nagpur',        c:'#1546a0', bold:false},
+  {k:'oth', t:'Other courts and special courts',             c:'#1546a0', bold:false},
+  {k:'ind', t:'Industrial Court',                            c:'#1e8449', bold:false},
+  {k:'lab', t:'Labour Court',                                c:'#c05600', bold:false}
+];
+var GRANK={},GMETA={};
+GRPS.forEach(function(g,i){GRANK[g.k]=i;GMETA[g.k]=g;});
+
+function courtGroup(c){
+  var raw=String(c.court||'').toLowerCase();
+  /* two normalised forms: dots as spaces, and dots stripped, so that
+     both "J.M.F.C." and "JMFC" are recognised */
+  var s=' '+raw.replace(/[.\-_,/()]/g,' ').replace(/\s+/g,' ').trim()+' ';
+  var z=' '+raw.replace(/\./g,'').replace(/[\-_,/()]/g,' ').replace(/\s+/g,' ').trim()+' ';
+  var hit=function(re){return re.test(s)||re.test(z);};
+  if(hit(/high court|\bhc\b/))return 'hc';
+  if(hit(/central administrative tribunal|\bcat\b/))return 'cat';
+  if(hit(/maharashtra administrative tribunal|\bmat\b/))return 'mat';
+  if(hit(/school tribunal|school court/))return 'sch';
+  if(hit(/revenue tribunal|\bmrt\b/))return 'mrt';
+  if(hit(/industrial court|industrial tribunal/))return 'ind';
+  if(hit(/lab(o|ou)r court|lab(o|ou)r tribunal/))return 'lab';
+  if(hit(/district|sessions|small cause|civil judge|senior division|junior division|civil court|magistrate|jmfc|acjm|cjm|cjsd|cjjd|\bjmc\b/))return 'dist';
+  return 'oth';
+}
+function gMeta(c){return GMETA[courtGroup(c)]||GMETA.oth;}
+
+/* board font preferences, remembered between sessions */
+function bf(){
+  if(!S.bf)S.bf={f:'Georgia',s:13};
+  if(!S.bf.f)S.bf.f='Georgia';
+  if(!S.bf.s)S.bf.s=13;
+  return S.bf;
+}
+var FAMS=['Georgia','Times New Roman','Cambria','Book Antiqua','Palatino Linotype','Arial','Segoe UI','Verdana','Tahoma','Calibri'];
+var SIZES=[10,11,12,13,14,15,16,18,20,22];
+function setBF(k,v){
+  var b=bf();
+  b[k]=(k==='s'?parseInt(v,10):v);
+  saveAll();refresh();
+  var d=document.getElementById('rdate-result');
+  if(d&&d.innerHTML.trim())showDateReport();
+  toast('Board font: '+b.f+' '+b.s+'pt');
+}
+function fontCtl(){
+  var b=bf();
+  return '<span class="fontctl" onclick="event.stopPropagation()"><span>Aa</span>'+
+    '<select onchange="setBF(\'f\',this.value)" title="Font for the board, on screen and in print">'+
+      FAMS.map(function(f){return '<option value="'+he(f)+'"'+(f===b.f?' selected':'')+'>'+he(f)+'</option>';}).join('')+
+    '</select>'+
+    '<select onchange="setBF(\'s\',this.value)" title="Font size">'+
+      SIZES.map(function(s){return '<option value="'+s+'"'+(s===b.s?' selected':'')+'>'+s+'</option>';}).join('')+
+    '</select></span>';
+}
+function legendHTML(){
+  return '<div class="legend">'+GRPS.map(function(g){
+    return '<span style="color:'+g.c+';font-weight:'+(g.bold?'800':'600')+'"><i style="background:'+g.c+'"></i>'+he(g.t)+'</span>';
+  }).join('')+'</div>';
+}
+
+/* ---------- small helpers ---------- */
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function zz(n){return String(n).padStart(2,'0');}
+function td(){var d=new Date();return d.getFullYear()+'-'+zz(d.getMonth()+1)+'-'+zz(d.getDate());}
+function shift(iso,n){var p=(iso||td()).split('-');var d=new Date(+p[0],+p[1]-1,+p[2]);d.setDate(d.getDate()+n);return d.getFullYear()+'-'+zz(d.getMonth()+1)+'-'+zz(d.getDate());}
+function fd(s){if(!s)return'—';var a=String(s).split('-');if(a.length!==3)return s;return a[2]+'/'+a[1]+'/'+a[0];}
+function fdl(s){if(!s)return'—';var p=String(s).split('-');var d=new Date(+p[0],+p[1]-1,+p[2]);return fd(s)+' ('+WD[d.getDay()]+')';}
+function he(s){if(s===0)return'0';if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function now(){return new Date().toISOString();}
+function touch(o){o.mod=now();return o;}
+function find(id){return C.find(function(x){return x.id===id;});}
+function LC(){return C.filter(function(c){return !c.del;});}
+function LT(){return T.filter(function(t){return !t.del;});}
+function isOpen(c){return c.st!=='disposed';}
+var undoFn=null;
+function toast(msg,t,undo){
+  var el=document.getElementById('toast');
+  el.className=(t==='err'?'err':'');
+  if(undo){
+    undoFn=undo;
+    el.innerHTML=he(msg)+'<button class="btn bg" style="margin-left:9px;padding:3px 9px" onclick="doUndo()">Undo</button>';
+  }else{
+    undoFn=null;el.textContent=msg;
+  }
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.style.display='none';undoFn=null;},undo?8000:3000);
+}
+function doUndo(){
+  var f=undoFn;undoFn=null;
+  document.getElementById('toast').style.display='none';
+  if(f)f();
+}
+
+/* ---------- permissions ---------- */
+function can(p){
+  if(!cu)return false;
+  if(cu.role==='admin')return true;
+  if(cu.rOnly)return p==='view'||p==='exp'&&!cu.noExp;
+  if(p==='del')return !cu.noDel;
+  if(p==='set')return !cu.noSet;
+  if(p==='exp')return !cu.noExp;
+  return true;
+}
+function guard(p,msg){if(can(p))return true;toast(msg||'You do not have permission for this action.','err');return false;}
+
+/* ---------- password hashing ---------- */
+function hashPw(user,pass){
+  var s=String(user).toLowerCase()+'␟'+String(pass)+'␟charpe.v5';
+  if(window.crypto&&window.crypto.subtle&&window.crypto.subtle.digest&&window.TextEncoder){
+    try{
+      return window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(function(buf){
+        return 's'+Array.prototype.map.call(new Uint8Array(buf),function(b){return b.toString(16).padStart(2,'0');}).join('');
+      });
+    }catch(e){}
+  }
+  return Promise.resolve(fallbackHash(s));
+}
+function fallbackHash(s){
+  var h1=0x811c9dc5,h2=0x01000193;
+  for(var i=0;i<s.length;i++){h1^=s.charCodeAt(i);h1=Math.imul(h1,16777619);h2=Math.imul(h2^s.charCodeAt(i),2246822519);}
+  return 'f'+((h1>>>0).toString(16))+((h2>>>0).toString(16));
+}
+
+/* ---------- normalisation ---------- */
+function normCase(c){
+  c=c||{};
+  var o=normCase0(c);if(c.eci)o.eci=c.eci;return o;
+}
+function normCase0(c){
+  return{
+    id:c.id||uid(),
+    court:c.court||'',
+    cn:c.cn||c.caseNo||'',
+    jd:c.jd||c.judge||'',
+    jov:c.jov||{},
+    cnr:c.cnr||'',
+    pl:c.pl||c.plaintiff||'',
+    de:c.de||c.defendant||'',
+    cl:c.cl||c.client||'',
+    cp:c.cp||c.contactPerson||'',
+    cm:c.cm||c.contactNum||'',
+    pd:c.pd||c.prevDate||'',
+    ps:c.ps||c.prevStage||'',
+    nd:c.nd||c.nextDate||'',
+    ns:c.ns||c.nextStage||'',
+    st:c.st||'active',
+    notes:c.notes||[],
+    hist:c.hist||c.history||[],
+    added:c.added||c.addedDate||'',
+    addedBy:c.addedBy||'',
+    mod:c.mod||'',
+    del:c.del||'',
+    delBy:c.delBy||''
+  };
+}
+function normTask(t){
+  t=t||{};
+  return{id:t.id||uid(),desc:t.desc||'',prio:t.prio||'n',due:t.due||'',done:!!t.done,
+    cid:t.cid||'',added:t.added||'',addedBy:t.addedBy||'',mod:t.mod||'',del:t.del||'',delBy:t.delBy||''};
+}
+
+/* ---------- storage ---------- */
+function loadAll(){
+  try{C=JSON.parse(localStorage.getItem('cpm_c')||'[]').map(normCase);}catch(e){C=[];}
+  try{T=JSON.parse(localStorage.getItem('cpm_t')||'[]').map(normTask);}catch(e){T=[];}
+  try{M=JSON.parse(localStorage.getItem('cpm_m')||'[]');}catch(e){M=[];}
+  try{S=JSON.parse(localStorage.getItem('cpm_s')||'{}')||{};}catch(e){S={};}
+  try{L=JSON.parse(localStorage.getItem('cpm_l')||'[]');}catch(e){L=[];}
+  try{
+    U=JSON.parse(localStorage.getItem('cpm_u')||'[]');
+    if(!U.length){U=[{id:'admin',name:'Administrator',username:'admin',password:'admin123',role:'admin'}];saveU();}
+  }catch(e){U=[{id:'admin',name:'Administrator',username:'admin',password:'admin123',role:'admin'}];}
+  if(!S.firm)S.firm={n:'Adv. R.S. Charpe  |  Adv. S.R. Charpe',a:'Nagpur',p:''};
+  purge();
+  applyFirm();
+}
+function purge(){
+  var cut=shift(td(),-PURGE_DAYS);
+  var f=function(x){return !(x.del&&String(x.del).slice(0,10)<cut);};
+  C=C.filter(f);T=T.filter(f);
+}
+function saveAll(){
+  try{
+    localStorage.setItem('cpm_c',JSON.stringify(C));
+    localStorage.setItem('cpm_t',JSON.stringify(T));
+    localStorage.setItem('cpm_m',JSON.stringify(M));
+    localStorage.setItem('cpm_s',JSON.stringify(S));
+    localStorage.setItem('cpm_l',JSON.stringify(L.slice(-600)));
+    var n=new Date(),el=document.getElementById('slbl');
+    if(el)el.textContent='● Saved '+zz(n.getHours())+':'+zz(n.getMinutes());
+  }catch(e){toast('Could not save: '+e.message,'err');}
+}
+function saveU(){try{localStorage.setItem('cpm_u',JSON.stringify(U));}catch(e){}}
+function logAct(act){L.push({id:uid(),ts:now(),by:cu?(cu.name||cu.username):'system',act:act});if(L.length>600)L=L.slice(-600);}
+function applyFirm(){
+  var n=(S.firm&&S.firm.n)||'Adv. R.S. Charpe  |  Adv. S.R. Charpe';
+  var e1=document.getElementById('hfirm'),e2=document.getElementById('lfirm');
+  if(e1)e1.textContent=n;if(e2)e2.textContent=n;
+}
+
+/* ---------- login ---------- */
+function login(){
+  var u=document.getElementById('luser').value.trim(),p=document.getElementById('lpass').value;
+  var f=U.find(function(x){return (x.username||'').toLowerCase()===u.toLowerCase();});
+  if(!f){return loginFail();}
+  hashPw(f.username,p).then(function(h){
+    var ok=false;
+    if(f.ph){ok=(f.ph===h);}
+    else if(f.password!==undefined){ok=(f.password===p);if(ok){f.ph=h;delete f.password;saveU();}}
+    if(!ok)return loginFail();
+    cu=f;
+    document.getElementById('lerr').style.display='none';
+    document.getElementById('lscr').style.display='none';
+    document.getElementById('mainapp').style.display='block';
+    document.getElementById('ubdg').textContent=(f.name||f.username)+(f.role==='admin'?'':' · user');
+    document.getElementById('lpass').value='';
+    logAct('Signed in');
+    initApp();
+  });
+}
+function loginFail(){document.getElementById('lerr').style.display='block';}
+function logout(){
+  saveAll();cu=null;
+  document.getElementById('mainapp').style.display='none';
+  document.getElementById('lscr').style.display='flex';
+  document.getElementById('luser').value='';document.getElementById('lpass').value='';
+  if(stmr){clearInterval(stmr);stmr=null;}
+}
+function initApp(){
+  initCal();initPlan();
+  document.getElementById('navSett').style.display=can('set')?'':'none';
+  document.getElementById('rpdate').value=td();
+  document.getElementById('rfrom').value=td();
+  document.getElementById('rto').value=shift(td(),30);
+  selcd=td();selpd=td();
+  popMsgSel();popCaseSel();
+  refresh();
+  if(stmr)clearInterval(stmr);
+  setInterval(saveAll,120000);
+  if(S.jbKey&&S.jbBin)startSync();
+}
+
+/* ---------- navigation ---------- */
+function go(name){
+  if(name==='sett'&&!can('set')){toast('Settings are restricted for your account.','err');return;}
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-page')===name);});
+  var pg=document.getElementById('p'+name);
+  if(pg)pg.classList.add('on');
+  if(name==='dash')renderDash();
+  if(name==='cases')renderC();
+  if(name==='unupd')renderUnupd();
+  if(name==='cal')renderCal();
+  if(name==='plan')renderPlan();
+  if(name==='tasks'){renderTasks();renderMsgs();}
+  if(name==='deleted')renderDeleted();
+  if(name==='sett')renderSett();
+  window.scrollTo(0,0);
+}
+function refresh(){
+  renderDash();renderC();renderUnupd();renderCal();renderPlan();
+  renderTasks();renderDashT();renderMsgs();renderDashM();renderDeleted();
+  updCF();popCaseSel();updBadges();
+}
+function updBadges(){
+  var un=unupdated().length,tk=LT().filter(function(t){return !t.done;}).length;
+  var dl=C.filter(function(c){return c.del;}).length+T.filter(function(t){return t.del;}).length;
+  var a=document.getElementById('nbUn'),b=document.getElementById('nbTk'),e=document.getElementById('nbDl');
+  if(a){a.textContent=un;a.style.display=un?'inline':'none';}
+  if(b){b.textContent=tk;b.style.display=tk?'inline':'none';}
+  if(e){e.textContent=dl;e.style.display=dl?'inline':'none';}
+}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function stab(btn,id){
+  btn.closest('.cb').querySelectorAll('.tbt').forEach(function(b){b.classList.remove('on');});
+  btn.closest('.cb').querySelectorAll('.tp').forEach(function(p){p.classList.remove('on');});
+  btn.classList.add('on');document.getElementById(id).classList.add('on');
+}
+function ctit(c){var pl=c.pl||'',de=c.de||'';if(pl&&de)return pl+' vs. '+de;return pl||de||c.court||'Unnamed matter';}
+
+/* ===========================================================
+   HEARING TIMELINE
+   Every date a matter was (or is) listed on, rebuilt from the
+   current previous/next dates plus the full history trail.
+   =========================================================== */
+function timeline(c){
+  var m={};
+  function add(d,s){if(!d)return;if(!(d in m)||(!m[d]&&s))m[d]=s||m[d]||'';}
+  (c.hist||[]).forEach(function(h){add(h.pd,h.ps);add(h.nd,h.ns);});
+  add(c.pd,c.ps);add(c.nd,c.ns);
+  return Object.keys(m).sort().map(function(d){return{d:d,s:m[d]};});
+}
+function onDate(c,iso){return timeline(c).some(function(x){return x.d===iso;});}
+function stageOn(c,iso){var t=timeline(c);for(var i=0;i<t.length;i++)if(t[i].d===iso)return t[i].s;return '';}
+function prevOf(c,iso){var t=timeline(c),r=null;for(var i=0;i<t.length;i++){if(t[i].d<iso)r=t[i];else break;}return r;}
+function nextOf(c,iso){var t=timeline(c);for(var i=0;i<t.length;i++)if(t[i].d>iso)return t[i];return null;}
+function judgeOn(c,iso){return (c.jov&&c.jov[iso])||c.jd||'';}
+
+/* Board for any date - past, present or future */
+function boardOn(iso){
+  return LC().filter(function(c){return onDate(c,iso);})
+    .map(function(c){return{c:c,cur:c.nd===iso,g:courtGroup(c)};})
+    .sort(function(a,b){
+      var ra=GRANK[a.g],rb=GRANK[b.g];
+      if(ra!==rb)return ra-rb;                                  /* High Court first, Labour Court last */
+      if(a.cur!==b.cur)return a.cur?-1:1;                       /* live listings above historical ones */
+      return (a.c.court||'').localeCompare(b.c.court||'')||ctit(a.c).localeCompare(ctit(b.c));
+    });
+}
+function tOn(iso){return LT().filter(function(t){return t.due===iso&&!t.done;});}
+
+/* Unupdated: open matters with no future date on record.
+   Subordinate courts and tribunals are listed first; High Court last. */
+function isHC(c){return courtGroup(c)==='hc';}
+function unupdated(){
+  var t=td();
+  return LC().filter(function(c){return isOpen(c)&&(!c.nd||c.nd<t);})
+    .sort(function(a,b){
+      var ha=isHC(a)?1:0,hb=isHC(b)?1:0;
+      if(ha!==hb)return ha-hb;                          /* High Court sinks to the bottom */
+      var ra=GRANK[courtGroup(a)],rb=GRANK[courtGroup(b)];
+      if(ra!==rb)return ra-rb;                          /* then the usual court sequence */
+      var ga=a.nd?1:0,gb=b.nd?1:0;
+      if(ga!==gb)return ga-gb;                          /* never-dated ahead of overdue */
+      return (a.nd||'').localeCompare(b.nd||'');        /* oldest neglect first */
+    });
+}
+function daysLate(iso){
+  if(!iso)return null;
+  var p=iso.split('-'),a=new Date(+p[0],+p[1]-1,+p[2]),n=new Date(),b=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  return Math.round((b-a)/86400000);
+}
+
+/* ===========================================================
+   CASE ROW
+   =========================================================== */
+function bldRow(c,ctxDate){
+  var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1]:{};
+  var gm=gMeta(c);
+  var t=td();
+  var late=c.nd&&c.nd<t&&isOpen(c);
+  var ndBdg=c.nd?(late?'<span class="ovbdg">Overdue: '+fd(c.nd)+' &middot; '+daysLate(c.nd)+'d</span>':'<span class="dbdg">Next: '+fd(c.nd)+'</span>')
+                : '<span class="ndbdg">No next date</span>';
+  var pdBdg=c.pd?'<span class="pbdg">Prev: '+fd(c.pd)+'</span>':'';
+  var eciH=(typeof cs2EciHTML==='function')?cs2EciHTML(c):'';
+  var tasks=LT().filter(function(x){return x.cid===c.id&&!x.done;});
+  var jump=timeline(c).map(function(x){
+    return '<button class="btn bo" style="font-size:9px;padding:2px 5px" onclick="event.stopPropagation();selDay(\''+x.d+'\')" title="Open the board for this date">'+fd(x.d)+'</button>';
+  }).join('');
+
+  var onH=c.notes&&c.notes.length>1?'<div id="on_'+c.id+'" style="display:none;margin-top:5px">'+c.notes.slice(0,-1).reverse().map(function(n){return'<div class="hiitem">'+he(n.text)+'<div class="nby">'+fd(n.date)+' &middot; '+he(n.by||'')+'</div></div>';}).join('')+'</div>':'';
+  var hiH=c.hist&&c.hist.length?'<div id="hi_'+c.id+'" style="display:none;margin-top:5px;border-top:1px solid #eee;padding-top:5px">'+c.hist.slice().reverse().map(function(h){return'<div class="hiitem"><b>Prev:</b> '+fd(h.pd)+' ['+he(h.ps||'')+'] &rarr; <b>Next:</b> '+fd(h.nd)+' ['+he(h.ns||'')+']'+(h.note?'<br><em>'+he(h.note)+'</em>':'')+'<div class="nby">'+he(h.by||'')+'</div></div>';}).join('')+'</div>':'';
+
+  var acts='<button class="btn bg" onclick="event.stopPropagation();openUpd(\''+c.id+'\')">Post next date/note</button>';
+  if(can('edit')){
+    acts+='<button class="btn bn" onclick="event.stopPropagation();editC(\''+c.id+'\')">Edit</button>';
+    acts+='<button class="btn bor" onclick="event.stopPropagation();adjOne(\''+c.id+'\')">Adjourn</button>';
+    acts+='<button class="btn bo" onclick="event.stopPropagation();openTask(\''+c.id+'\')">+ Task</button>';
+    acts+='<button class="btn bo" onclick="event.stopPropagation();openCont(\''+c.id+'\')">Contact</button>';
+  }
+  if(c.notes&&c.notes.length>1)acts+='<button class="btn bo" onclick="event.stopPropagation();togEl(\'on_'+c.id+'\')">Prev notes</button>';
+  if(c.hist&&c.hist.length)acts+='<button class="btn bo" onclick="event.stopPropagation();togEl(\'hi_'+c.id+'\')">History</button>';
+  acts+='<button class="btn bo" onclick="event.stopPropagation();prtC(\''+c.id+'\')">Print</button>';
+  if(c.cnr&&typeof cs2FetchCase==='function')acts+='<button class="btn bn" onclick="event.stopPropagation();cs2FetchCase(\''+c.id+'\')" title="Check this case on eCourtsIndia now">&#8635; Fetch from court</button>';
+  if(can('del'))acts+='<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')">Delete</button>';
+
+  return '<div class="crow" id="cr-'+c.id+'">'+
+    '<div class="crow-head" onclick="togRow(\''+c.id+'\')">'+
+      '<div style="flex:1">'+
+        '<div class="crow-title"><span style="color:'+gm.c+';font-style:italic;text-decoration:underline;font-weight:'+(gm.bold?'800':'700')+';font-size:12px">'+he(ctit(c))+'</span>'+(tasks.length?' <span class="caselink">'+tasks.length+' task'+(tasks.length>1?'s':'')+'</span>':'')+'</div>'+
+        '<div class="crow-sub">'+
+          (c.pd?'<b>Prev:</b> '+fd(c.pd)+(c.ps?' ['+he(c.ps)+']':'')+' &nbsp;':'')+
+          '<b>Court:</b> '+he(c.court||'—')+(c.cn?' &middot; '+he(c.cn):'')+(c.jd?' &middot; <i>'+he(c.jd)+'</i>':'')+
+          eciH+'</div>'+
+      '</div>'+
+      '<div class="crow-dates">'+ndBdg+(c.pd?pdBdg:'')+'</div>'+
+      '<div class="rowacts">'+
+        (can('edit')?'<button class="btn bg" onclick="event.stopPropagation();openUpd(\''+c.id+'\')" title="Post the next date for this case">Post</button>':'')+
+        (can('del')?'<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')" title="Delete this case in one click — revivable from the Deleted tab">&#x2715; Delete</button>':'')+
+      '</div>'+
+    '</div>'+
+    '<div class="crow-body">'+
+      '<div class="dg">'+
+        '<div class="df"><label>Previous date</label><span>'+fd(c.pd)+'</span></div>'+
+        '<div class="df"><label>Previous stage</label><span>'+he(c.ps||'—')+'</span></div>'+
+        '<div class="df"><label>Court</label><span>'+he(c.court||'—')+'</span></div>'+
+        '<div class="df"><label>Case no.</label><span>'+he(c.cn||'—')+'</span></div>'+
+        '<div class="df"><label>Judge</label><span>'+he(c.jd||'—')+'</span></div>'+
+        '<div class="df"><label>Plaintiff / Petitioner</label><span>'+he(c.pl||'—')+'</span></div>'+
+        '<div class="df"><label>Defendant / Respondent</label><span>'+he(c.de||'—')+'</span></div>'+
+        '<div class="df"><label>Next date</label><span>'+fd(c.nd)+'</span></div>'+
+        '<div class="df"><label>Next stage</label><span>'+he(c.ns||'—')+'</span></div>'+
+        '<div class="df"><label>Our client</label><span>'+he(c.cl||'—')+'</span></div>'+
+        '<div class="df"><label>Contact</label><span>'+he((c.cp||'')+(c.cm?' · '+c.cm:''))+'</span></div>'+
+      '</div>'+
+      (ln.text?'<div class="nbox">'+he(ln.text)+'<div class="nby">'+fd(ln.date)+' &middot; '+he(ln.by||'')+'</div></div>':'')+
+      (tasks.length?'<div style="margin:5px 0"><div class="mini" style="font-weight:700">Open tasks</div>'+tasks.map(function(x){return '<div class="mini">&bull; '+he(x.desc)+(x.due?' <b>('+fd(x.due)+')</b>':'')+'</div>';}).join('')+'</div>':'')+
+      onH+
+      '<div class="arow">'+acts+'</div>'+
+      (jump?'<div style="margin-top:6px"><div class="mini" style="margin-bottom:2px">All hearing dates &mdash; click to open that day\'s board:</div><div class="arow" style="margin-top:0">'+jump+'</div></div>':'')+
+      hiH+
+    '</div>'+
+  '</div>';
+}
+function togRow(id){var el=document.getElementById('cr-'+id);if(el)el.classList.toggle('open');}
+function togEl(id){var el=document.getElementById(id);if(el)el.style.display=(el.style.display==='none'||!el.style.display)?'block':'none';}
+
+function selDay(iso){
+  selcd=iso;selpd=iso;
+  var p=iso.split('-');
+  calMo=+p[1]-1;calY=+p[0];plMo=+p[1]-1;plY=+p[0];
+  var cm=document.getElementById('cmo'),cy=document.getElementById('cyr');
+  if(cm)cm.value=calMo;if(cy)cy.value=calY;
+  if(document.getElementById('pplan').classList.contains('on')){renderPlan();return;}
+  renderCal();go('cal');
+  var el=document.getElementById('cal-daylist');
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ===========================================================
+   THE DAY BOARD
+   =========================================================== */
+function boardActs(iso,pfx){
+  return fontCtl()+
+         '<button class="btn bg" onclick="prtBoard(\''+iso+'\',\'print\')">&#128424; Print board</button>'+
+         '<button class="btn bbl" onclick="prtBoard(\''+iso+'\',\'pdf\')">&#128196; Download PDF</button>'+
+         '<button class="btn bgr" onclick="prtBoard(\''+iso+'\',\'word\')">&#128209; Download Word</button>'+
+         (can('edit')?'<button class="btn bor" onclick="adjSel(\''+iso+'\',\''+pfx+'\')">&#8631; Adjourn selected</button>':'');
+}
+
+/* Screen board table. pfx namespaces the checkboxes so several
+   boards can live on the page at once. Rows are grouped and
+   coloured by court in the fixed order set out in GRPS. */
+function boardTable(iso,pfx){
+  var rows=boardOn(iso);
+  if(!rows.length)return '<div style="color:#888;font-size:11px;padding:6px 0">No matters were listed on '+fd(iso)+'.</div>';
+  var b=bf(),ncols=can('edit')?10:9;
+  var h='<div class="bwrap"><table class="board" style="font-family:'+he(b.f)+',serif;font-size:'+b.s+'px"><thead><tr>'+
+    (can('edit')?'<th style="width:24px"><input type="checkbox" onclick="bAll(\''+pfx+'\',this.checked)"></th>':'')+
+    '<th class="num">#</th>'+
+    '<th>Previous date / stage</th>'+
+    '<th>Court / Case no. / Judge</th>'+
+    '<th>Parties</th>'+
+    '<th>Stage on '+fd(iso)+'</th>'+
+    '<th>Next date / stage</th>'+
+    '<th>Client</th>'+
+    '<th>Note</th>'+
+    '<th class="act">Action</th>'+
+    '</tr></thead><tbody>';
+  var lastG='',n=0;
+  rows.forEach(function(x){
+    var c=x.c,g=GMETA[x.g]||GMETA.oth;
+    if(x.g!==lastG){
+      lastG=x.g;
+      var cnt=rows.filter(function(y){return y.g===x.g;}).length;
+      h+='<tr class="ghead"><td colspan="'+ncols+'"><span class="gdot" style="background:'+g.c+'"></span>'+
+         he(g.t)+' &mdash; '+cnt+' matter'+(cnt===1?'':'s')+'</td></tr>';
+    }
+    n++;
+    var pv=prevOf(c,iso),nx=nextOf(c,iso);
+    var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'';
+    var j=judgeOn(c,iso);
+    var sty=' style="color:'+g.c+'"';
+    h+='<tr class="brow'+(x.g==='hc'?' hcrow':'')+'"'+sty+'>'+
+      (can('edit')?'<td><input type="checkbox" class="'+pfx+'chk" value="'+c.id+'"'+(x.cur?' checked':'')+'></td>':'')+
+      '<td class="num"'+sty+'>'+n+'</td>'+
+      '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini" style="color:'+g.c+';opacity:.8">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
+      '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+
+        '<br><input class="jinp'+(j?' set':'')+'" value="'+he(j)+'" placeholder="Judge — type to add" '+
+        'style="color:'+g.c+'" onclick="event.stopPropagation()" onchange="setJudge(\''+c.id+'\',\''+iso+'\',this.value)"></td>'+
+      '<td class="par"'+sty+'>'+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+'</td>'+
+      '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
+      '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini" style="color:'+g.c+';opacity:.8">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
+      '<td'+sty+'>'+he(c.cl||'—')+'</td>'+
+      '<td'+sty+'>'+he(ln)+'</td>'+
+      '<td class="act">'+
+        '<button class="btn bg" onclick="event.stopPropagation();openUpd(\''+c.id+'\')" title="Post the next date">Post</button>'+
+        '<button class="btn bo" onclick="event.stopPropagation();jumpCase(\''+c.id+'\')" title="Open the full case">Open</button>'+
+        (can('del')?'<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')" title="Delete this case — one click, revivable from the Deleted tab">&#x2715; Delete</button>':'')+
+      '</td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div>'+legendHTML();
+  return h;
+}
+function bAll(pfx,on){document.querySelectorAll('.'+pfx+'chk').forEach(function(e){e.checked=on;});}
+function bSel(pfx){return Array.prototype.map.call(document.querySelectorAll('.'+pfx+'chk:checked'),function(e){return e.value;});}
+
+function setJudge(id,iso,v){
+  if(!guard('edit'))return;
+  var c=find(id);if(!c)return;
+  v=(v||'').trim();
+  c.jov=c.jov||{};
+  if(!c.jd){c.jd=v;delete c.jov[iso];}
+  else if(v&&v!==c.jd){c.jov[iso]=v;}
+  else{delete c.jov[iso];}
+  touch(c);saveAll();logAct('Judge recorded on '+fd(iso)+' for '+ctit(c));
+  toast('Judge saved.');
+}
+
+function buildDayPanel(iso,containerId,pfx){
+  var el=document.getElementById(containerId);if(!el)return;
+  var rows=boardOn(iso),tt=tOn(iso);
+  var h='<div class="daylist-panel">'+
+    '<div class="daylist-head">'+
+      '<b style="font-size:12px">&#128197; Board for '+fdl(iso)+' &mdash; '+rows.length+' matter'+(rows.length===1?'':'s')+'</b>'+
+      '<div style="display:flex;gap:4px;flex-wrap:wrap">'+boardActs(iso,pfx)+'</div>'+
+    '</div><div class="daylist-body">';
+  if(tt.length){
+    h+='<div style="background:#fef3e2;border:1px solid #e67e22;border-radius:4px;padding:6px 8px;margin-bottom:8px"><b style="font-size:9px;color:#e67e22">TASKS DUE</b>'+
+       tt.map(function(t){return'<div style="font-size:10px;margin-top:1px">&bull; '+he(t.desc)+'</div>';}).join('')+'</div>';
+  }
+  h+=boardTable(iso,pfx);
+  h+='</div></div>';
+  el.innerHTML=h;
+}
+
+/* ===========================================================
+   DASHBOARD
+   =========================================================== */
+function renderDash(){
+  if(!document.getElementById('stt'))return;
+  var t=td(),un=unupdated();
+  var over=un.filter(function(c){return c.nd;}),none=un.filter(function(c){return !c.nd;});
+  document.getElementById('stt').textContent=boardOn(t).filter(function(x){return x.cur;}).length;
+  document.getElementById('sta').textContent=LC().filter(isOpen).length;
+  document.getElementById('stov').textContent=over.length;
+  document.getElementById('stm').textContent=none.length;
+  var n=new Date();
+  document.getElementById('todlbl').textContent=zz(n.getDate())+'/'+zz(n.getMonth()+1)+'/'+n.getFullYear()+' — '+WD[n.getDay()];
+  document.getElementById('tbdate').textContent=fdl(t);
+  document.getElementById('todacts').innerHTML=boardActs(t,'dsh');
+  document.getElementById('todlist').innerHTML=boardTable(t,'dsh');
+  var wb=document.getElementById('wbar');
+  if(un.length){wb.style.display='flex';document.getElementById('missn').textContent=un.length;}else wb.style.display='none';
+  document.getElementById('casesacts').innerHTML=(can('edit')?'<button class="btn bg" onclick="openAdd(\'\')">+ Add case</button>':'')+
+    (can('exp')?'<button class="btn bo" onclick="expCSV()">&#8595; CSV</button>':'');
+  document.getElementById('unupdacts').innerHTML=
+    (can('edit')?'<button class="btn bbl" onclick="openDateImport()">&#8681; Update dates from backup file</button>':'')+
+    boardUnupdActs();
+  bkReminder();
+  renderDashT();renderDashM();updBadges();
+}
+function boardUnupdActs(){
+  return '<button class="btn bg" onclick="prtUnupd(\'print\')">&#128424; Print</button>'+
+         '<button class="btn bbl" onclick="prtUnupd(\'pdf\')">&#128196; PDF</button>'+
+         '<button class="btn bgr" onclick="prtUnupd(\'word\')">&#128209; Word</button>';
+}
+function bkReminder(){
+  var el=document.getElementById('bkbar');if(!el)return;
+  var last=S.lastBackup||'';
+  var days=last?daysLate(String(last).slice(0,10)):null;
+  if(!last){
+    el.innerHTML='<div class="wbar"><span style="font-weight:600;color:#c0392b">&#9888; No backup has ever been taken. Your data lives only in this browser.</span><button class="btn br" onclick="go(\'sett\')">Take backup</button></div>';
+  }else if(days>7){
+    el.innerHTML='<div class="wbar"><span style="font-weight:600;color:#c0392b">&#9888; Last backup was '+days+' days ago ('+fd(String(last).slice(0,10))+').</span><button class="btn br" onclick="backupAll()">Backup now</button></div>';
+  }else{
+    el.innerHTML='<div class="okbar"><span style="font-size:11px;color:#1e8449">&#10003; Last backup: '+fd(String(last).slice(0,10))+'</span><button class="btn bo" onclick="backupAll()">Backup again</button></div>';
+  }
+}
+
+/* ===========================================================
+   ALL CASES
+   =========================================================== */
+function renderC(){
+  var sq=document.getElementById('sq');if(!sq)return;
+  var q=(sq.value||'').toLowerCase();
+  var cf=document.getElementById('cfilter').value||'';
+  var sf=document.getElementById('sfilter').value;
+  var f=LC().filter(function(c){
+    var hay=[ctit(c),c.court,c.cn,c.cl,c.jd,c.ns,c.ps,c.cp,c.cm,c.pl,c.de,
+      (c.notes||[]).map(function(n){return n.text;}).join(' ')].join(' ').toLowerCase();
+    if(q&&hay.indexOf(q)<0)return false;
+    if(cf&&c.court!==cf)return false;
+    if(sf==='open'&&!isOpen(c))return false;
+    if(sf&&sf!=='open'&&c.st!==sf)return false;
+    return true;
+  }).sort(function(a,b){
+    if(!a.nd&&b.nd)return -1;if(a.nd&&!b.nd)return 1;
+    return (a.nd||'').localeCompare(b.nd||'');
+  });
+  document.getElementById('ccount').textContent=f.length+' of '+LC().length;
+  document.getElementById('clist').innerHTML=f.length?f.map(function(c){return bldRow(c,'');}).join('')
+    :'<div style="color:#888;font-size:11px">No cases match.</div>';
+}
+function updCF(){
+  var sel=document.getElementById('cfilter');if(!sel)return;
+  var cts=Array.from(new Set(LC().map(function(c){return c.court;}).filter(Boolean))).sort(),cv=sel.value;
+  sel.innerHTML='<option value="">All courts</option>'+cts.map(function(c){return'<option value="'+he(c)+'"'+(c===cv?' selected':'')+'>'+he(c)+'</option>';}).join('');
+}
+
+/* ===========================================================
+   UNUPDATED CASES PAGE
+   =========================================================== */
+function renderUnupd(){
+  var el=document.getElementById('ulist');if(!el)return;
+  var q=((document.getElementById('usq')||{}).value||'').toLowerCase();
+  var grp=(document.getElementById('ufilter')||{}).value||'';
+  var all=unupdated().filter(function(c){
+    if(q){var hay=[ctit(c),c.court,c.cn,c.cl,c.jd].join(' ').toLowerCase();if(hay.indexOf(q)<0)return false;}
+    if(grp==='over'&&!c.nd)return false;
+    if(grp==='none'&&c.nd)return false;
+    return true;
+  });
+  if(!all.length){el.innerHTML='<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing pending &mdash; every open matter has a future date on record.</span></div>';return;}
+  var sub=all.filter(function(c){return !isHC(c);}),hc=all.filter(isHC);
+  el.innerHTML=unupdSect('Subordinate courts, tribunals, industrial &amp; labour courts',sub,'#1a2744')+
+               unupdSect('High Court',hc,'#c0392b');
+}
+/* one section of the unupdated list, split into never-dated and overdue */
+function unupdSect(title,arr,col){
+  if(!arr.length)return '';
+  var none=arr.filter(function(c){return !c.nd;}),over=arr.filter(function(c){return c.nd;});
+  var h='<div class="grpttl" style="color:'+col+';font-size:11px;border-bottom:2px solid '+col+
+        ';padding-bottom:3px;margin-top:14px">'+title+' &mdash; '+arr.length+' matter'+(arr.length===1?'':'s')+'</div>';
+  if(none.length){
+    h+='<div class="mini" style="font-weight:700;color:#c0392b;margin:7px 0 3px">No next date ever entered ('+none.length+')</div>'+
+       none.map(function(c){return bldRow(c,'');}).join('');
+  }
+  if(over.length){
+    h+='<div class="mini" style="font-weight:700;color:#b9770e;margin:7px 0 3px">Next date has passed without update ('+over.length+')</div>'+
+       over.map(function(c){return bldRow(c,'');}).join('');
+  }
+  return h;
+}
+
+/* ===========================================================
+   ADD / EDIT CASE
+   =========================================================== */
+var CF=['fc','fcn','fjd','fp','fd','fcl','fcp','fcm','fps','fns','fno'];
+function openAdd(pd){
+  if(!guard('edit'))return;
+  eid=null;document.getElementById('cmtit').textContent='Add case';
+  CF.forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('fpd').value='';
+  document.getElementById('fnd').value=pd||'';
+  document.getElementById('fst').value='active';
+  document.getElementById('dupwarn').innerHTML='';
+  openM('mcase');
+}
+function editC(id){
+  if(!guard('edit'))return;
+  var c=find(id);if(!c)return;eid=id;
+  document.getElementById('cmtit').textContent='Edit case';
+  document.getElementById('fc').value=c.court||'';document.getElementById('fcn').value=c.cn||'';
+  document.getElementById('fjd').value=c.jd||'';
+  document.getElementById('fp').value=c.pl||'';document.getElementById('fd').value=c.de||'';
+  document.getElementById('fcl').value=c.cl||'';document.getElementById('fcp').value=c.cp||'';
+  document.getElementById('fcm').value=c.cm||'';document.getElementById('fpd').value=c.pd||'';
+  document.getElementById('fps').value=c.ps||'';document.getElementById('fnd').value=c.nd||'';
+  document.getElementById('fns').value=c.ns||'';document.getElementById('fst').value=c.st||'active';
+  document.getElementById('fno').value=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'';
+  document.getElementById('dupwarn').innerHTML='';
+  openM('mcase');
+}
+function saveCase(){
+  if(!guard('edit'))return;
+  var d={court:val('fc'),cn:val('fcn'),jd:val('fjd'),pl:val('fp'),de:val('fd'),
+    cl:val('fcl'),cp:val('fcp'),cm:val('fcm'),pd:document.getElementById('fpd').value,ps:val('fps'),
+    nd:document.getElementById('fnd').value,ns:val('fns'),st:document.getElementById('fst').value};
+  if(!d.pl&&!d.de&&!d.court){toast('Enter at least a party name or the court.','err');return;}
+  if(d.pd&&d.nd&&d.nd<d.pd){toast('Next date cannot be before the previous date.','err');return;}
+  var nt=val('fno');
+  if(!eid){
+    var dup=LC().find(function(c){
+      return (c.cn&&d.cn&&c.cn.toLowerCase()===d.cn.toLowerCase()&&(c.court||'').toLowerCase()===(d.court||'').toLowerCase())||
+             (ctit(c).toLowerCase()===((d.pl||'')+' vs. '+(d.de||'')).toLowerCase()&&(c.court||'').toLowerCase()===(d.court||'').toLowerCase());
+    });
+    if(dup&&!document.getElementById('dupwarn').innerHTML){
+      document.getElementById('dupwarn').innerHTML='<div class="wbar"><span style="font-size:11px;color:#c0392b">&#9888; A matter that looks identical already exists: <b>'+he(ctit(dup))+'</b>. Press <b>Save case</b> again to add it anyway.</span></div>';
+      return;
+    }
+  }
+  if(eid){
+    var c=find(eid);if(!c)return;
+    Object.assign(c,d);
+    if(nt&&(!c.notes.length||c.notes[c.notes.length-1].text!==nt))c.notes.push({text:nt,date:td(),by:cu?cu.name:''});
+    touch(c);logAct('Edited case '+ctit(c));toast('Case updated.');
+  }else{
+    var nc=normCase({});Object.assign(nc,d);
+    nc.added=td();nc.addedBy=cu?cu.name:'';touch(nc);
+    if(nt)nc.notes.push({text:nt,date:td(),by:cu?cu.name:''});
+    C.push(nc);logAct('Added case '+ctit(nc));toast('Case added.');
+  }
+  saveAll();closeM('mcase');refresh();if(S.jbKey)push();
+}
+function val(id){return (document.getElementById(id).value||'').trim();}
+/* One click, no dialog. The matter goes straight to Deleted, where it can
+   be revived at any time; an Undo button also sits in the toast. */
+function delC(id){
+  if(!guard('del','You are not allowed to delete records.'))return;
+  var c=find(id);if(!c)return;
+  c.del=now();c.delBy=cu?(cu.name||cu.username):'';touch(c);
+  saveAll();logAct('Deleted case '+ctit(c));
+  toast('Deleted: '+ctit(c),'',function(){reviveCase(id);});
+  refresh();if(S.jbKey)push();
+}
+function reviveCase(id){
+  var c=C.find(function(x){return x.id===id;});if(!c)return;
+  c.del='';c.delBy='';touch(c);saveAll();
+  logAct('Revived case '+ctit(c));toast('Revived: '+ctit(c));
+  refresh();if(S.jbKey)push();
+}
+
+/* ---------- post next date ---------- */
+function openUpd(id){
+  if(!guard('edit'))return;
+  var c=find(id);if(!c)return;uid2=id;
+  document.getElementById('utit').textContent=ctit(c);
+  document.getElementById('upd').value=c.nd||td();
+  document.getElementById('ups').value=c.ns||'';
+  document.getElementById('und').value='';
+  document.getElementById('uns').value='';
+  document.getElementById('ujd').value=c.jd||'';
+  document.getElementById('ust').value=c.st||'active';
+  document.getElementById('uno').value='';
+  document.getElementById('pnw').style.display='none';
+  openM('mupd');
+}
+function togPN(){
+  var c=find(uid2),el=document.getElementById('pnw');
+  if(el.style.display==='none'||!el.style.display){
+    el.innerHTML=(c&&c.notes&&c.notes.length)?c.notes.slice().reverse().map(function(n){return'<div class="hiitem">'+he(n.text)+'<div class="nby">'+fd(n.date)+' &middot; '+he(n.by||'')+'</div></div>';}).join(''):'<div style="font-size:10px;color:#888">No previous notes.</div>';
+    el.style.display='block';
+  }else el.style.display='none';
+}
+function saveUpd(){
+  if(!guard('edit'))return;
+  var c=find(uid2);if(!c)return;
+  var npd=document.getElementById('upd').value,nps=val('ups');
+  var nnd=document.getElementById('und').value,nns=val('uns');
+  var st=document.getElementById('ust').value;
+  if(npd&&nnd&&nnd<npd){toast('The new date cannot be earlier than the previous date.','err');return;}
+  if(!nnd&&st!=='disposed'&&!confirm('No new next date entered.\n\nThis matter will appear in the Unupdated list. Continue?'))return;
+  c.hist=c.hist||[];
+  c.hist.push({dt:c.nd||td(),pd:c.pd,ps:c.ps,nd:c.nd,ns:c.ns,
+    note:(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'',by:cu?cu.name:''});
+  c.pd=npd;c.ps=nps;c.nd=nnd;c.ns=nns;c.st=st;
+  var j=val('ujd');if(j)c.jd=j;
+  var n=val('uno');if(n)c.notes.push({text:n,date:td(),by:cu?cu.name:''});
+  touch(c);saveAll();closeM('mupd');
+  logAct('Posted '+(nnd?fd(nnd):'no date')+' for '+ctit(c));
+  toast(nnd?'Next date posted: '+fd(nnd):'Updated.');
+  refresh();if(S.jbKey)push();
+}
+
+/* ---------- adjournment ---------- */
+function adjOne(id){var c=find(id);if(!c)return;openAdj(c.nd||td(),[id]);}
+function adjSel(iso,pfx){
+  var ids=bSel(pfx);
+  if(!ids.length){toast('Tick the matters you want to adjourn.','err');return;}
+  openAdj(iso,ids);
+}
+function openAdj(iso,ids){
+  if(!guard('edit'))return;
+  adjCtx={date:iso,ids:ids};
+  document.getElementById('adjinfo').innerHTML='<b>'+ids.length+' matter'+(ids.length===1?'':'s')+'</b> listed on <b>'+fd(iso)+'</b> will be adjourned. The present date becomes the previous date and the full history is preserved.';
+  document.getElementById('ajd').value='';
+  document.getElementById('ajs').value='';
+  document.getElementById('ajn').value='';
+  openM('madj');
+}
+function saveAdj(){
+  if(!guard('edit'))return;
+  var nd=document.getElementById('ajd').value,ns=val('ajs'),note=val('ajn');
+  if(!nd){toast('Enter the new date.','err');return;}
+  if(nd<=adjCtx.date&&!confirm('The new date is not after '+fd(adjCtx.date)+'. Continue anyway?'))return;
+  var n=0;
+  adjCtx.ids.forEach(function(id){
+    var c=find(id);if(!c)return;
+    c.hist=c.hist||[];
+    c.hist.push({dt:c.nd||adjCtx.date,pd:c.pd,ps:c.ps,nd:c.nd,ns:c.ns,
+      note:(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'',by:cu?cu.name:''});
+    c.pd=adjCtx.date;c.ps=stageOn(c,adjCtx.date)||c.ns||c.ps;
+    c.nd=nd;c.ns=ns||c.ns;
+    if(note)c.notes.push({text:note,date:td(),by:cu?cu.name:''});
+    touch(c);n++;
+  });
+  saveAll();closeM('madj');
+  logAct('Adjourned '+n+' matter(s) from '+fd(adjCtx.date)+' to '+fd(nd));
+  toast(n+' matter(s) adjourned to '+fd(nd)+'.');
+  refresh();if(S.jbKey)push();
+}
+
+/* ---------- contact ---------- */
+function openCont(id){
+  if(!guard('edit'))return;
+  var c=find(id);if(!c)return;ccid=id;
+  document.getElementById('cctit').textContent=ctit(c);
+  document.getElementById('ccl').value=c.cl||'';
+  document.getElementById('ccp').value=c.cp||'';
+  document.getElementById('ccm').value=c.cm||'';
+  openM('mcont');
+}
+function saveCont(){
+  var c=find(ccid);if(!c)return;
+  c.cl=val('ccl');c.cp=val('ccp');c.cm=val('ccm');
+  touch(c);saveAll();closeM('mcont');toast('Contact saved.');refresh();
+}
+
+/* ===========================================================
+   CALENDAR
+   =========================================================== */
+function initCal(){
+  var n=new Date();calY=n.getFullYear();calMo=n.getMonth();
+  var ms=document.getElementById('cmo'),yr=document.getElementById('cyr');
+  ms.innerHTML=MO.map(function(m,i){return'<option value="'+i+'"'+(i===calMo?' selected':'')+'>'+m+'</option>';}).join('');
+  var o='';for(var y=2015;y<=2045;y++)o+='<option value="'+y+'"'+(y===calY?' selected':'')+'>'+y+'</option>';
+  yr.innerHTML=o;
+}
+function renderCal(){
+  var g=document.getElementById('cgrid');if(!g)return;
+  calMo=parseInt(document.getElementById('cmo').value,10);
+  calY=parseInt(document.getElementById('cyr').value,10);
+  var f=new Date(calY,calMo,1).getDay(),dm=new Date(calY,calMo+1,0).getDate(),t=td();
+  var h=DY.map(function(d){return'<div class="caldh">'+d+'</div>';}).join('');
+  for(var i=0;i<f;i++)h+='<div class="cald oth"></div>';
+  for(var d=1;d<=dm;d++){
+    var iso=calY+'-'+zz(calMo+1)+'-'+zz(d);
+    var b=boardOn(iso);
+    var cur=b.filter(function(x){return x.cur;}).length,pastN=b.length-cur;
+    var cl='cald'+(iso===t?' tod':'')+(iso===selcd?' sel':'');
+    h+='<div class="'+cl+'" onclick="selCalDay(\''+iso+'\')">'+
+      '<div class="caldn">'+d+'</div>'+
+      (cur?'<span class="calbdg">'+cur+'</span> ':'')+
+      (pastN?'<span class="calbdg past">'+pastN+'</span>':'')+
+      '</div>';
+  }
+  g.innerHTML=h;
+  buildDayPanel(selcd||t,'cal-daylist','cal');
+}
+function selCalDay(iso){
+  selcd=iso;
+  var p=iso.split('-');calY=+p[0];calMo=+p[1]-1;
+  document.getElementById('cmo').value=calMo;document.getElementById('cyr').value=calY;
+  renderCal();
+}
+function cnav(d){
+  calMo+=d;if(calMo<0){calMo=11;calY--;}if(calMo>11){calMo=0;calY++;}
+  document.getElementById('cmo').value=calMo;document.getElementById('cyr').value=calY;renderCal();
+}
+
+/* ===========================================================
+   PLANNER
+   =========================================================== */
+function initPlan(){var n=new Date();plY=n.getFullYear();plMo=n.getMonth();}
+function renderPlan(){
+  var g=document.getElementById('pgrid');if(!g)return;
+  document.getElementById('ptitle').textContent=MO[plMo]+' '+plY;
+  var f=new Date(plY,plMo,1).getDay(),dm=new Date(plY,plMo+1,0).getDate(),t=td();
+  var h=DY.map(function(d){return'<div class="caldh">'+d+'</div>';}).join('');
+  for(var i=0;i<f;i++)h+='<div class="plcell" style="opacity:.15;min-height:45px"></div>';
+  for(var d=1;d<=dm;d++){
+    var iso=plY+'-'+zz(plMo+1)+'-'+zz(d);
+    var b=boardOn(iso);
+    var cur=b.filter(function(x){return x.cur;}),pastN=b.filter(function(x){return !x.cur;});
+    var cl='plcell'+(iso===t?' tod':'')+(iso===selpd?' sel':'');
+    h+='<div class="'+cl+'" onclick="selPlanDay(\''+iso+'\')">'+
+      '<div class="plnum">'+d+'</div>'+
+      cur.slice(0,2).map(function(x){return'<span class="plchip">'+he(ctit(x.c)).slice(0,16)+'</span>';}).join('')+
+      pastN.slice(0,1).map(function(x){return'<span class="plpchip">'+he(ctit(x.c)).slice(0,14)+'</span>';}).join('')+
+      (b.length>3?'<span style="font-size:7px;color:#888">+'+(b.length-3)+' more</span>':'')+
+      '</div>';
+  }
+  g.innerHTML=h;
+  buildDayPanel(selpd||t,'plan-daylist','pln');
+}
+function selPlanDay(iso){
+  selpd=iso;var p=iso.split('-');plY=+p[0];plMo=+p[1]-1;renderPlan();
+}
+function pnav(d){plMo+=d;if(plMo<0){plMo=11;plY--;}if(plMo>11){plMo=0;plY++;}renderPlan();}
+
+/* ===========================================================
+   QUICK ADD
+   =========================================================== */
+function qAdd(type,date){
+  if(!guard('edit'))return;
+  qt=type;qd=date||td();
+  document.getElementById('qtit').textContent=(type==='case'?'Quick add case':'Quick add task')+' — '+fd(qd);
+  var b=document.getElementById('qbody');
+  if(type==='case'){
+    b.innerHTML='<div class="fg"><label>Plaintiff / Petitioner</label><input id="qap"></div>'+
+      '<div class="fg"><label>Defendant / Respondent</label><input id="qad"></div>'+
+      '<div class="fg"><label>Court</label><input id="qac"></div>'+
+      '<div class="fg"><label>Case no.</label><input id="qacn"></div>'+
+      '<div class="fg"><label>Judge</label><input id="qaj"></div>'+
+      '<div class="fg"><label>Stage</label><input id="qas"></div>'+
+      '<div class="fa"><button class="btn bo" onclick="closeM(\'mqk\')">Cancel</button><button class="btn bg" onclick="saveQC()">Add</button></div>';
+  }else{
+    b.innerHTML='<div class="fg"><label>Task description</label><textarea id="qatd" rows="3"></textarea></div>'+
+      '<div class="fg"><label>Priority</label><select id="qatp"><option value="vu">Very urgent</option><option value="u">Urgent</option><option value="n" selected>Normal</option><option value="l">Low</option></select></div>'+
+      '<div class="fa"><button class="btn bo" onclick="closeM(\'mqk\')">Cancel</button><button class="btn bg" onclick="saveQT()">Add</button></div>';
+  }
+  openM('mqk');
+}
+function saveQC(){
+  var nc=normCase({pl:val('qap'),de:val('qad'),court:val('qac'),cn:val('qacn'),jd:val('qaj'),nd:qd,ns:val('qas')});
+  if(!nc.pl&&!nc.de&&!nc.court){toast('Enter a party name or the court.','err');return;}
+  nc.added=td();nc.addedBy=cu?cu.name:'';touch(nc);
+  C.push(nc);saveAll();closeM('mqk');logAct('Quick-added '+ctit(nc));
+  toast('Case added on '+fd(qd)+'.');refresh();if(S.jbKey)push();
+}
+function saveQT(){
+  var desc=val('qatd');if(!desc){toast('Enter a description.','err');return;}
+  var t=normTask({desc:desc,prio:document.getElementById('qatp').value,due:qd,added:td(),addedBy:cu?cu.name:''});
+  touch(t);T.push(t);saveAll();closeM('mqk');toast('Task added.');refresh();
+}
+
+/* ===========================================================
+   TASKS
+   =========================================================== */
+function popCaseSel(){
+  var opts='<option value="">&mdash; Not linked &mdash;</option>'+
+    LC().filter(isOpen).sort(function(a,b){return ctit(a).localeCompare(ctit(b));})
+    .map(function(c){return'<option value="'+c.id+'">'+he(ctit(c))+(c.cn?' ('+he(c.cn)+')':'')+'</option>';}).join('');
+  var a=document.getElementById('tcase');if(a)a.innerHTML=opts;
+  var b=document.getElementById('tkcase');
+  if(b){var v=b.value;b.innerHTML='<option value="">All cases</option>'+
+    LC().sort(function(x,y){return ctit(x).localeCompare(ctit(y));})
+    .map(function(c){return'<option value="'+c.id+'">'+he(ctit(c))+'</option>';}).join('');b.value=v;}
+}
+function openTask(cid){
+  if(!guard('edit'))return;
+  etid=null;
+  document.getElementById('tktit').textContent='Add task';
+  document.getElementById('tdesc').value='';
+  document.getElementById('tdue').value='';
+  document.getElementById('tprio').value='n';
+  popCaseSel();
+  document.getElementById('tcase').value=cid||'';
+  openM('mtask');
+}
+function saveTask(){
+  if(!guard('edit'))return;
+  var desc=val('tdesc');if(!desc){toast('Enter a description.','err');return;}
+  var t=normTask({desc:desc,prio:document.getElementById('tprio').value,due:document.getElementById('tdue').value,
+    cid:document.getElementById('tcase').value,added:td(),addedBy:cu?cu.name:''});
+  touch(t);T.push(t);saveAll();closeM('mtask');
+  logAct('Added task: '+desc.slice(0,50));
+  toast('Task saved.');refresh();
+}
+function markDone(id){
+  var t=LT().find(function(x){return x.id===id;});if(!t)return;
+  t.done=!t.done;touch(t);saveAll();renderTasks();renderDashT();updBadges();
+}
+function delTask(id){
+  if(!guard('del','You are not allowed to delete records.'))return;
+  var t=LT().find(function(x){return x.id===id;});if(!t)return;
+  t.del=now();t.delBy=cu?(cu.name||cu.username):'';touch(t);saveAll();
+  toast('Task deleted.','',function(){reviveTask(id);});
+  refresh();
+}
+function reviveTask(id){
+  var t=T.find(function(x){return x.id===id;});if(!t)return;
+  t.del='';t.delBy='';touch(t);saveAll();toast('Task revived.');refresh();
+}
+function bldT(t){
+  var pc=PC[t.prio]||'prn';
+  var late=t.due&&t.due<td()&&!t.done;
+  var c=t.cid?find(t.cid):null;
+  return'<div class="titem '+(t.done?'done ':'')+(late?'late':'')+'">'+
+    '<div style="flex:1"><div class="tdesc" style="font-size:11px;font-weight:600;margin-bottom:3px">'+he(t.desc)+'</div>'+
+    '<div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">'+
+      '<span class="prbdg '+pc+'">'+(PL[t.prio]||t.prio)+'</span>'+
+      (t.due?'<span style="background:'+(late?'#fdecea':'#e8f0ff')+';color:'+(late?'#c0392b':'#2040a0')+';border-radius:8px;padding:1px 5px;font-size:9px">'+(late?'Overdue ':'')+fd(t.due)+'</span>':'')+
+      (c?'<span class="caselink" style="cursor:pointer" onclick="jumpCase(\''+c.id+'\')">'+he(ctit(c)).slice(0,34)+'</span>':'')+
+    '</div></div>'+
+    '<div style="display:flex;flex-direction:column;gap:2px">'+
+      '<button class="btn '+(t.done?'bo':'bgr')+'" onclick="markDone(\''+t.id+'\')">'+(t.done?'Undo':'&#10003;')+'</button>'+
+      (can('del')?'<button class="btn br" onclick="delTask(\''+t.id+'\')">&#x2715;</button>':'')+
+    '</div></div>';
+}
+function renderTasks(){
+  var el=document.getElementById('alltsk');if(!el)return;
+  var mode=(document.getElementById('tkfilter')||{}).value||'pending';
+  var cid=(document.getElementById('tkcase')||{}).value||'';
+  var t=td();
+  var s=LT().filter(function(x){
+    if(cid&&x.cid!==cid)return false;
+    if(mode==='pending')return !x.done;
+    if(mode==='done')return x.done;
+    if(mode==='late')return !x.done&&x.due&&x.due<t;
+    return true;
+  }).sort(function(a,b){
+    if(a.done!==b.done)return a.done?1:-1;
+    var o={vu:0,u:1,n:2,l:3};
+    var pa=(o[a.prio]===undefined?2:o[a.prio]),pb=(o[b.prio]===undefined?2:o[b.prio]);
+    if(pa!==pb)return pa-pb;
+    return (a.due||'9999').localeCompare(b.due||'9999');
+  });
+  el.innerHTML=s.length?s.map(bldT).join(''):'<div style="color:#888;font-size:11px">No tasks match.</div>';
+}
+function renderDashT(){
+  var p=LT().filter(function(t){return !t.done;});
+  var bg=document.getElementById('tbdg');
+  if(bg){bg.textContent=p.length;bg.style.display=p.length?'inline':'none';}
+  var el=document.getElementById('dashtsk');if(!el)return;
+  var o={vu:0,u:1,n:2,l:3};
+  var s=p.slice().sort(function(a,b){
+    var pa=(o[a.prio]===undefined?2:o[a.prio]),pb=(o[b.prio]===undefined?2:o[b.prio]);
+    if(pa!==pb)return pa-pb;
+    return (a.due||'9999').localeCompare(b.due||'9999');
+  }).slice(0,5);
+  el.innerHTML=s.length?s.map(bldT).join('')+(p.length>5?'<div style="font-size:10px;color:#888;padding:3px 0">+'+(p.length-5)+' more</div>':'')
+    :'<div style="color:#888;font-size:11px">No pending tasks.</div>';
+}
+function jumpCase(id){
+  go('cases');
+  document.getElementById('sq').value='';
+  document.getElementById('sfilter').value='';
+  renderC();
+  var el=document.getElementById('cr-'+id);
+  if(el){el.classList.add('open');el.scrollIntoView({behavior:'smooth',block:'center'});}
+}
+
+/* ---------- messages ---------- */
+function popMsgSel(){
+  var names=['All'].concat(U.map(function(u){return u.name||u.username;}));
+  var mine=U.map(function(u){return u.name||u.username;});
+  document.getElementById('mfr').innerHTML=mine.map(function(n){return'<option value="'+he(n)+'"'+(cu&&(cu.name||cu.username)===n?' selected':'')+'>'+he(n)+'</option>';}).join('');
+  document.getElementById('mto').innerHTML=names.map(function(n){return'<option value="'+he(n)+'">'+he(n)+'</option>';}).join('');
+}
+function saveMsg(){
+  var body=val('mbdy');if(!body){toast('Enter a message.','err');return;}
+  var n=new Date();
+  M.push({id:uid(),from:document.getElementById('mfr').value,to:document.getElementById('mto').value,
+    body:body,date:td(),time:zz(n.getHours())+':'+zz(n.getMinutes())});
+  saveAll();closeM('mmsg');toast('Sent.');
+  document.getElementById('mbdy').value='';renderMsgs();renderDashM();
+}
+function bldM(m){return'<div class="mbub"><b style="font-size:10px">'+he(m.from)+'</b> <span style="color:#666;font-size:10px">&rarr; '+he(m.to)+'</span><div style="font-size:11px;margin-top:2px">'+he(m.body)+'</div><div style="font-size:9px;color:#888;margin-top:1px">'+fd(m.date)+' '+he(m.time)+'</div></div>';}
+function renderMsgs(){var el=document.getElementById('allms');if(!el)return;el.innerHTML=M.slice().reverse().map(bldM).join('')||'<div style="color:#888;font-size:11px">No messages.</div>';}
+function renderDashM(){
+  var el=document.getElementById('dashms');if(!el)return;
+  el.innerHTML=M.slice().reverse().slice(0,3).map(bldM).join('')||'<div style="color:#888;font-size:11px">No messages.</div>';
+  if(M.length>3)el.innerHTML+='<a href="#" onclick="go(\'tasks\');return false" style="font-size:10px">View all &rarr;</a>';
+}
+
+/* ===========================================================
+   PRINT / PDF / WORD
+   =========================================================== */
+/* Print stylesheet. Sizes are expressed in em against #doc, so a single
+   font-size on the wrapper scales the whole board for page fitting. */
+function prtStyle(){
+  var b=bf();
+  return '<style>'+
+  'body{margin:0;padding:0;background:#e8e6df;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
+  '#doc{background:#fff;margin:0 auto;padding:0;color:#1a2744;font-family:'+b.f+',Georgia,serif;font-size:10pt;box-shadow:0 2px 10px rgba(0,0,0,.18)}'+
+  '#doc h1{font-size:1.25em;border-bottom:2px solid #b8932a;padding-bottom:.25em;margin:0 0 .5em;font-family:Arial,sans-serif}'+
+  '#doc h2{font-size:1.02em;background:#1a2744;color:#e8c96a;padding:.22em .5em;margin:.6em 0 .25em;font-family:Arial,sans-serif}'+
+  'table{width:100%;border-collapse:collapse;font-size:1em;margin-bottom:.4em;font-weight:600;table-layout:fixed;word-wrap:break-word;overflow-wrap:break-word}'+
+  'th{background:#1a2744;color:#e8c96a;padding:.25em .3em;text-align:left;border:.5pt solid #888;font-family:Arial,sans-serif;font-size:.82em;text-transform:uppercase;letter-spacing:.2px}'+
+  'td{padding:.25em .3em;border:.5pt solid #bbb;vertical-align:top;line-height:1.18}'+
+  'tr.ghead td{background:#1a2744;color:#fff;font-family:Arial,sans-serif;font-size:.82em;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:.2em .5em}'+
+  'tr{page-break-inside:avoid}'+
+  'thead{display:table-header-group}'+
+  '.par{font-style:italic;text-decoration:underline;font-weight:700}'+
+  '.hcrow td{font-weight:800}'+
+  '.hd{border:1px solid #b8932a;padding:.4em .6em;margin-bottom:.5em;text-align:center}'+
+  '.hd b{font-size:1.35em;color:#1a2744;letter-spacing:.5px}'+
+  '.hd small{font-size:.82em;color:#555;display:block;margin-top:.1em}'+
+  '.sub{font-size:.82em;color:#555;margin-bottom:.4em}'+
+  '.mini{font-size:.8em;opacity:.85;font-style:normal;text-decoration:none;font-weight:400}'+
+  '.sign{margin-top:1.4em;text-align:right;font-size:1em}'+
+  '.lgd{font-size:.75em;margin-top:.5em;font-family:Arial,sans-serif;line-height:1.5}'+
+  '.lgd span{margin-right:.8em;font-weight:700;white-space:nowrap}'+
+  '.hint{background:#fffbe8;border-bottom:2px solid #b8932a;padding:8px 12px;font-size:11pt;'+
+    'font-family:Segoe UI,Arial,sans-serif;position:sticky;top:0;z-index:9;display:flex;gap:6px;'+
+    'align-items:center;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,.1)}'+
+  '.hint select,.hint button{font-size:10pt;padding:3px 6px;font-family:inherit;border-radius:4px;border:1px solid #b8932a;background:#fff}'+
+  '.hint button{background:#1a2744;color:#fff;font-weight:700;cursor:pointer;border-color:#1a2744;padding:5px 12px}'+
+  '.hint b{font-size:10pt}'+
+  '#stat{font-size:10pt;font-weight:700}'+
+  '@media print{.hint{display:none}body{background:#fff}#doc{box-shadow:none;width:auto !important;margin:0;font-size:var(--fs)}}'+
+  '</style>';
+}
+function prtLegend(){
+  return '<div class="lgd">'+GRPS.map(function(g){
+    return '<span style="color:'+g.c+'">&#9632; '+he(g.t)+'</span>';
+  }).join('')+'</div>';
+}
+function prtHeader(sub){
+  var f=S.firm||{};
+  return '<div class="hd"><b>'+he(f.n||'Adv. R.S. Charpe  |  Adv. S.R. Charpe')+'</b>'+
+    '<small>'+he(f.a||'')+(f.p?' &middot; '+he(f.p):'')+'</small></div>'+
+    (sub?'<div class="sub">'+sub+'</div>':'');
+}
+function boardRowsHTML(iso){
+  var rows=boardOn(iso);
+  var h='<table><colgroup><col style="width:4%"><col style="width:12%"><col style="width:19%">'+
+    '<col style="width:22%"><col style="width:11%"><col style="width:12%"><col style="width:10%">'+
+    '<col style="width:10%"></colgroup>'+
+    '<thead><tr><th>#</th><th>Previous date / stage</th>'+
+    '<th>Court / Case no. / Judge</th><th>Parties</th><th>Stage on '+fd(iso)+'</th>'+
+    '<th>Next date / stage</th><th>Client</th><th>Note</th></tr></thead><tbody>';
+  var lastG='',n=0;
+  rows.forEach(function(x){
+    var c=x.c,g=GMETA[x.g]||GMETA.oth;
+    if(x.g!==lastG){
+      lastG=x.g;
+      var cnt=rows.filter(function(y){return y.g===x.g;}).length;
+      h+='<tr class="ghead"><td colspan="8">'+he(g.t)+' &mdash; '+cnt+' matter'+(cnt===1?'':'s')+'</td></tr>';
+    }
+    n++;
+    var pv=prevOf(c,iso),nx=nextOf(c,iso);
+    var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'';
+    var j=judgeOn(c,iso);
+    var sty=' style="color:'+g.c+'"';
+    h+='<tr class="'+(x.g==='hc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
+      '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
+      '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(j?'<br><span class="mini">Judge: '+he(j)+'</span>':'<br><span class="mini">Judge: ______________</span>')+'</td>'+
+      '<td class="par"'+sty+'>'+he(ctit(c))+'</td>'+
+      '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
+      '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
+      '<td'+sty+'>'+he(c.cl||'')+'</td>'+
+      '<td'+sty+'>'+he(ln)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  return {html:h,n:rows.length};
+}
+function boardDoc(iso){
+  var b=boardRowsHTML(iso),tt=tOn(iso);
+  var body=prtHeader('Printed on '+fd(td())+(cu?' by '+he(cu.name||cu.username):''))+
+    '<h1>Board for '+fdl(iso)+' &mdash; '+b.n+' matter'+(b.n===1?'':'s')+'</h1>'+b.html+prtLegend()+
+    (tt.length?'<h2>Tasks due on this date</h2><ul>'+tt.map(function(t){return '<li>'+he(t.desc)+'</li>';}).join('')+'</ul>':'')+
+    '<div class="sign">_______________________<br>Advocate</div>';
+  /* portrait, squeezed onto a single sheet wherever the day's list allows */
+  return {title:'Board '+fd(iso),body:body,land:false,fit:1,iso:iso};
+}
+function prtBoard(iso,mode){
+  if(!boardOn(iso).length){toast('No matters were listed on '+fd(iso)+'.','err');return;}
+  out(boardDoc(iso),mode,'Board-'+iso);
+}
+function out(doc,mode,fname){
+  if(mode!=='print'&&!can('exp')){toast('You are not allowed to export.','err');return;}
+  if(mode==='word')return dlWord(doc,fname);
+  var b=bf();
+  var land=!!doc.land;                       /* boards default to portrait */
+  var fitDef=doc.fit===undefined?1:doc.fit;  /* 1 = squeeze onto one page  */
+  var bar='<div class="hint">'+
+    '<b>Fit:</b><select id="pfit" onchange="fit()">'+
+      '<option value="1"'+(fitDef===1?' selected':'')+'>1 page</option>'+
+      '<option value="2"'+(fitDef===2?' selected':'')+'>2 pages</option>'+
+      '<option value="3">3 pages</option>'+
+      '<option value="0"'+(fitDef===0?' selected':'')+'>Actual size</option>'+
+    '</select>'+
+    '<b>Paper:</b><select id="port" onchange="fit()">'+
+      '<option value="p"'+(land?'':' selected')+'>Portrait</option>'+
+      '<option value="l"'+(land?' selected':'')+'>Landscape</option>'+
+    '</select>'+
+    '<b>Font:</b><select id="pfam" onchange="fit()">'+
+      FAMS.map(function(f){return '<option value="'+he(f)+'"'+(f===b.f?' selected':'')+'>'+he(f)+'</option>';}).join('')+
+    '</select>'+
+    '<select id="psz" onchange="fit()">'+
+      SIZES.map(function(s){return '<option value="'+s+'"'+(s===b.s?' selected':'')+'>'+s+' pt max</option>';}).join('')+
+    '</select>'+
+    '<label><input type="checkbox" id="pbold" onchange="fit()"> extra bold</label>'+
+    '<span id="stat"></span>'+
+    '<button onclick="doPrint()">'+(mode==='pdf'?'&#128196; Save as PDF':'&#128424; Print now')+'</button>'+
+    (mode==='pdf'?'<span style="font-size:9.5pt;color:#666">choose <b>Destination &rarr; Save as PDF</b></span>':'')+
+    '</div><style id="pg"></style>';
+
+  /* Auto-fit: shrink the wrapper font until the content falls inside the
+     requested number of pages, never going below a legible floor. */
+  var scr=[
+   'var MIN=6.4,MARG=8;',
+   'function mm(v){return v*96/25.4;}',
+   'function page(){var l=document.getElementById("port").value==="l";',
+   ' var w=l?mm(297):mm(210),h=l?mm(210):mm(297),m=mm(MARG);',
+   ' document.getElementById("pg").textContent="@page{size:A4 "+(l?"landscape":"portrait")+";margin:"+MARG+"mm}";',
+   ' var d=document.getElementById("doc");d.style.width=(w-2*m)+"px";d.style.padding="0";',
+   ' return{w:w-2*m,h:h-2*m};}',
+   'function setSize(v){var d=document.getElementById("doc");d.style.fontSize=v+"pt";',
+   ' d.style.setProperty("--fs",v+"pt");}',
+   'function fit(){',
+   ' var dim=page(),d=document.getElementById("doc");',
+   ' d.style.fontFamily=document.getElementById("pfam").value+",Georgia,serif";',
+   ' d.style.fontWeight=document.getElementById("pbold").checked?"800":"";',
+   ' var max=parseFloat(document.getElementById("psz").value);',
+   ' var want=parseInt(document.getElementById("pfit").value,10);',
+   ' var s=max;setSize(s);',
+   ' if(want){var n=0;while(s>MIN&&d.scrollHeight>dim.h*want+1&&n<220){s=Math.round((s-0.1)*10)/10;setSize(s);n++;}}',
+   ' var pages=Math.max(1,Math.ceil((d.scrollHeight-1)/dim.h));',
+   ' var st=document.getElementById("stat");',
+   ' st.textContent=pages+" page"+(pages===1?"":"s")+" @ "+s.toFixed(1)+"pt";',
+   ' st.style.color=(want&&pages>want)?"#c0392b":"#1e8449";',
+   ' if(want&&pages>want)st.textContent+=" — will not fit "+want+" at a readable size";',
+   '}',
+   'function doPrint(){fit();setTimeout(function(){window.print();},120);}',
+   'window.onload=function(){fit();setTimeout(function(){fit();window.print();},450);};',
+   'window.onresize=fit;'
+  ].join('');
+
+  var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+he(doc.title)+'</title>'+prtStyle()+'</head><body>'+
+    bar+'<div id="doc">'+doc.body+'</div><scr'+'ipt>'+scr+'<\/scr'+'ipt></body></html>';
+  var w=window.open('','_blank','width=1050,height=800');
+  if(!w){toast('Allow pop-ups for this page so the board can be printed.','err');return;}
+  w.document.write(h);w.document.close();
+  logAct((mode==='pdf'?'Saved PDF: ':'Printed: ')+doc.title);
+}
+function dlWord(doc,fname){
+  var bfF=bf().f,bfS=bf().s;
+  var head='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" '+
+    'xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+he(doc.title)+'</title>'+
+    '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->'+
+    '<style>@page WordSection1{size:'+(doc.land?'29.7cm 21.0cm;mso-page-orientation:landscape':'21.0cm 29.7cm')+';margin:1cm}'+
+    'div.WordSection1{page:WordSection1}'+
+    'body{font-family:'+bfF+',Georgia,serif;font-size:'+bfS+'pt;color:#1a2744}'+
+    'h1{font-size:'+(bfS+3)+'pt;border-bottom:2px solid #b8932a;padding-bottom:4pt;font-family:Arial,sans-serif}'+
+    'h2{font-size:'+(bfS+1)+'pt;background:#1a2744;color:#e8c96a;padding:3pt 6pt;font-family:Arial,sans-serif}'+
+    'table{border-collapse:collapse;width:100%;font-size:'+bfS+'pt;font-weight:600}'+
+    'th{background:#1a2744;color:#e8c96a;border:1px solid #666;padding:3pt;font-family:Arial,sans-serif;font-size:'+Math.max(7,bfS-2)+'pt}'+
+    'td{border:1px solid #999;padding:3pt;vertical-align:top}'+
+    'tr.ghead td{background:#1a2744;color:#ffffff;font-family:Arial,sans-serif;font-weight:700;font-size:'+Math.max(7,bfS-2)+'pt}'+
+    '.par{font-style:italic;text-decoration:underline;font-weight:700}'+
+    '.hcrow td{font-weight:800}'+
+    '.hd{border:1px solid #b8932a;padding:6pt;text-align:center;margin-bottom:8pt}'+
+    '.hd b{font-size:'+(bfS+4)+'pt}.hd small{font-size:'+Math.max(7,bfS-2)+'pt;color:#555}'+
+    '.mini{font-size:'+Math.max(6,bfS-3)+'pt;font-style:normal;text-decoration:none;font-weight:400}'+
+    '.sub{font-size:'+Math.max(7,bfS-2)+'pt;color:#555}'+
+    '.lgd{font-size:'+Math.max(6,bfS-3)+'pt;margin-top:8pt;font-family:Arial,sans-serif}'+
+    '.lgd span{margin-right:10pt;font-weight:700}'+
+    '.sign{margin-top:20pt;text-align:right}'+
+    '</style></head><body><div class="WordSection1">';
+  var blob=new Blob(['﻿'+head+doc.body+'</div></body></html>'],{type:'application/msword'});
+  dl(blob,fname+'.doc');
+  logAct('Saved Word: '+doc.title);
+  toast('Word file downloaded — fully editable.');
+}
+function dl(blob,name){
+  var url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+}
+
+/* generic case table for list reports - same court order and colours */
+function listTable(arr){
+  var sorted=arr.slice().sort(function(a,b){
+    var ra=GRANK[courtGroup(a)],rb=GRANK[courtGroup(b)];
+    if(ra!==rb)return ra-rb;
+    return (a.court||'').localeCompare(b.court||'')||ctit(a).localeCompare(ctit(b));
+  });
+  var h='<table><colgroup><col style="width:4%"><col style="width:12%"><col style="width:19%">'+
+    '<col style="width:24%"><col style="width:12%"><col style="width:11%"><col style="width:8%">'+
+    '<col style="width:10%"></colgroup>'+
+    '<thead><tr><th>#</th><th>Previous date / stage</th>'+
+    '<th>Court / Case no. / Judge</th><th>Parties</th><th>Next date / stage</th><th>Client</th><th>Status</th><th>Note</th></tr></thead><tbody>';
+  var lastG='',n=0;
+  sorted.forEach(function(c){
+    var gk=courtGroup(c),g=GMETA[gk]||GMETA.oth;
+    if(gk!==lastG){
+      lastG=gk;
+      var cnt=sorted.filter(function(y){return courtGroup(y)===gk;}).length;
+      h+='<tr class="ghead"><td colspan="8">'+he(g.t)+' &mdash; '+cnt+'</td></tr>';
+    }
+    n++;
+    var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'';
+    var sty=' style="color:'+g.c+'"';
+    h+='<tr class="'+(gk==='hc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
+      '<td'+sty+'>'+fd(c.pd)+(c.ps?'<br><span class="mini">'+he(c.ps)+'</span>':'')+'</td>'+
+      '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(c.jd?'<br><span class="mini">Judge: '+he(c.jd)+'</span>':'')+'</td>'+
+      '<td class="par"'+sty+'>'+he(ctit(c))+'</td>'+
+      '<td'+sty+'>'+fd(c.nd)+(c.ns?'<br><span class="mini">'+he(c.ns)+'</span>':'')+'</td>'+
+      '<td'+sty+'>'+he(c.cl||'')+'</td>'+
+      '<td'+sty+'>'+he(STL[c.st]||'Active')+'</td>'+
+      '<td'+sty+'>'+he(ln)+'</td></tr>';
+  });
+  return h+'</tbody></table>';
+}
+function prtAll(mode){
+  var arr=LC();
+  if(!arr.length){toast('No cases to print.','err');return;}
+  var byDate={};
+  arr.forEach(function(c){var k=c.nd||'zzz';(byDate[k]=byDate[k]||[]).push(c);});
+  var body=prtHeader('Printed on '+fd(td())+(cu?' by '+he(cu.name||cu.username):''))+
+    '<h1>Complete case list &mdash; '+arr.length+' matters as on '+fd(td())+'</h1>';
+  Object.keys(byDate).sort().forEach(function(k){
+    body+='<h2>'+(k==='zzz'?'No next date on record':fdl(k))+' ('+byDate[k].length+')</h2>'+listTable(byDate[k]);
+  });
+  out({title:'Complete case list',body:body,land:false,fit:0},mode,'Case-list-'+td());
+}
+function prtUnupd(mode){
+  var arr=unupdated();
+  if(!arr.length){toast('Nothing pending — every open matter has a future date.','err');return;}
+  var sub=arr.filter(function(c){return !isHC(c);}),hc=arr.filter(isHC);
+  var body=prtHeader('Printed on '+fd(td())+(cu?' by '+he(cu.name||cu.username):''))+
+    '<h1>Unupdated matters &mdash; no future date on record ('+arr.length+')</h1>';
+  var sect=function(t,a){
+    if(!a.length)return '';
+    var none=a.filter(function(c){return !c.nd;}),over=a.filter(function(c){return c.nd;});
+    var x='<h2>'+t+' &mdash; '+a.length+'</h2>';
+    if(none.length)x+='<div class="sub"><b>No next date ever entered ('+none.length+')</b></div>'+listTable(none);
+    if(over.length)x+='<div class="sub"><b>Next date has passed ('+over.length+')</b></div>'+listTable(over);
+    return x;
+  };
+  body+=sect('Subordinate courts, tribunals, industrial &amp; labour courts',sub)+sect('High Court',hc);
+  body+=prtLegend();
+  out({title:'Unupdated matters',body:body,land:false,fit:0},mode,'Unupdated-'+td());
+}
+function prtRange(mode){
+  var from=document.getElementById('rfrom').value,to=document.getElementById('rto').value;
+  if(!from||!to){toast('Select both dates.','err');return;}
+  if(from>to){toast('The From date must not be after the To date.','err');return;}
+  var arr=LC().filter(function(c){return c.nd&&c.nd>=from&&c.nd<=to;});
+  if(!arr.length){toast('No cases in that range.','err');return;}
+  var byDate={};
+  arr.forEach(function(c){(byDate[c.nd]=byDate[c.nd]||[]).push(c);});
+  var body=prtHeader('Printed on '+fd(td()))+
+    '<h1>Cases from '+fd(from)+' to '+fd(to)+' &mdash; '+arr.length+' matters</h1>';
+  Object.keys(byDate).sort().forEach(function(k){
+    body+='<h2>'+fdl(k)+' ('+byDate[k].length+')</h2>'+listTable(byDate[k]);
+  });
+  body+=prtLegend();
+  out({title:'Cases '+fd(from)+' to '+fd(to),body:body,land:false,fit:0},mode,'Cases-'+from+'-to-'+to);
+}
+function prtC(id){
+  var c=find(id);if(!c)return;
+  var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'—';
+  var body=prtHeader('Printed on '+fd(td()))+'<h1>'+he(ctit(c))+'</h1>'+
+    '<table><tr><th>Previous date</th><td>'+fd(c.pd)+'</td><th>Previous stage</th><td>'+he(c.ps||'—')+'</td></tr>'+
+    '<tr><th>Court</th><td>'+he(c.court||'—')+'</td><th>Case no.</th><td>'+he(c.cn||'—')+'</td></tr>'+
+    '<tr><th>Judge</th><td colspan="3">'+he(c.jd||'—')+'</td></tr>'+
+    '<tr><th>Plaintiff</th><td>'+he(c.pl||'—')+'</td><th>Defendant</th><td>'+he(c.de||'—')+'</td></tr>'+
+    '<tr><th>Next date</th><td>'+fd(c.nd)+'</td><th>Next stage</th><td>'+he(c.ns||'—')+'</td></tr>'+
+    '<tr><th>Our client</th><td>'+he(c.cl||'—')+'</td><th>Contact</th><td>'+he((c.cp||'')+(c.cm?' · '+c.cm:''))+'</td></tr>'+
+    '<tr><th>Status</th><td>'+he(STL[c.st]||'Active')+'</td><th>Note</th><td>'+he(ln)+'</td></tr></table>';
+  var tl=timeline(c);
+  if(tl.length){
+    body+='<h2>Hearing history</h2><table><thead><tr><th style="width:22px">#</th><th>Date</th><th>Stage</th></tr></thead><tbody>'+
+      tl.map(function(x,i){return'<tr><td>'+(i+1)+'</td><td>'+fdl(x.d)+'</td><td>'+he(x.s||'—')+'</td></tr>';}).join('')+'</tbody></table>';
+  }
+  out({title:ctit(c),body:body,land:false,fit:1},'print','Case-'+c.id);
+}
+
+/* ---------- reports page ---------- */
+function setRp(n){document.getElementById('rpdate').value=shift(td(),n);showDateReport();}
+function showDateReport(){
+  var iso=document.getElementById('rpdate').value;
+  if(!iso){toast('Select a date.','err');return;}
+  var el=document.getElementById('rdate-result');
+  var rows=boardOn(iso);
+  el.innerHTML='<div class="daylist-panel"><div class="daylist-head">'+
+    '<b style="font-size:12px">&#128197; '+fdl(iso)+' &mdash; '+rows.length+' matter'+(rows.length===1?'':'s')+'</b>'+
+    '<div style="display:flex;gap:4px;flex-wrap:wrap">'+boardActs(iso,'rep')+'</div></div>'+
+    '<div class="daylist-body">'+boardTable(iso,'rep')+'</div></div>';
+}
+function showRangeReport(){
+  var from=document.getElementById('rfrom').value,to=document.getElementById('rto').value;
+  var el=document.getElementById('rrange-result');
+  if(!from||!to){toast('Select both dates.','err');return;}
+  if(from>to){toast('The From date must not be after the To date.','err');return;}
+  var arr=LC().filter(function(c){return c.nd&&c.nd>=from&&c.nd<=to;});
+  if(!arr.length){el.innerHTML='<div style="color:#888;font-size:11px;padding:6px 0">No cases in this range.</div>';return;}
+  var byDate={};
+  arr.forEach(function(c){(byDate[c.nd]=byDate[c.nd]||[]).push(c);});
+  var h='<div style="font-size:11px;font-weight:600;margin-bottom:8px">'+arr.length+' case(s) from '+fd(from)+' to '+fd(to)+'</div>';
+  Object.keys(byDate).sort().forEach(function(k){
+    h+='<div style="background:#1a2744;color:#e8c96a;font-size:10px;font-weight:600;padding:5px 9px;border-radius:5px 5px 0 0;margin-top:8px;display:flex;justify-content:space-between;align-items:center">'+
+      '<span>'+fdl(k)+' ('+byDate[k].length+')</span>'+
+      '<button class="btn bg" style="font-size:9px;padding:2px 6px" onclick="prtBoard(\''+k+'\',\'print\')">Print this board</button></div>';
+    h+='<div style="background:#fff;border:1px solid #d4c9a8;border-top:none;border-radius:0 0 5px 5px;padding:8px">';
+    byDate[k].forEach(function(c){h+=bldRow(c,'');});
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+
+/* ===========================================================
+   SETTINGS
+   =========================================================== */
+function renderSett(){renderBT();renderDT();renderUT();renderFT();renderST();renderBin();renderLog();}
+function renderBT(){
+  document.getElementById('tbk').innerHTML=
+    '<div style="background:#eafaf1;border:1px solid #b0e8c0;border-radius:6px;padding:12px;margin-bottom:10px">'+
+      '<b style="font-size:12px">&#128190; Backup everything</b>'+
+      '<div style="font-size:11px;color:#555;margin:5px 0 8px">One file containing every case, task, message, user, setting and the activity log. Keep a copy outside this computer.</div>'+
+      '<button class="btn bgr" onclick="backupAll()">&#8595; Backup entire system</button>'+
+    '</div>'+
+    '<div style="background:#e8f4fd;border:1px solid #90c0e8;border-radius:6px;padding:12px;margin-bottom:10px">'+
+      '<b style="font-size:12px">&#8593; Restore everything</b>'+
+      '<div style="font-size:11px;color:#555;margin:5px 0 8px">Loads a backup file and <b>replaces</b> all current data with it. You will be asked to confirm, and a safety copy of the present data is downloaded first.</div>'+
+      '<label class="btn bbl" style="cursor:pointer;display:inline-block">&#8593; Restore from backup file<input type="file" accept=".json" onchange="restoreAll(event)" style="display:none"></label>'+
+    '</div>'+
+    '<hr style="border:none;border-top:1px solid #d4c9a8;margin:12px 0">'+
+    '<b style="font-size:12px">Other options</b>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">'+
+      '<label class="btn bo" style="cursor:pointer;display:inline-block">Merge cases from a file<input type="file" accept=".json" onchange="mergeImport(event)" style="display:none"></label>'+
+      '<button class="btn bo" onclick="expCSV()">Export cases as CSV</button>'+
+      '<button class="btn br" onclick="clearCasesOnly()">Clear all cases</button>'+
+    '</div>'+
+    '<div style="font-size:10px;color:#666;margin-top:7px">Merge adds cases that are not already present and updates ones that are older than the file, without touching anything else.</div>';
+}
+function snapshot(){
+  return{app:'charpe-law',ver:5,exportDate:now(),exportBy:cu?(cu.name||cu.username):'',
+    cases:C,tasks:T,msgs:M,users:U,settings:S,log:L};
+}
+function backupAll(){
+  if(!can('exp')){toast('You are not allowed to export.','err');return;}
+  var blob=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'});
+  dl(blob,'charpe-FULL-backup-'+td()+'.json');
+  S.lastBackup=now();saveAll();logAct('Took full backup');
+  toast('Full backup downloaded.');bkReminder();
+}
+function restoreAll(ev){
+  var file=ev.target.files[0];ev.target.value='';
+  if(!file)return;
+  if(!guard('set'))return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var d;
+    try{d=JSON.parse(e.target.result);}catch(err){toast('That file is not a valid backup.','err');return;}
+    if(!d||(!d.cases&&!d.tasks&&!d.users)){toast('No recognisable data in that file.','err');return;}
+    var msg='RESTORE will replace everything currently in the system.\n\n'+
+      'In the file:  '+((d.cases||[]).length)+' cases, '+((d.tasks||[]).length)+' tasks, '+((d.users||[]).length)+' users\n'+
+      'Right now:    '+C.length+' cases, '+T.length+' tasks, '+U.length+' users\n\n'+
+      'A safety copy of the present data will be downloaded first.\n\nProceed?';
+    if(!confirm(msg))return;
+    try{
+      var safe=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'});
+      dl(safe,'charpe-SAFETY-before-restore-'+td()+'.json');
+    }catch(err){}
+    C=(d.cases||[]).map(normCase);
+    T=(d.tasks||[]).map(normTask);
+    M=d.msgs||[];
+    if(d.users&&d.users.length)U=d.users;
+    if(d.settings){var kb=S.jbKey,bb=S.jbBin;S=d.settings;if(!S.jbKey){S.jbKey=kb;S.jbBin=bb;}}
+    if(d.log)L=d.log;
+    if(!S.firm)S.firm={n:'Adv. R.S. Charpe  |  Adv. S.R. Charpe',a:'Nagpur',p:''};
+    saveAll();saveU();applyFirm();
+    logAct('Restored full backup from file');
+    toast('Restore complete — '+C.length+' cases loaded.');
+    popMsgSel();refresh();renderSett();
+  };
+  r.readAsText(file);
+}
+function mergeImport(ev){
+  var file=ev.target.files[0];ev.target.value='';
+  if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var d=JSON.parse(e.target.result);
+      var res=mergeCases((d.cases||[]).map(normCase));
+      if(d.tasks)mergeTasks(d.tasks.map(normTask));
+      saveAll();
+      toast(res.added+' added, '+res.upd+' updated.');
+      logAct('Merged file: '+res.added+' added, '+res.upd+' updated');
+      refresh();
+    }catch(err){toast('Error: '+err.message,'err');}
+  };
+  r.readAsText(file);
+}
+function mergeCases(inc){
+  var byId={};C.forEach(function(c){byId[c.id]=c;});
+  var added=0,upd=0;
+  inc.forEach(function(n){
+    var e=byId[n.id];
+    if(!e){C.push(n);byId[n.id]=n;added++;}
+    else if((n.mod||'')>(e.mod||'')){Object.assign(e,n);upd++;}
+  });
+  return{added:added,upd:upd};
+}
+function mergeTasks(inc){
+  var byId={};T.forEach(function(t){byId[t.id]=t;});
+  inc.forEach(function(n){
+    var e=byId[n.id];
+    if(!e){T.push(n);byId[n.id]=n;}
+    else if((n.mod||'')>(e.mod||''))Object.assign(e,n);
+  });
+}
+function expCSV(){
+  if(!can('exp')){toast('You are not allowed to export.','err');return;}
+  var cols=['Court','Case no.','Judge','Plaintiff','Defendant','Client','Contact person','Contact no.',
+    'Previous date','Previous stage','Next date','Next stage','Status','Latest note'];
+  var q=function(v){return '"'+String(v===undefined||v===null?'':v).replace(/"/g,'""')+'"';};
+  var lines=[cols.map(q).join(',')];
+  LC().forEach(function(c){
+    var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'';
+    lines.push([c.court,c.cn,c.jd,c.pl,c.de,c.cl,c.cp,c.cm,fd(c.pd),c.ps,fd(c.nd),c.ns,STL[c.st]||'Active',ln].map(q).join(','));
+  });
+  dl(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),'charpe-cases-'+td()+'.csv');
+  toast('CSV exported.');
+}
+function clearCasesOnly(){
+  if(!guard('del'))return;
+  if(!confirm('Delete all '+LC().length+' cases?\n\nUsers, tasks and messages are kept.\nTake a backup first if you have not already.'))return;
+  LC().forEach(function(c){c.del=now();c.delBy=cu?(cu.name||cu.username):'';touch(c);});
+  saveAll();logAct('Cleared all cases');toast('Cases moved to recycle bin.');refresh();
+}
+
+/* ===========================================================
+   UPDATE DATES FROM AN EXTERNAL BACKUP FILE
+   Reads plain-text / CSV / JSON backups exported from the court
+   app, and refreshes the next date and stage of matters ALREADY
+   in this tool. Cases not present here are reported and ignored
+   — adding new cases stays with the separate import button.
+   =========================================================== */
+var IMPR=[];   /* parsed rows from the file(s) */
+var IMPM=[];   /* proposed updates after matching */
+
+function renderDT(){
+  var last=S.lastDateImport;
+  document.getElementById('tdt').innerHTML=
+    '<b style="font-size:12px">&#8681; Update next dates from a backup file</b>'+
+    '<div style="font-size:11px;color:#555;line-height:1.7;margin:6px 0 10px">'+
+      'Reads the backup exported from the court app and lifts the <b>next date</b>, <b>stage</b> and '+
+      '<b>status</b> for matters <b>already entered here</b>. Cases not already in this tool are skipped — '+
+      'use <i>Merge cases from a file</i> on the Backup tab to bring new ones in. '+
+      'Nothing is written until you have seen the proposed changes and pressed Apply.'+
+    '</div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+      '<label class="btn bbl" style="cursor:pointer;display:inline-block">&#128193; Select the backup folder'+
+        '<input type="file" id="dtFolder" webkitdirectory directory multiple onchange="dtRead(event)" style="display:none"></label>'+
+      '<label class="btn bo" style="cursor:pointer;display:inline-block">&#128196; Select a file'+
+        '<input type="file" id="dtFile" multiple onchange="dtRead(event)" style="display:none"></label>'+
+      '<button class="btn bo" onclick="togEl(\'dtpaste\')">&#128203; Paste the text instead</button>'+
+    '</div>'+
+    '<div id="dtpaste" style="display:none;margin-top:8px">'+
+      '<div class="fg"><label>Paste the contents of the export file here</label>'+
+      '<textarea id="dtText" rows="7" placeholder="Open the export file in Notepad, select all, copy, and paste here..."></textarea></div>'+
+      '<button class="btn bg" onclick="dtPaste()">Analyse this text</button>'+
+    '</div>'+
+    (last?'<div style="font-size:10px;color:#666;margin-top:8px">Last run: '+fd(String(last).slice(0,10))+'</div>':'')+
+    '<div id="dtdiag" style="margin-top:9px">'+(S.lastDiag||'')+'</div>';
+}
+function openDateImport(){
+  go('sett');
+  var b=document.querySelector('.tbt[onclick*="tdt"]');
+  if(b)stab(b,'tdt');
+  var f=document.getElementById('dtFile');
+  if(f)f.click();                      /* open the picker straight away */
+}
+function dtPaste(){
+  var t=(document.getElementById('dtText')||{}).value||'';
+  if(!t.trim()){toast('Paste the text first.','err');return;}
+  IMPR=parseBackup(t,'pasted text');
+  IMPR.forEach(function(r){r.file='pasted text';});
+  dtMatch(['pasted text ('+IMPR.length+')'],1,[{name:'pasted text',text:t}]);
+}
+
+/* ---------- value helpers ---------- */
+function nk(s){return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,'');}
+function MOI(w){
+  var m=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  var i=m.indexOf(String(w).toLowerCase().slice(0,3));return i<0?0:i+1;
+}
+function pDate(v){
+  if(!v)return '';
+  var s=String(v).trim(),m;
+  if((m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)))return m[1]+'-'+zz(m[2])+'-'+zz(m[3]);
+  if((m=s.match(/(\d{1,2})\s*[-\/.]\s*(\d{1,2})\s*[-\/.]\s*(\d{4})/)))return m[3]+'-'+zz(m[2])+'-'+zz(m[1]);
+  if((m=s.match(/(\d{1,2})(?:st|nd|rd|th)?[\s-]+([A-Za-z]{3,})[\s,-]+(\d{4})/))){
+    var mo=MOI(m[2]);if(mo)return m[3]+'-'+zz(mo)+'-'+zz(m[1]);
+  }
+  if((m=s.match(/([A-Za-z]{3,})[\s-]+(\d{1,2})(?:st|nd|rd|th)?[\s,-]+(\d{4})/))){
+    var mo2=MOI(m[1]);if(mo2)return m[3]+'-'+zz(mo2)+'-'+zz(m[2]);
+  }
+  return '';
+}
+var FLD={
+  date:/(next|nxt).*(date|hearing)|hearing.*date|date.*hearing|nextdt|nextdate|dateofnext/,
+  stage:/stage|purpose|proceeding|nature.*hearing/,
+  status:/status|disposal|disposed/,
+  cno:/case.*(no|number|code)|regi?s?t?.*(no|number)|filing.*(no|number)|suit.*no|^cno$/,
+  cnr:/cnr/,
+  pet:/petition|plaintiff|applicant|appellant|partyone|firstparty/,
+  res:/respond|defend|opponent|nonapplicant|partytwo|secondparty/,
+  court:/court|establish|bench|tribunal|forum/
+};
+function fkey(label){
+  var k=nk(label);
+  for(var f in FLD)if(FLD[f].test(k))return f;
+  return '';
+}
+function rowFrom(obj){
+  var r={date:'',stage:'',status:'',cno:'',cnr:'',pet:'',res:'',court:'',raw:obj};
+  for(var k in obj){
+    var f=fkey(k);
+    if(!f)continue;
+    var v=String(obj[k]==null?'':obj[k]).trim();
+    if(!v)continue;
+    if(f==='date'){var dd=pDate(v);if(dd&&!r.date)r.date=dd;}
+    else if(!r[f])r[f]=v;
+  }
+  return (r.date||r.cno||r.pet)?r:null;
+}
+
+/* ---------- eCourts "myCases" export ----------
+   The eCourts Services app writes a JSON array whose every element is
+   itself a JSON string, using its own field names. Handled explicitly. */
+function isEc(o){return !!(o&&(o.cino!==undefined||o.date_next_list!==undefined||o.petparty_name!==undefined));}
+function ecRow(o){
+  var ty=String(o.type_name==null?'':o.type_name).trim().replace(/\s+/g,' ');
+  var rn=(o.reg_no==null?'':o.reg_no),ry=(o.reg_year==null?'':o.reg_year);
+  var alts=[];
+  if(rn!==''&&ry!=='')alts.push(rn+'/'+ry);
+  if(o.case_no)alts.push(String(o.case_no));
+  if(o.fil_no&&o.fil_year&&String(o.fil_no)!=='0')alts.push(o.fil_no+'/'+o.fil_year);
+  var dec=pDate(o.date_of_decision);
+  return{
+    date:pDate(o.date_next_list),
+    prev:pDate(o.date_last_list),
+    stage:String(o.purpose_name==null?'':o.purpose_name).trim(),
+    status:dec?String(o.disp_name||'Disposed').trim():'',
+    decided:dec,
+    cno:(ty&&rn!==''&&ry!=='')?(ty+' '+rn+'/'+ry):(alts[0]||''),
+    alts:alts,
+    cnr:String(o.cino==null?'':o.cino).trim(),
+    pet:String(o.petparty_name==null?'':o.petparty_name).trim(),
+    res:String(o.resparty_name==null?'':o.resparty_name).trim(),
+    court:String(o.establishment_name||o.court_no_desg_name||'').trim(),
+    bench:String(o.court_no_desg_name||'').trim(),
+    src:'ecourts',raw:o
+  };
+}
+
+/* ---------- the parser: JSON, delimited, or labelled blocks ---------- */
+function parseBackup(text,fname){
+  var out=[],t=(text||'').replace(/^﻿/,'').replace(/\r\n?/g,'\n').trim();
+  if(!t)return out;
+  /* 1. JSON — including the doubly-encoded eCourts shape */
+  if(/^[\[{]/.test(t)){
+    try{
+      var j=JSON.parse(t);
+      var arr=Array.isArray(j)?j:(j.cases||j.data||j.records||j.rows||j.myCases||[]);
+      if(Array.isArray(arr)&&arr.length){
+        arr=arr.map(function(o){
+          if(typeof o==='string'){
+            var s=o.trim();
+            if(/^[\[{]/.test(s)){try{return JSON.parse(s);}catch(e){return null;}}
+            return null;
+          }
+          return o;
+        }).filter(function(o){return o&&typeof o==='object';});
+        arr.forEach(function(o){
+          var r=isEc(o)?ecRow(o):rowFrom(o);
+          if(r&&(r.date||r.decided)){r.file=fname;out.push(r);}
+        });
+        if(out.length)return out;
+      }
+    }catch(e){}
+  }
+  /* 1b. one JSON object per line */
+  if(/^\s*\{/.test(t)&&t.indexOf('\n')>0){
+    var nd=[];
+    t.split('\n').forEach(function(l){
+      l=l.trim().replace(/,$/,'');
+      if(!/^\{/.test(l))return;
+      try{var o=JSON.parse(l);var r=isEc(o)?ecRow(o):rowFrom(o);if(r){r.file=fname;nd.push(r);}}catch(e){}
+    });
+    if(nd.length)return nd;
+  }
+  var lines=t.split('\n').filter(function(l){return l.trim()!=='';});
+  /* 2. delimited table with a header row */
+  ['\t','|',','].forEach(function(sep){
+    if(out.length)return;
+    var head=lines[0].split(sep);
+    if(head.length<3)return;
+    var known=head.filter(function(h){return fkey(h);}).length;
+    if(known<2)return;
+    var cols=head.map(function(h){return h.trim();});
+    for(var i=1;i<lines.length;i++){
+      var cells=lines[i].split(sep);
+      if(cells.length<2)continue;
+      var o={};cols.forEach(function(c,j){o[c]=(cells[j]||'').trim();});
+      var r=rowFrom(o);if(r){r.file=fname;out.push(r);}
+    }
+  });
+  if(out.length)return out;
+  /* 3. labelled blocks: "Next Date : 12-09-2026" grouped by blank lines or rules */
+  var blocks=t.split(/\n\s*\n|\n\s*[-=_*]{3,}\s*\n/);
+  blocks.forEach(function(b){
+    var o={},got=0;
+    b.split('\n').forEach(function(l){
+      var m=l.match(/^\s*([^:\t]{2,40}?)\s*[:\t]\s*(.+?)\s*$/);
+      if(m&&fkey(m[1])){o[m[1]]=m[2];got++;}
+    });
+    if(got>=2){var r=rowFrom(o);if(r){r.file=fname;out.push(r);}}
+  });
+  if(out.length)return out;
+  /* 4. last resort: any line carrying a date plus something case-like */
+  lines.forEach(function(l){
+    var dd=pDate(l);
+    if(!dd)return;
+    var cm=l.match(/([A-Za-z.\/]{2,12}\s*[\/-]?\s*\d{1,6}\s*[\/-]\s*\d{4})/);
+    var pm=l.match(/([A-Za-z][A-Za-z.\s]{2,40})\s+(?:vs?\.?|versus)\s+([A-Za-z][A-Za-z.\s]{2,40})/i);
+    if(!cm&&!pm)return;
+    out.push({date:dd,stage:'',status:'',cno:cm?cm[1].trim():'',cnr:'',
+      pet:pm?pm[1].trim():'',res:pm?pm[2].trim():'',court:'',file:fname,raw:l});
+  });
+  return out;
+}
+
+/* shows the opening of each file exactly as it was read, so an
+   unrecognised layout can be identified at a glance */
+function rawPeek(raws){
+  if(!raws||!raws.length)return '';
+  return raws.slice(0,3).map(function(r){
+    var t=(r.text||'').slice(0,700);
+    return '<div style="margin-top:6px"><div class="mini"><b>'+he(r.name)+'</b>'+
+      (r.size?' &middot; '+r.size+' bytes':'')+(r.text?'':' &middot; could not be read as text')+'</div>'+
+      '<textarea readonly rows="9" style="width:100%;font-family:monospace;font-size:10px;'+
+      'border:1px solid #d4c9a8;border-radius:4px;padding:5px;background:#fafaf5">'+
+      he(t||'(empty or not text)')+'</textarea>'+
+      '<button class="btn bo" style="margin-top:3px" onclick="copyPeek(this)">Copy this text</button></div>';
+  }).join('');
+}
+function copyPeek(btn){
+  var ta=btn.parentNode.querySelector('textarea');
+  if(!ta)return;
+  ta.select();
+  try{document.execCommand('copy');toast('Copied — paste it to your developer.');}
+  catch(e){toast('Select the text and copy it manually.','err');}
+}
+
+/* ---------- read the chosen files ---------- */
+function dtRead(ev){
+  if(!guard('edit'))return;
+  var all=Array.prototype.slice.call(ev.target.files||[]);
+  ev.target.value='';
+  if(!all.length)return;
+  /* accept anything text-like; only skip formats that plainly are not text */
+  var binary=all.filter(function(f){return /\.(pdf|docx?|xlsx?|zip|rar|db|sqlite|jpg|jpeg|png|apk)$/i.test(f.name);});
+  var files=all.filter(function(f){return !/\.(pdf|docx?|xlsx?|zip|rar|db|sqlite|jpg|jpeg|png|apk)$/i.test(f.name);});
+  if(!files.length){
+    var msg='<div class="wbar"><span style="font-size:11px">Those are not plain-text files: <b>'+
+      he(binary.map(function(f){return f.name;}).slice(0,6).join(', '))+'</b>.<br>'+
+      'This reader needs text (.txt, .csv, .json). A PDF, Word, Excel or database export cannot be read directly — '+
+      'open it and use <b>Paste the text instead</b>, or export again as text.</span></div>';
+    var dg0=document.getElementById('dtdiag');if(dg0)dg0.innerHTML=msg;
+    S.lastDiag=msg;saveAll();
+    toast('That file is not plain text.','err');
+    return;
+  }
+  files=files.slice(0,40);
+  IMPR=[];
+  var done=0,names=[],raws=[];
+  files.forEach(function(f){
+    var rd=new FileReader();
+    rd.onload=function(e){
+      var txt=e.target.result||'';
+      raws.push({name:f.name,text:txt,size:f.size});
+      var rows=parseBackup(txt,f.name);
+      names.push(f.name+' ('+rows.length+')');
+      IMPR=IMPR.concat(rows);
+      if(++done===files.length)dtMatch(names,files.length,raws);
+    };
+    rd.onerror=function(){raws.push({name:f.name,text:'',size:0});
+      if(++done===files.length)dtMatch(names,files.length,raws);};
+    rd.readAsText(f);
+  });
+}
+
+/* ---------- match parsed rows to cases already in the tool ---------- */
+function nameBits(s){
+  return nk(s).replace(/^(mrs|mr|ms|smt|shri|sri|m\/s|ms)/,'');
+}
+function matchCase(r){
+  var best=null,bs=0,bw='';
+  var rn=nk(r.cnr);
+  var keys=[nk(r.cno)].concat((r.alts||[]).map(nk)).filter(function(x){return x&&x.length>=4;});
+  var rp=nameBits(r.pet),rr=nameBits(r.res);
+  LC().forEach(function(c){
+    var s=0,why='',cnk=nk(c.cn);
+    /* once a matter carries a CNR it belongs to that court record alone —
+       never let a different entry claim it on loose party-name similarity */
+    if(c.cnr&&rn&&nk(c.cnr)!==rn)return;
+    if(rn&&c.cnr&&nk(c.cnr)===rn){s=5;why='CNR';}
+    else if(cnk){
+      for(var i=0;i<keys.length;i++){
+        if(cnk===keys[i]){if(s<4){s=4;why='case number';}break;}
+        if(keys[i].length>=6&&(cnk.indexOf(keys[i])>=0||keys[i].indexOf(cnk)>=0)){
+          if(s<3){s=3;why='registration number';}
+        }
+      }
+    }
+    if(rp&&rr){
+      var cp=nameBits(c.pl),cd=nameBits(c.de);
+      if(cp&&cd){
+        var pm=cp.indexOf(rp)>=0||rp.indexOf(cp)>=0;
+        var dm=cd.indexOf(rr)>=0||rr.indexOf(cd)>=0;
+        if(pm&&dm){if(s<4){s=4;why='both party names';}}
+        else if(pm||dm){if(s<2){s=2;why='one party name';}}
+      }
+    }
+    if(s>bs){bs=s;best=c;bw=why;}
+  });
+  return best?{c:best,score:bs,why:bw}:null;
+}
+function dtMatch(names,nfiles,raws){
+  raws=raws||[];
+  IMPM=[];
+  var nodate=0,unmatched=0,nochange=0,misses=[],stale=0,disp=0;
+  IMPR.forEach(function(r){
+    if(!r.date&&!r.decided){nodate++;return;}
+    var m=matchCase(r);
+    if(!m||m.score<3){
+      unmatched++;
+      if(misses.length<8)misses.push(r);
+      return;
+    }
+    var c=m.c;
+    if(IMPM.some(function(x){return x.c.id===c.id;}))return;
+    /* a matter shown as decided in the file: mark it disposed, never
+       drag its stale hearing date onto a live record */
+    if(r.decided){
+      if(c.st==='disposed'){nochange++;return;}
+      disp++;
+      IMPM.push({c:c,kind:'status',date:'',decided:r.decided,stage:r.stage,status:r.status,
+        cnr:r.cnr,why:m.why,score:m.score,tick:true,file:r.file});
+      return;
+    }
+    if(c.nd===r.date&&(!r.stage||c.ns===r.stage)){nochange++;return;}
+    var newer=(!c.nd||r.date>c.nd);
+    if(!newer)stale++;
+    IMPM.push({c:c,kind:'date',date:r.date,stage:r.stage,status:r.status,cnr:r.cnr,
+      why:m.why,score:m.score,tick:newer,file:r.file});
+  });
+  IMPM.sort(function(a,b){
+    if(a.kind!==b.kind)return a.kind==='date'?-1:1;
+    if(a.tick!==b.tick)return a.tick?-1:1;
+    return (a.date||'').localeCompare(b.date||'');
+  });
+  var dg=document.getElementById('dtdiag');
+  var diag='<div class="hiitem"><b>'+nfiles+' file(s) read</b>'+
+    (names.length?'<div class="mini">'+he(names.join(', '))+'</div>':'')+
+    '<div class="mini"><b>'+IMPR.length+'</b> entries parsed &middot; <b>'+IMPM.length+'</b> to update &middot; '+
+    nochange+' already current &middot; '+unmatched+' not found here &middot; '+nodate+' had no readable date</div></div>';
+
+  /* --- nothing parsed: show the file so the layout can be identified --- */
+  if(!IMPR.length){
+    diag+='<div class="wbar" style="display:block"><b style="color:#c0392b;font-size:11px">'+
+      'The layout of this file was not recognised. Nothing has been changed.</b>'+
+      '<div class="mini" style="margin-top:4px">The reader understands: <i>Label : value</i> blocks, '+
+      'CSV/TSV with a header row, and JSON. Below is the start of the file as it was actually read &mdash; '+
+      'send this text and the reader can be taught the layout.</div></div>'+ rawPeek(raws);
+    if(dg)dg.innerHTML=diag;
+    S.lastDiag=diag;saveAll();
+    toast('That file layout was not recognised.','err');
+    return;
+  }
+  /* --- parsed, but nothing lined up with cases held here --- */
+  if(!IMPM.length&&!nochange){
+    diag+='<div class="wbar" style="display:block"><b style="color:#c0392b;font-size:11px">'+
+      'The file was read, but none of its cases could be matched to cases in this tool.</b>'+
+      '<div class="mini" style="margin-top:4px">Matching uses the case number first, then both party names. '+
+      'If the case number is written differently here than in the file, nothing will match. '+
+      'Here is what was read from the file, against what this tool holds:</div>'+
+      '<table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:5px">'+
+      '<tr style="background:#f0ecdf"><th style="text-align:left;padding:3px">From the file</th>'+
+      '<th style="text-align:left;padding:3px">Next date read</th></tr>'+
+      misses.map(function(r){
+        return '<tr><td style="padding:3px;border-top:1px solid #e4dcc4">'+
+          he(r.cno||'(no case number)')+(r.pet||r.res?'<br><span class="mini">'+he(r.pet||'?')+' vs. '+he(r.res||'?')+'</span>':'')+
+          '</td><td style="padding:3px;border-top:1px solid #e4dcc4">'+fd(r.date)+'</td></tr>';
+      }).join('')+
+      '</table><div class="mini" style="margin-top:5px">Case numbers presently stored here, for comparison: '+
+      he(LC().slice(0,8).map(function(c){return c.cn||'('+ctit(c)+')';}).join('  |  '))+'</div></div>';
+    if(dg)dg.innerHTML=diag;
+    S.lastDiag=diag;saveAll();
+    toast('File read, but no case matched.','err');
+    return;
+  }
+  if(dg)dg.innerHTML=diag;
+  S.lastDiag=diag;
+  if(!IMPM.length){toast(nochange?'Every matched case is already up to date.':'No matching cases found.','err');return;}
+  showImp(unmatched,nochange,stale,disp);
+}
+
+/* ---------- preview before anything is written ---------- */
+function showImp(unmatched,nochange,stale,disp){
+  var nTick=IMPM.filter(function(m){return m.tick;}).length;
+  var h='<div style="font-size:11px;margin-bottom:8px;line-height:1.7">'+
+    '<b>'+nTick+'</b> change(s) are ticked and ready. '+
+    (disp?'<b>'+disp+'</b> shown as decided in the file will be marked <b>disposed</b> (their old hearing date is <b>not</b> copied across). ':'')+
+    (stale?'<b>'+stale+'</b> carry a date <b>older</b> than the one you already hold — left unticked, tick them only if you want to go back. ':'')+
+    (unmatched?'<b>'+unmatched+'</b> case(s) in the file are not in this tool and are <b>skipped</b>. ':'')+
+    (nochange?nochange+' already current. ':'')+
+    '<br>Nothing is saved until you press Apply.</div>'+
+    '<div class="bwrap" style="max-height:52vh;overflow-y:auto"><table class="board" style="font-size:11px;min-width:720px"><thead><tr>'+
+    '<th style="width:24px"><input type="checkbox" onclick="impAll(this.checked)"></th>'+
+    '<th>Matter</th><th>Court / case no.</th><th>Present next date</th><th>From the file</th><th>Stage</th><th>Matched on</th>'+
+    '</tr></thead><tbody>';
+  IMPM.forEach(function(m,i){
+    var g=gMeta(m.c);
+    var newCell=m.kind==='status'
+      ? '<b style="color:#c05600">Disposed '+(m.decided?fd(m.decided):'')+'</b>'+
+        (m.status?'<br><span class="mini">'+he(m.status)+'</span>':'')+
+        '<br><span class="mini">next date left alone</span>'
+      : '<b>'+fd(m.date)+'</b>'+(!m.tick?'<br><span class="mini" style="color:#c0392b">older than yours</span>':'');
+    h+='<tr class="brow" style="color:'+g.c+(m.tick?'':';opacity:.65')+'">'+
+      '<td><input type="checkbox" class="impchk" value="'+i+'"'+(m.tick?' checked':'')+'></td>'+
+      '<td class="par" style="color:'+g.c+'">'+he(ctit(m.c))+'</td>'+
+      '<td style="color:'+g.c+'">'+he(m.c.court||'—')+(m.c.cn?'<br><span class="mini">'+he(m.c.cn)+'</span>':'')+'</td>'+
+      '<td style="color:'+g.c+'">'+(m.c.nd?fd(m.c.nd):'<span class="mini">none</span>')+
+        (m.c.ns?'<br><span class="mini">'+he(m.c.ns)+'</span>':'')+'</td>'+
+      '<td style="color:'+g.c+'">'+newCell+'</td>'+
+      '<td style="color:'+g.c+'">'+he(m.stage||'—')+'</td>'+
+      '<td><span class="mini">'+he(m.why)+(m.score<3?' — verify':'')+'</span></td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div>'+
+    '<div class="mini" style="margin-top:6px">The CNR number from the file is stored against each matter you accept, '+
+    'so later runs match instantly and exactly.</div>'+
+    '<div class="fa"><button class="btn bo" onclick="closeM(\'mimp\')">Cancel</button>'+
+    '<button class="btn bg" onclick="applyImp()">Apply ticked changes</button></div>';
+  document.getElementById('impbody').innerHTML=h;
+  openM('mimp');
+}
+function impAll(on){document.querySelectorAll('.impchk').forEach(function(e){e.checked=on;});}
+function applyImp(){
+  if(!guard('edit'))return;
+  var sel=Array.prototype.map.call(document.querySelectorAll('.impchk:checked'),function(e){return +e.value;});
+  if(!sel.length){toast('Nothing ticked.','err');return;}
+  var n=0,nd=0,ns=0,kept=0,t0=td();
+  sel.forEach(function(i){
+    var m=IMPM[i];if(!m)return;
+    var c=m.c;
+    if(m.cnr&&!c.cnr)c.cnr=m.cnr;          /* remember the CNR for future runs */
+    if(m.kind==='status'){                  /* decided: status only, date untouched */
+      c.st='disposed';
+      if(m.stage&&!c.ns)c.ns=m.stage;
+      if(m.status)c.notes.push({text:'Shown as '+m.status+' in the court record'+(m.decided?' on '+fd(m.decided):'')+'.',
+        date:td(),by:cu?cu.name:''});
+      touch(c);n++;ns++;return;
+    }
+    /* NEXT-DATE RULE: a court-record date is used only if it is later than today,
+       and never replaces a different future date already saved. */
+    if(!m.date||m.date<=t0){kept++;return;}
+    if(c.nd===m.date){if(m.stage&&!c.ns){c.ns=m.stage;touch(c);}kept++;return;}
+    if(c.nd&&c.nd>t0){
+      c.notes=c.notes||[];
+      c.notes.push({text:'Court record shows next date '+fd(m.date)+', but '+fd(c.nd)+' is saved. Saved date kept — please confirm.',date:t0,by:cu?cu.name:''});
+      touch(c);kept++;return;
+    }
+    c.hist=c.hist||[];
+    c.hist.push({dt:c.nd||td(),pd:c.pd,ps:c.ps,nd:c.nd,ns:c.ns,
+      note:(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'',by:cu?cu.name:''});
+    if(c.nd){c.pd=c.nd;c.ps=c.ns;}          /* the old next date becomes the previous date */
+    c.nd=m.date;
+    if(m.stage)c.ns=m.stage;
+    var st=nk(m.status);
+    if(st){
+      if(/dispos|decid|closed|withdraw/.test(st))c.st='disposed';
+      else if(/stay/.test(st))c.st='stayed';
+      else if(/appeal/.test(st))c.st='appeal';
+      else if(/pend|activ/.test(st))c.st='active';
+    }
+    touch(c);n++;nd++;
+  });
+  S.lastDateImport=now();
+  saveAll();closeM('mimp');
+  logAct('Updated next dates for '+n+' matter(s) from a backup file');
+  toast(nd+' date(s) updated'+(ns?', '+ns+' marked disposed':'')+(kept?', '+kept+' kept (court date not later than today, or a different future date already saved)':'')+'.');
+  refresh();renderSett();if(S.jbKey)push();
+}
+
+function renderUT(){
+  var rows=U.map(function(u){
+    var r=[];
+    if(u.rOnly)r.push('read only');
+    if(u.noDel)r.push('no delete');
+    if(u.noSet)r.push('no settings');
+    if(u.noExp)r.push('no export');
+    return'<tr style="border-bottom:1px solid #d4c9a8">'+
+      '<td style="padding:6px;font-size:11px">'+he(u.name||u.username)+'</td>'+
+      '<td style="padding:6px;font-size:11px">'+he(u.username)+'</td>'+
+      '<td style="padding:6px"><span style="background:'+(u.role==='admin'?'#1a2744':'#e8f0fe')+';color:'+(u.role==='admin'?'#e8c96a':'#2040a0')+';border-radius:8px;padding:1px 7px;font-size:9px;font-weight:600">'+he(u.role)+'</span>'+
+        (r.length?'<div class="mini">'+he(r.join(', '))+'</div>':'')+'</td>'+
+      '<td style="padding:6px;white-space:nowrap"><button class="btn bn" style="font-size:9px;padding:2px 6px" onclick="editU(\''+u.id+'\')">Edit</button> '+
+      (u.id!=='admin'?'<button class="btn br" style="font-size:9px;padding:2px 6px" onclick="delU(\''+u.id+'\')">Del</button>':'')+'</td></tr>';
+  }).join('');
+  document.getElementById('tu').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:12px">System users</b><button class="btn bg" onclick="addU()">+ Add user</button></div>'+
+    '<table style="width:100%;border-collapse:collapse;border:1px solid #d4c9a8"><thead><tr style="background:#f0ecdf">'+
+    '<th style="padding:6px;text-align:left;font-size:10px">Name</th><th style="padding:6px;text-align:left;font-size:10px">Username</th>'+
+    '<th style="padding:6px;text-align:left;font-size:10px">Role</th><th style="padding:6px;text-align:left;font-size:10px">Actions</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div style="margin-top:8px;padding:9px;background:#f5f0e8;border-radius:5px;font-size:10px;line-height:1.6">'+
+    '<b>Passwords are stored as one-way SHA-256 hashes</b> &mdash; they cannot be read back out of the file, only reset. '+
+    'To change one: Edit &rarr; type the new password &rarr; Save.</div>';
+}
+function renderFT(){
+  var f=S.firm||{};
+  document.getElementById('tfirm').innerHTML=
+    '<b style="font-size:12px">Letterhead used on every printout</b>'+
+    '<div class="fgr" style="margin-top:8px">'+
+      '<div class="fg f2"><label>Firm / advocate names</label><input id="fmN" value="'+he(f.n||'')+'"></div>'+
+      '<div class="fg"><label>Address line</label><input id="fmA" value="'+he(f.a||'')+'"></div>'+
+      '<div class="fg"><label>Phone / email</label><input id="fmP" value="'+he(f.p||'')+'"></div>'+
+    '</div><button class="btn bg" onclick="saveFirm()">Save letterhead</button>';
+}
+function saveFirm(){
+  S.firm={n:val('fmN'),a:val('fmA'),p:val('fmP')};
+  saveAll();applyFirm();toast('Letterhead saved.');logAct('Updated letterhead');
+}
+/* ---------- deleted cases ---------- */
+function delDaysLeft(x){
+  var d=daysLate(String(x.del).slice(0,10));
+  return Math.max(0,PURGE_DAYS-(d||0));
+}
+function delRow(x,kind){
+  var left=delDaysLeft(x);
+  var ttl=kind==='c'?ctit(x):x.desc;
+  var meta=kind==='c'
+    ? he(x.court||'—')+(x.cn?' &middot; '+he(x.cn):'')+(x.nd?' &middot; was listed '+fd(x.nd):'')
+    : 'Task'+(x.due?' &middot; due '+fd(x.due):'');
+  return '<div class="hiitem" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
+    '<span style="flex:1;min-width:180px"><b style="font-style:italic;text-decoration:underline">'+he(ttl)+'</b>'+
+      '<div class="mini">'+meta+'</div>'+
+      '<div class="mini">Deleted '+fd(String(x.del).slice(0,10))+(x.delBy?' by '+he(x.delBy):'')+
+      ' &middot; <b>'+left+' day'+(left===1?'':'s')+'</b> left before it is removed for good</div></span>'+
+    '<span style="white-space:nowrap">'+
+      (can('edit')?'<button class="btn bgr" onclick="revive(\''+kind+'\',\''+x.id+'\')">&#8630; Revive</button> ':'')+
+      (can('del')?'<button class="btn br" onclick="purgeItem(\''+kind+'\',\''+x.id+'\')">Delete forever</button>':'')+
+    '</span></div>';
+}
+function binHTML(q){
+  var dc=C.filter(function(c){return c.del;}),dt=T.filter(function(t){return t.del;});
+  if(q){
+    q=q.toLowerCase();
+    dc=dc.filter(function(c){return [ctit(c),c.court,c.cn,c.cl].join(' ').toLowerCase().indexOf(q)>=0;});
+    dt=dt.filter(function(t){return (t.desc||'').toLowerCase().indexOf(q)>=0;});
+  }
+  if(!dc.length&&!dt.length){
+    return '<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; '+
+      (q?'Nothing deleted matches that search.':'Nothing has been deleted.')+'</span></div>';
+  }
+  var h='';
+  dc.sort(function(a,b){return String(b.del).localeCompare(String(a.del));});
+  dt.sort(function(a,b){return String(b.del).localeCompare(String(a.del));});
+  if(dc.length){h+='<div class="grpttl">Cases ('+dc.length+')</div>'+dc.map(function(c){return delRow(c,'c');}).join('');}
+  if(dt.length){h+='<div class="grpttl">Tasks ('+dt.length+')</div>'+dt.map(function(t){return delRow(t,'t');}).join('');}
+  return h;
+}
+function renderDeleted(){
+  var el=document.getElementById('dlist');if(!el)return;
+  var dc=C.filter(function(c){return c.del;}),dt=T.filter(function(t){return t.del;});
+  document.getElementById('dcount').textContent=dc.length;
+  document.getElementById('pdays').textContent=PURGE_DAYS;
+  document.getElementById('delacts').innerHTML=
+    ((dc.length||dt.length)&&can('edit')?'<button class="btn bgr" onclick="reviveAll()">&#8630; Revive everything</button>':'')+
+    ((dc.length||dt.length)&&can('del')?'<button class="btn br" onclick="emptyBin()">Empty permanently</button>':'');
+  el.innerHTML=binHTML((document.getElementById('dsq')||{}).value||'');
+}
+function renderBin(){
+  var el=document.getElementById('tbin');if(!el)return;
+  el.innerHTML='<b style="font-size:12px">Deleted items</b>'+
+    '<div style="font-size:11px;color:#666;margin:5px 0 9px">Kept for '+PURGE_DAYS+
+    ' days. The full list also has its own <b>Deleted</b> tab in the menu.</div>'+binHTML('');
+}
+function revive(kind,id){
+  if(!guard('edit'))return;
+  if(kind==='c')reviveCase(id);else reviveTask(id);
+  renderDeleted();renderBin();
+}
+function reviveAll(){
+  if(!guard('edit'))return;
+  var n=0;
+  C.forEach(function(c){if(c.del){c.del='';c.delBy='';touch(c);n++;}});
+  T.forEach(function(t){if(t.del){t.del='';t.delBy='';touch(t);n++;}});
+  if(!n)return;
+  saveAll();logAct('Revived '+n+' deleted item(s)');toast(n+' item(s) revived.');
+  refresh();renderBin();if(S.jbKey)push();
+}
+function emptyBin(){
+  if(!guard('del'))return;
+  var n=C.filter(function(c){return c.del;}).length+T.filter(function(t){return t.del;}).length;
+  if(!n)return;
+  if(!confirm('Permanently remove '+n+' deleted item(s)?\n\nThis cannot be undone and they can no longer be revived.'))return;
+  C=C.filter(function(c){return !c.del;});T=T.filter(function(t){return !t.del;});
+  saveAll();logAct('Emptied the deleted list ('+n+' items)');toast('Removed permanently.');
+  refresh();renderBin();
+}
+function purgeItem(k,id){
+  if(!guard('del'))return;
+  var o=(k==='c'?C:T).find(function(x){return x.id===id;});
+  if(!o)return;
+  if(!confirm('Permanently delete "'+(k==='c'?ctit(o):o.desc)+'"?\n\nThis cannot be undone.'))return;
+  if(k==='c')C=C.filter(function(x){return x.id!==id;});else T=T.filter(function(x){return x.id!==id;});
+  saveAll();logAct('Permanently deleted an item');toast('Deleted permanently.');
+  refresh();renderBin();
+}
+function renderLog(){
+  var h='<b style="font-size:12px">Activity log</b><div style="font-size:11px;color:#666;margin:5px 0 9px">Last '+Math.min(L.length,200)+' actions.</div>';
+  if(!L.length)h+='<div style="color:#888;font-size:11px">Nothing recorded yet.</div>';
+  h+=L.slice(-200).reverse().map(function(x){
+    var d=new Date(x.ts);
+    return'<div class="hiitem"><b>'+he(x.by)+'</b> &mdash; '+he(x.act)+
+      '<div class="nby">'+fd(x.ts.slice(0,10))+' '+zz(d.getHours())+':'+zz(d.getMinutes())+'</div></div>';
+  }).join('');
+  document.getElementById('tlog').innerHTML=h;
+}
+function addU(){
+  if(!guard('set'))return;
+  euid=null;['aun','auu','aup'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('aur').value='user';
+  ['aundel','aunset','aunexp','auro'].forEach(function(id){document.getElementById(id).checked=false;});
+  openM('musr');
+}
+function editU(id){
+  if(!guard('set'))return;
+  var u=U.find(function(x){return x.id===id;});if(!u)return;euid=id;
+  document.getElementById('aun').value=u.name||'';document.getElementById('auu').value=u.username||'';
+  document.getElementById('aup').value='';document.getElementById('aur').value=u.role||'user';
+  document.getElementById('aundel').checked=!!u.noDel;document.getElementById('aunset').checked=!!u.noSet;
+  document.getElementById('aunexp').checked=!!u.noExp;document.getElementById('auro').checked=!!u.rOnly;
+  openM('musr');
+}
+function saveUsr(){
+  if(!guard('set'))return;
+  var name=val('aun'),uname=val('auu'),pass=document.getElementById('aup').value;
+  if(!name||!uname){toast('Name and username are required.','err');return;}
+  if(!euid&&!pass){toast('A password is required for a new user.','err');return;}
+  if(U.find(function(x){return (x.username||'').toLowerCase()===uname.toLowerCase()&&x.id!==euid;})){toast('That username already exists.','err');return;}
+  var d={name:name,username:uname,role:document.getElementById('aur').value,
+    noDel:document.getElementById('aundel').checked,noSet:document.getElementById('aunset').checked,
+    noExp:document.getElementById('aunexp').checked,rOnly:document.getElementById('auro').checked};
+  var done=function(){
+    if(euid){var t=U.find(function(x){return x.id===euid;});Object.assign(t,d);if(cu&&cu.id===euid)cu=t;}
+    else{d.id=uid();U.push(d);}
+    saveU();closeM('musr');toast('User saved.');logAct('Saved user '+uname);
+    renderSett();popMsgSel();
+    document.getElementById('navSett').style.display=can('set')?'':'none';
+  };
+  if(pass){hashPw(uname,pass).then(function(h){d.ph=h;d.password=undefined;done();});}
+  else{
+    if(euid){var ex=U.find(function(x){return x.id===euid;});if(ex&&ex.ph)d.ph=ex.ph;else if(ex)d.password=ex.password;}
+    done();
+  }
+}
+function delU(id){
+  if(!guard('set'))return;
+  if(cu&&cu.id===id){toast('You cannot delete the account you are signed in with.','err');return;}
+  if(!confirm('Delete this user?'))return;
+  U=U.filter(function(u){return u.id!==id;});saveU();toast('User deleted.');logAct('Deleted a user');renderSett();popMsgSel();
+}
+
+/* ---------- online sync ---------- */
+function renderST(){
+  document.getElementById('tsync').innerHTML='<b style="font-size:12px">Online sync via JSONBin.io</b>'+
+    '<div style="font-size:11px;color:#666;margin:6px 0">Optional. Create a free bin at <a href="https://jsonbin.io" target="_blank" style="color:#2980b9">jsonbin.io</a> and paste the details below to keep two machines in step. Edits and deletions now propagate both ways, newest change winning.</div>'+
+    '<div class="fgr"><div class="fg"><label>Master key</label><input id="jbk" type="password" value="'+he(S.jbKey||'')+'"></div>'+
+    '<div class="fg"><label>Bin ID</label><input id="jbb" value="'+he(S.jbBin||'')+'"></div></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">'+
+    '<button class="btn bg" onclick="saveSync()">Save config</button>'+
+    '<button class="btn bn" onclick="doSync()">&harr; Sync now</button>'+
+    '<button class="btn bo" onclick="push()">&uarr; Push</button>'+
+    '<button class="btn bo" onclick="pull(null)">&darr; Pull</button></div>'+
+    '<div id="sresult" style="margin-top:7px;font-size:10px;color:#666"></div>';
+}
+function saveSync(){
+  S.jbKey=val('jbk');S.jbBin=val('jbb');saveAll();
+  if(S.jbKey&&S.jbBin){startSync();push();toast('Sync configured.');}else toast('Sync cleared.');
+  renderST();
+}
+function setSR(m){var el=document.getElementById('sresult');if(el)el.textContent=m;}
+function startSync(){if(stmr)clearInterval(stmr);stmr=setInterval(function(){pull(function(){push();});},180000);}
+function doSync(){pull(function(){push();});}
+function push(){
+  if(!S.jbKey||!S.jbBin)return;
+  setSR('Pushing...');
+  fetch('https://api.jsonbin.io/v3/b/'+S.jbBin,{method:'PUT',
+    headers:{'Content-Type':'application/json','X-Master-Key':S.jbKey,'X-Bin-Versioning':'false'},
+    body:JSON.stringify({cases:C,tasks:T,msgs:M,upd:now()})})
+  .then(function(r){return r.json();})
+  .then(function(){setSR('Synced at '+new Date().toLocaleTimeString());})
+  .catch(function(e){setSR('Push error: '+e.message);});
+}
+function pull(cb){
+  if(!S.jbKey||!S.jbBin){if(cb)cb();return;}
+  setSR('Pulling...');
+  fetch('https://api.jsonbin.io/v3/b/'+S.jbBin+'/latest',{headers:{'X-Master-Key':S.jbKey}})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var rec=d.record;
+    if(rec&&rec.cases){
+      var res=mergeCases(rec.cases.map(normCase));
+      if(rec.tasks)mergeTasks(rec.tasks.map(normTask));
+      if(rec.msgs){
+        var ids={};M.forEach(function(m){ids[m.id]=1;});
+        rec.msgs.forEach(function(m){if(!ids[m.id])M.push(m);});
+      }
+      saveAll();
+      if(res.added||res.upd)toast(res.added+' new, '+res.upd+' updated from sync.');
+      refresh();
+      setSR('Synced at '+new Date().toLocaleTimeString());
+    }
+    if(cb)cb();
+  })
+  .catch(function(e){setSR('Pull error: '+e.message);if(cb)cb();});
+}
+
+/* ===========================================================
+   QUICK SEARCH (Ctrl+K)
+   =========================================================== */
+function openQS(){document.getElementById('qsbox').classList.add('open');var i=document.getElementById('qsinp');i.value='';i.focus();qsRun();}
+function closeQS(){document.getElementById('qsbox').classList.remove('open');}
+function qsRun(){
+  var q=(document.getElementById('qsinp').value||'').toLowerCase().trim();
+  qsSel=0;
+  qsHits=LC().filter(function(c){
+    if(!q)return false;
+    return [ctit(c),c.court,c.cn,c.cl,c.jd].join(' ').toLowerCase().indexOf(q)>=0;
+  }).slice(0,12);
+  var el=document.getElementById('qsres');
+  if(!q){el.innerHTML='<div class="qsitem" style="color:#888">Start typing to find a matter&hellip;</div>';return;}
+  el.innerHTML=qsHits.length?qsHits.map(function(c,i){
+    return'<div class="qsitem'+(i===0?' sel':'')+'" onclick="qsPick(\''+c.id+'\')">'+
+      '<b>'+he(ctit(c))+'</b><div class="mini">'+he(c.court||'')+(c.cn?' &middot; '+he(c.cn):'')+
+      ' &middot; Next: '+fd(c.nd)+'</div></div>';
+  }).join(''):'<div class="qsitem" style="color:#888">No match.</div>';
+}
+function qsKey(e){
+  if(e.key==='Escape'){closeQS();return;}
+  if(!qsHits.length)return;
+  if(e.key==='ArrowDown'){qsSel=Math.min(qsSel+1,qsHits.length-1);qsPaint();e.preventDefault();}
+  if(e.key==='ArrowUp'){qsSel=Math.max(qsSel-1,0);qsPaint();e.preventDefault();}
+  if(e.key==='Enter'){qsPick(qsHits[qsSel].id);e.preventDefault();}
+}
+function qsPaint(){
+  document.querySelectorAll('#qsres .qsitem').forEach(function(el,i){el.classList.toggle('sel',i===qsSel);});
+}
+function qsPick(id){closeQS();jumpCase(id);}
+
+/* ===========================================================
+   GLOBAL KEYS + BOOT
+   =========================================================== */
+document.addEventListener('keydown',function(e){
+  if(!cu)return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openQS();return;}
+  if(e.key==='Escape'){
+    document.querySelectorAll('.ov.open').forEach(function(o){o.classList.remove('open');});
+    closeQS();
+  }
+});
+document.querySelectorAll('.ov').forEach(function(o){
+  o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});
+});
+window.addEventListener('beforeunload',function(){if(cu)saveAll();});
+window.onload=function(){loadAll();document.getElementById('luser').focus();};
+</script>
+<script>
+/* ==================================================================
+   CHARPE SUITE — GOOGLE DRIVE SYNC (v2)            added 19 Sep 2026
+   Replaces the old JSONBin sync. Runs from the moment the page opens,
+   whether or not anyone has logged in. Every case, task, message, user
+   and log entry is compared with what was last synced; only changes
+   are sent, and the most recent edit of each record wins.
+   ================================================================== */
+var CS2={busy:false,soon:null,state:'',msg:''};
+function cs2Cfg(){try{return JSON.parse(localStorage.getItem('cs2_cfg')||'{}')||{};}catch(e){return {};}}
+function cs2SetCfg(c){localStorage.setItem('cs2_cfg',JSON.stringify(c));}
+function cs2Shadow(){try{return JSON.parse(localStorage.getItem('cs2_shadow')||'{}')||{};}catch(e){return {};}}
+function cs2H(r){
+  var o={};Object.keys(r).sort().forEach(function(k){if(k!=='mod'&&k!=='_srv'&&k!=='_dev')o[k]=r[k];});
+  var s=JSON.stringify(o),h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return (h>>>0).toString(36)+'.'+s.length;
+}
+var CS2_SKIP_S=['jbKey','jbBin','lastDiag','lastBackup'];
+var CS2_COLS=[
+  {col:'cases',get:function(){return C;},set:function(a){C=a.map(normCase);}},
+  {col:'tasks',get:function(){return T;},set:function(a){T=a.map(normTask);}},
+  {col:'msgs', get:function(){return M;},set:function(a){M=a;}},
+  {col:'users',get:function(){return U;},set:function(a){if(a.length)U=a;},users:true},
+  {col:'log',  get:function(){return L;},set:function(a){L=a.sort(function(x,y){return String(x.ts)<String(y.ts)?-1:1;}).slice(-600);},noTomb:true},
+  {col:'settings',noTomb:true,
+   get:function(){var o={id:'main'};Object.keys(S).forEach(function(k){if(CS2_SKIP_S.indexOf(k)<0)o[k]=S[k];});return [o];},
+   set:function(a){var r=a[0];if(!r)return;var n={};Object.keys(r).forEach(function(k){if(['id','mod','_srv','_dev'].indexOf(k)<0&&CS2_SKIP_S.indexOf(k)<0)n[k]=r[k];});
+     CS2_SKIP_S.forEach(function(k){if(S[k]!==undefined&&k!=='jbKey'&&k!=='jbBin')n[k]=S[k];});S=n;}}
+];
+function cs2Post(cfg,body){
+  body.token=cfg.token;body.device=cfg.device||'';
+  return fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),redirect:'follow'})
+    .then(function(r){return r.json();})
+    .then(function(j){if(!j||!j.ok)throw new Error((j&&j.error)||'Server did not answer');return j;});
+}
+function cs2Fmt(iso){if(!iso)return '';var d=new Date(iso),mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate()+' '+mo[d.getMonth()]+' '+zz(d.getHours())+':'+zz(d.getMinutes());}
+function cs2Show(state,msg){
+  CS2.state=state;CS2.msg=msg||'';var cfg=cs2Cfg(),el=document.getElementById('cs2lbl'),t,col='#9ab';
+  if(state==='off'){t='&#9729; Drive sync: not set up';col='#e8c96a';}
+  else if(state==='busy'){t='&#10227; Syncing&hellip;';col='#7af';}
+  else if(state==='offline'){t='&#9729; Offline &mdash; will sync when connected'+(cfg.lastOk?' (last '+cs2Fmt(cfg.lastOk)+')':'');col='#fa7';}
+  else if(state==='err'){t='&#9888; Sync problem'+(cfg.lastOk?' (last synced '+cs2Fmt(cfg.lastOk)+')':'');col='#f77';}
+  else {t='&#9729; Last synced '+cs2Fmt(cfg.lastOk);col='#7d7';}
+  if(el){el.innerHTML=t;el.style.color=col;}
+  var st=document.getElementById('cs2st');if(st)st.innerHTML=t+(CS2.msg?'<br><span style="color:#c0392b">'+he(CS2.msg)+'</span>':'');
+}
+function cs2Click(){if(cu&&can('set')){go('sett');toast('Drive sync is under Settings \u2192 Sync.');}else if(CS2.msg)toast(CS2.msg,'err');}
+function cs2Soon(){clearTimeout(CS2.soon);CS2.soon=setTimeout(cs2Cycle,4000);}
+function cs2Cycle(){
+  var cfg=cs2Cfg();
+  if(!cfg.url||!cfg.token){cs2Show('off');return Promise.resolve();}
+  if(!navigator.onLine){cs2Show('offline');return Promise.resolve();}
+  if(CS2.busy)return Promise.resolve();
+  CS2.busy=true;cs2Show('busy');
+  var sh=cs2Shadow(),changes={},pushedH={},pushed={},now0=new Date().toISOString();
+  /* a brand-new device (nothing stored here yet) first takes everything from Drive
+     and sends nothing, so its blank defaults can never overwrite the real data */
+  var fresh=!cfg.since&&!(C&&C.length);
+  if(!fresh)CS2_COLS.forEach(function(d){
+    var s=sh[d.col]||{},out=[],seen={};
+    (d.get()||[]).forEach(function(r){
+      if(!r||r.id===undefined||r.id===null)return;
+      var id=String(r.id),h=cs2H(r),old=s[id];seen[id]=1;
+      if(!old||old.h!==h){
+        var rec=JSON.parse(JSON.stringify(r));
+        if(!rec.mod||(old&&String(rec.mod)<=String(old.m||'')))rec.mod=now0;
+        out.push(rec);pushedH[d.col+'|'+id]=h;
+      }
+    });
+    if(!d.noTomb)Object.keys(s).forEach(function(id){if(!seen[id]&&!s[id].gone)out.push({id:id,_gone:true,mod:now0});});
+    if(out.length){changes[d.col]=out;pushed[d.col]=out;}
+  });
+  var np=Object.keys(changes).length;
+  var step=np?cs2Post(cfg,{action:'push',changes:changes}):Promise.resolve(null);
+  return step.then(function(){
+    Object.keys(pushed).forEach(function(col){
+      var s=sh[col]=sh[col]||{};
+      pushed[col].forEach(function(r){s[String(r.id)]=r._gone?{gone:true}:{h:pushedH[col+'|'+r.id],m:r.mod};});
+    });
+    localStorage.setItem('cs2_shadow',JSON.stringify(sh));
+    if(document.querySelector('.ov.open'))return 'deferred';      /* a form is open: bring in others' changes later */
+    return cs2Post(cfg,{action:'pull',since:cfg.since||''}).then(function(res){
+      var got=0;
+      CS2_COLS.forEach(function(d){
+        var inc=res.changes&&res.changes[d.col];if(!inc||!inc.length)return;
+        var s=sh[d.col]=sh[d.col]||{},arr=fresh?[]:(d.get()||[]).slice(),idx={},touched=[];
+        arr.forEach(function(r,i){if(r&&r.id!==undefined)idx[String(r.id)]=i;});
+        inc.forEach(function(r){
+          var id=String(r.id),li=idx[id],local=li!==undefined?arr[li]:null;
+          if(local&&!fresh){var lh=cs2H(local),s0=s[id];if((!s0||lh!==s0.h)&&pushedH[d.col+'|'+id]!==lh)return;}  /* edited here meanwhile: keep, send next round */
+          if(r._gone){if(li!==undefined)arr[li]=null;s[id]={gone:true};got++;return;}
+          var clean=JSON.parse(JSON.stringify(r));delete clean._srv;delete clean._dev;
+          if(li!==undefined)arr[li]=clean;else{idx[id]=arr.length;arr.push(clean);}
+          touched.push(id);got++;
+        });
+        d.set(arr.filter(function(x){return x;}));
+        var byId={};(d.get()||[]).forEach(function(r){if(r&&r.id!==undefined)byId[String(r.id)]=r;});
+        touched.forEach(function(id){var r=byId[id];if(r)s[id]={h:cs2H(r),m:r.mod||''};});
+      });
+      localStorage.setItem('cs2_shadow',JSON.stringify(sh));
+      if(got){CS2.applying=true;try{cs2SaveRaw();saveU();}finally{CS2.applying=false;}if(cu)refresh();}
+      cfg=cs2Cfg();cfg.since=res.time;cfg.lastOk=new Date().toISOString();cfg.lastErr='';
+      if(res.lastFetch)cfg.lastFetch=res.lastFetch;cs2SetCfg(cfg);
+      return got;
+    });
+  }).then(function(r){CS2.busy=false;if(r==='deferred'){var c=cs2Cfg();c.lastOk=new Date().toISOString();cs2SetCfg(c);}cs2Show('ok');})
+    .catch(function(e){CS2.busy=false;var c=cs2Cfg();c.lastErr=String(e.message||e);cs2SetCfg(c);
+      cs2Show(navigator.onLine?'err':'offline',c.lastErr);});
+}
+/* the tool's own save, plus a sync a few seconds later */
+var cs2SaveRaw=saveAll;
+saveAll=function(){cs2SaveRaw.apply(this,arguments);if(!CS2.applying)cs2Soon();};
+var cs2SaveURaw=saveU;
+saveU=function(){cs2SaveURaw.apply(this,arguments);if(!CS2.applying)cs2Soon();};
+
+/* the old JSONBin sync is switched off */
+function startSync(){}
+function push(){}
+function pull(cb){if(cb)cb();}
+function doSync(){cs2Cycle();}
+function saveSync(){cs2SaveCfg();}
+
+function renderST(){
+  var c=cs2Cfg();
+  document.getElementById('tsync').innerHTML='<b style="font-size:12px">Google Drive sync</b>'+
+    '<div style="font-size:11px;color:#666;margin:6px 0">Keeps this computer, the other office computers and the phone app in step through your Google Drive. '+
+    'Changes are saved here first and sent as soon as there is internet, whether or not anyone is logged in.</div>'+
+    '<div class="fg"><label>Backend web address (ends in /exec)</label><input id="cs2url" value="'+he(c.url||'')+'" placeholder="https://script.google.com/macros/s/.../exec"></div>'+
+    '<div class="fgr"><div class="fg"><label>Sync password (the SECRET in the script)</label><input id="cs2tok" type="password" value="'+he(c.token||'')+'"></div>'+
+    '<div class="fg"><label>Name of this device</label><input id="cs2dev" value="'+he(c.device||'')+'" placeholder="e.g. Master desktop, Laptop"></div></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">'+
+    '<button class="btn bg" onclick="cs2SaveCfg()">Save and sync now</button>'+
+    '<button class="btn bn" onclick="cs2Cycle()">&harr; Sync now</button></div>'+
+    '<div id="cs2st" style="margin-top:9px;font-size:11px;color:#444"></div>'+
+    (c.lastFetch?'<div style="margin-top:5px;font-size:10px;color:#666">Last eCourtsIndia run: '+he(c.lastFetch)+'</div>':'');
+  cs2Show(CS2.state||'ok',c.lastErr||'');
+}
+function cs2SaveCfg(){
+  var c=cs2Cfg(),u=val('cs2url').trim(),t=val('cs2tok'),d=val('cs2dev').trim();
+  if(u&&!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){toast('That address does not look right. It should start with https://script.google.com/macros/s/ and end with /exec','err');return;}
+  if(u!==c.url){c.since='';localStorage.removeItem('cs2_shadow');}   /* new backend: send everything once */
+  c.url=u;c.token=t;c.device=d||'This computer';cs2SetCfg(c);
+  toast(u?'Saved. Syncing now\u2026':'Drive sync switched off.');renderST();
+  if(u)cs2Cycle().then(function(){renderST();});
+}
+function cs2Start(){
+  try{var o=localStorage.getItem('__charpe_sync_cfg');if(o){var j=JSON.parse(o);if(j&&j.url){localStorage.setItem('__charpe_sync_cfg_old',o);j.url='';j.auto=false;localStorage.setItem('__charpe_sync_cfg',JSON.stringify(j));}}}catch(e){}
+  if(S&&S.jbKey){S.jbKey='';S.jbBin='';cs2SaveRaw();}
+  cs2Cycle();
+  setInterval(cs2Cycle,60000);
+  window.addEventListener('online',function(){cs2Cycle();});
+  window.addEventListener('offline',function(){cs2Show('offline');});
+}
+
+/* ---------- eCourtsIndia on each case ---------- */
+function cs2EciHTML(c){
+  var e=c.eci;if(!e||!e.at)return '';
+  var id=c.id,h;
+  if(e.err)h='<span style="color:#c0392b">check failed: '+he(e.err)+'</span>';
+  else if(e.conflict)h='<span style="color:#c0392b;font-weight:600">&#9888; Court shows '+fd(e.conflict)+', saved '+fd(c.nd)+'.</span> '+
+    '<a href="#" onclick="event.stopPropagation();cs2AcceptCourt(\''+id+'\');return false">Use court date</a> &middot; '+
+    '<a href="#" onclick="event.stopPropagation();cs2KeepMine(\''+id+'\');return false">Keep mine</a>';
+  else if(e.stale)h='<span style="color:#8a6d3b">&#9203; court record not updated yet'+(e.apiNext?' (still shows '+fd(e.apiNext)+')':'')+' &mdash; your date kept</span>';
+  else h='<span style="color:#2e7d32">&#10003; matches the court record</span>';
+  if(e.disposedFlag)h+=' <span style="color:#d35400;font-weight:600">&middot; court shows &ldquo;'+he(e.status)+'&rdquo; &mdash; please confirm</span>';
+  var got=e.got||{},ofs=Object.keys(got).filter(function(k){return !got[k].skipped;}).sort(function(a,b){return String(got[b].date||'')<String(got[a].date||'')?-1:1;}),ox='';
+  if(ofs.length){
+    h+=' &middot; <a href="#" onclick="event.stopPropagation();togEl(\'eco_'+id+'\');return false">Orders ('+ofs.length+')</a>';
+    ox='<div id="eco_'+id+'" style="display:none;margin-top:5px;border-top:1px solid #eee;padding-top:5px;max-height:260px;overflow:auto">'+
+      ofs.map(function(f){var g=got[f];
+        return '<div class="hiitem" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b>'+(g.date?fd(g.date):'(no date)')+'</b> '+he(g.type||'Order')+
+          (g.textId?' <button class="btn bo" style="font-size:9px;padding:2px 6px" onclick="event.stopPropagation();cs2OrderText(\''+id+'\',\''+he(f)+'\')">Read</button>':'')+
+          ' <button class="btn bo" style="font-size:9px;padding:2px 6px" onclick="event.stopPropagation();cs2OrderPdf(\''+id+'\',\''+he(f)+'\')">'+(g.pdfId?'PDF':'Get PDF (&#8377;3.75)')+'</button></div>';
+      }).join('')+
+      (e.ordersFolder?'<div style="margin-top:4px"><a href="'+he(e.ordersFolder)+'" target="_blank" onclick="event.stopPropagation()">Open the folder in Drive</a></div>':'')+'</div>';
+  } else if(e.ordersFolder) h+=' &middot; <span style="color:#888">no orders uploaded yet</span>';
+  var hh=e.hh||[],hx='';
+  if(hh.length){
+    h+=' &middot; <a href="#" onclick="event.stopPropagation();togEl(\'ech_'+id+'\');return false">Court history ('+hh.length+')</a>';
+    hx='<div id="ech_'+id+'" style="display:none;margin-top:5px;border-top:1px solid #eee;padding-top:5px;max-height:260px;overflow:auto">'+
+      hh.slice().reverse().map(function(x){return '<div class="hiitem"><b>'+(x.d?fd(x.d):'(no date)')+'</b> &mdash; '+he(x.t)+'</div>';}).join('')+
+      (e.histFile?'<div style="margin-top:4px"><a href="'+he(e.histFile)+'" target="_blank" onclick="event.stopPropagation()">Open as a file in Drive</a></div>':'')+'</div>';
+  }
+  return '<div style="font-size:10px;margin-top:3px;font-weight:400">eCourts '+cs2Fmt(e.at)+': '+h+ox+hx+'</div>';
+}
+function cs2FetchCase(id){
+  var c=find(id),cfg=cs2Cfg();if(!c)return;
+  if(!cfg.url||!cfg.token){toast('Set up Drive sync first: Settings \u2192 Online sync.','err');return;}
+  if(!navigator.onLine){toast('No internet connection right now.','err');return;}
+  toast('Checking the court record for '+ctit(c)+'\u2026');
+  var wait=function(){return CS2.busy?new Promise(function(r){setTimeout(r,1500);}).then(wait):Promise.resolve();};
+  wait().then(function(){return cs2Cycle();})                 /* make sure Drive has this case first */
+    .then(function(){return cs2Post(cs2Cfg(),{action:'fetchCase',cnr:c.cnr});})
+    .then(function(r){toast(r.msg||'Checked.');return wait().then(function(){return cs2Cycle();});})
+    .catch(function(e){toast('Could not check: '+(e.message||e),'err');});
+}
+function cs2AcceptCourt(id){
+  var c=find(id);if(!c||!c.eci||!c.eci.conflict)return;if(!guard('edit'))return;
+  var nd=c.eci.conflict;
+  c.hist=c.hist||[];
+  c.hist.push({dt:td(),pd:c.pd,ps:c.ps,nd:c.nd,ns:c.ns,note:'Next date changed from '+fd(c.nd)+' to the court record date '+fd(nd),by:cu?cu.name:''});
+  c.nd=nd;delete c.eci.conflict;delete c.eci.keptFor;touch(c);saveAll();refresh();
+  toast('Next date set to '+fd(nd)+'.');
+}
+function cs2KeepMine(id){
+  var c=find(id);if(!c||!c.eci)return;if(!guard('edit'))return;
+  c.eci.keptFor=c.eci.conflict;delete c.eci.conflict;touch(c);saveAll();refresh();
+  toast('Kept your date. The same court date will not be flagged again.');
+}
+
+/* ---------- reading an order inside the app ---------- */
+function cs2Viewer(title,bodyHTML){
+  var old=document.getElementById('cs2view');if(old)old.remove();
+  var d=document.createElement('div');d.id='cs2view';
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px';
+  d.innerHTML='<div style="background:#fff;border-radius:8px;width:min(960px,100%);height:min(92vh,100%);display:flex;flex-direction:column;overflow:hidden">'+
+    '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #ddd;background:#1b2a4a;color:#fff">'+
+    '<b style="flex:1;font-size:13px">'+title+'</b><span id="cs2vacts"></span>'+
+    '<button class="btn bo" style="font-size:11px" onclick="cs2CloseViewer()">&#10005; Close</button></div>'+
+    '<div id="cs2vbody" style="flex:1;overflow:auto">'+bodyHTML+'</div></div>';
+  d.addEventListener('click',function(ev){if(ev.target===d)cs2CloseViewer();});
+  document.body.appendChild(d);
+}
+function cs2CloseViewer(){var d=document.getElementById('cs2view');if(d){var f=d.querySelector('iframe');if(f&&f.dataset.url)URL.revokeObjectURL(f.dataset.url);d.remove();}}
+function cs2OrderMeta(id,file){var c=find(id);return c&&c.eci&&c.eci.got?{c:c,g:c.eci.got[file]||{}}:null;}
+function cs2OrderText(id,file){
+  var m=cs2OrderMeta(id,file);if(!m)return;
+  var ttl=he(ctit(m.c))+' &mdash; '+(m.g.date?fd(m.g.date):'')+' '+he(m.g.type||'Order');
+  cs2Viewer(ttl,'<div style="padding:30px;text-align:center;color:#666">Loading the order&hellip;</div>');
+  cs2Post(cs2Cfg(),{action:'orderText',cnr:m.c.cnr,file:file}).then(function(r){
+    var b=document.getElementById('cs2vbody');if(!b)return;
+    b.innerHTML='<pre style="white-space:pre-wrap;font:13px/1.55 Georgia,serif;padding:18px 22px;margin:0">'+he(r.text||'')+'</pre>';
+    var blob=new Blob([r.text||''],{type:'text/plain'}),u=URL.createObjectURL(blob);
+    document.getElementById('cs2vacts').innerHTML='<a class="btn bo" style="font-size:11px" href="'+u+'" download="'+he((m.g.date||'order')+' '+(m.g.type||'Order'))+'.txt">&#8595; Download text</a> '+
+      '<button class="btn bo" style="font-size:11px" onclick="cs2CloseViewer();cs2OrderPdf(\''+id+'\',\''+he(file)+'\')">PDF</button>';
+  }).catch(function(e){var b=document.getElementById('cs2vbody');if(b)b.innerHTML='<div style="padding:30px;color:#c0392b">'+he(e.message||e)+'</div>';});
+}
+function cs2OrderPdf(id,file){
+  var m=cs2OrderMeta(id,file);if(!m)return;
+  if(!m.g.pdfId&&!confirm('The PDF of this order has not been downloaded yet.\n\nGetting the certified copy from eCourtsIndia costs \u20B93.75. It will then be kept in Drive for everyone.\n\nGet it now?'))return;
+  var ttl=he(ctit(m.c))+' &mdash; '+(m.g.date?fd(m.g.date):'')+' '+he(m.g.type||'Order');
+  cs2Viewer(ttl,'<div style="padding:30px;text-align:center;color:#666">Loading the PDF&hellip;</div>');
+  cs2Post(cs2Cfg(),{action:'orderPdf',cnr:m.c.cnr,file:file}).then(function(r){
+    var bin=atob(r.b64||''),arr=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    var u=URL.createObjectURL(new Blob([arr],{type:'application/pdf'}));
+    var b=document.getElementById('cs2vbody');if(!b){URL.revokeObjectURL(u);return;}
+    b.innerHTML='<iframe data-url="'+u+'" src="'+u+'" style="width:100%;height:100%;border:0"></iframe>';
+    document.getElementById('cs2vacts').innerHTML='<a class="btn bg" style="font-size:11px" href="'+u+'" download="'+he(r.name||'order.pdf')+'">&#8595; Download PDF</a>';
+    if(!m.g.pdfId)setTimeout(cs2Cycle,3000);            /* bring the new PDF link to this computer */
+  }).catch(function(e){var b=document.getElementById('cs2vbody');if(b)b.innerHTML='<div style="padding:30px;color:#c0392b">'+he(e.message||e)+'</div>';});
+}
+window.addEventListener('load',function(){setTimeout(cs2Start,1500);});
+</script>
+<script src="assets/shim.js"></script>
+</body>
+</html>

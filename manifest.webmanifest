@@ -1,0 +1,46 @@
+{
+  "name": "Charpe Suite — Cases & Billing",
+  "short_name": "Charpe Suite",
+  "description": "Case management and professional billing for the chambers of Adv. Sanket R. Charpe. Works offline; data stays on the device unless you sync it to your own Google Drive folder.",
+  "id": "/charpe-suite/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#eef0f4",
+  "theme_color": "#151d2b",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "finance"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icon-mono-96.png", "sizes": "96x96", "type": "image/png", "purpose": "monochrome" }
+  ],
+  "shortcuts": [
+    {
+      "name": "New invoice",
+      "short_name": "Invoice",
+      "description": "Start a fresh bill",
+      "url": "./index.html#billing",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Today's board",
+      "short_name": "Today",
+      "description": "Cases listed today",
+      "url": "./index.html#cases",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sync to Drive",
+      "short_name": "Sync",
+      "description": "Push this device's data to Drive",
+      "url": "./index.html#sync",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
