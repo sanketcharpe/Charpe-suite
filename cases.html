@@ -211,6 +211,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
     <button data-page="sett" onclick="go('sett')" id="navSett">Settings</button>
   </nav>
   <div class="hright">
+    <button class="btn bo" id="ecoHdr" onclick="ecoOpenBatch()" title="Fetch next dates and orders from the official eCourts site" style="padding:3px 8px">&#9878; eCourts</button>
     <button class="btn bo" onclick="openQS()" title="Ctrl+K" style="padding:3px 8px">&#128269; Search</button>
     <span id="slbl" style="font-size:9px;color:#9ab">&#9679; Saved</span> <span id="cs2lbl" onclick="cs2Click()" title="Google Drive sync" style="font-size:10px;color:#9ab;cursor:pointer;margin-left:8px">&#9729; Drive sync</span>
     <span class="ubadge" id="ubdg">Admin</span>
@@ -467,6 +468,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
         <button class="tbt" onclick="stab(this,'tu')">Users</button>
         <button class="tbt" onclick="stab(this,'tfirm')">Letterhead</button>
         <button class="tbt" onclick="stab(this,'tsync')">Online sync</button>
+        <button class="tbt" id="tbEcs" onclick="stab(this,'tecs');renderECS()">Official eCourts</button>
         <button class="tbt" onclick="stab(this,'tbin')">Deleted items</button>
         <button class="tbt" onclick="stab(this,'tlog')">Activity log</button>
       </div>
@@ -475,6 +477,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
       <div id="tu" class="tp"></div>
       <div id="tfirm" class="tp"></div>
       <div id="tsync" class="tp"></div>
+      <div id="tecs" class="tp"></div>
       <div id="tbin" class="tp"></div>
       <div id="tlog" class="tp"></div>
     </div>
@@ -789,7 +792,7 @@ function fallbackHash(s){
 /* ---------- normalisation ---------- */
 function normCase(c){
   c=c||{};
-  var o=normCase0(c);if(c.eci)o.eci=c.eci;return o;
+  var o=normCase0(c);if(c.eci)o.eci=c.eci;if(c.eco)o.eco=c.eco;return o;
 }
 function normCase0(c){
   return{
@@ -1008,7 +1011,7 @@ function bldRow(c,ctxDate){
   var ndBdg=c.nd?(late?'<span class="ovbdg">Overdue: '+fd(c.nd)+' &middot; '+daysLate(c.nd)+'d</span>':'<span class="dbdg">Next: '+fd(c.nd)+'</span>')
                 : '<span class="ndbdg">No next date</span>';
   var pdBdg=c.pd?'<span class="pbdg">Prev: '+fd(c.pd)+'</span>':'';
-  var eciH=(typeof cs2EciHTML==='function')?cs2EciHTML(c):'';
+  var eciH=((typeof cs2EciHTML==='function')?cs2EciHTML(c):'')+((typeof ecoHTML==='function')?ecoHTML(c):'');
   var tasks=LT().filter(function(x){return x.cid===c.id&&!x.done;});
   var jump=timeline(c).map(function(x){
     return '<button class="btn bo" style="font-size:9px;padding:2px 5px" onclick="event.stopPropagation();selDay(\''+x.d+'\')" title="Open the board for this date">'+fd(x.d)+'</button>';
@@ -1027,6 +1030,7 @@ function bldRow(c,ctxDate){
   if(c.notes&&c.notes.length>1)acts+='<button class="btn bo" onclick="event.stopPropagation();togEl(\'on_'+c.id+'\')">Prev notes</button>';
   if(c.hist&&c.hist.length)acts+='<button class="btn bo" onclick="event.stopPropagation();togEl(\'hi_'+c.id+'\')">History</button>';
   acts+='<button class="btn bo" onclick="event.stopPropagation();prtC(\''+c.id+'\')">Print</button>';
+  if(typeof ecoOk==='function'&&ecoOk(c))acts+='<button class="btn bg" onclick="event.stopPropagation();ecoOpenBatch([\''+c.id+'\'])" title="Fetch next date and orders from the official eCourts site (one CAPTCHA)">&#9878; Official eCourts</button>';
   if(c.cnr&&typeof cs2FetchCase==='function')acts+='<button class="btn bn" onclick="event.stopPropagation();cs2FetchCase(\''+c.id+'\')" title="Check this case on eCourtsIndia now">&#8635; Fetch from court</button>';
   if(can('del'))acts+='<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')">Delete</button>';
 
@@ -2034,7 +2038,7 @@ function showRangeReport(){
 /* ===========================================================
    SETTINGS
    =========================================================== */
-function renderSett(){renderBT();renderDT();renderUT();renderFT();renderST();renderBin();renderLog();}
+function renderSett(){renderBT();renderDT();renderUT();renderFT();renderST();renderBin();renderLog();if(typeof renderECS==='function')renderECS();}
 function renderBT(){
   document.getElementById('tbk').innerHTML=
     '<div style="background:#eafaf1;border:1px solid #b0e8c0;border-radius:6px;padding:12px;margin-bottom:10px">'+
@@ -3158,6 +3162,7 @@ function cs2OrderPdf(id,file){
 }
 window.addEventListener('load',function(){setTimeout(cs2Start,1500);});
 </script>
+<script src="assets/ecourts.js"></script>
 <script src="assets/shim.js"></script>
 </body>
 </html>
