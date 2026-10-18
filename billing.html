@@ -333,6 +333,119 @@ table.list tr:hover td{background:#f8fafc}
   }
   .inv-table thead th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+/* ---- module 5: screen only ---- */
+.m5-ov{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:400;display:grid;place-items:start center;padding:6vh 14px;overflow:auto}
+.m5-dlg{background:#fff;border-radius:12px;width:100%;max-width:520px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.m5-dlg.wide{max-width:880px}
+.m5-dh{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--line-soft)}
+.m5-dh strong{font-size:15px}
+.m5-db{padding:14px 16px 18px}
+.m5-q{width:100%}
+.m5-res{margin-top:10px;max-height:58vh;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.m5-row{display:grid;grid-template-columns:110px 92px 1fr 110px;gap:10px;align-items:start;text-align:left;
+  background:#fff;border:1px solid var(--line-soft);border-radius:8px;padding:9px 10px;cursor:pointer;font:inherit;font-size:13px;color:var(--ink)}
+.m5-row:hover,.m5-row:focus{border-color:var(--accent);background:#f5f8ff;outline:none}
+.m5-rn{font-weight:700}.m5-rd{color:var(--ink-3)}.m5-ra{text-align:right;font-variant-numeric:tabular-nums}
+.m5-rt{color:var(--ink-2);line-height:1.35}
+.m5-tag{font-size:9.5px;font-weight:700;color:#7a5200;background:#fff3cd;border:1px solid #f0d58a;border-radius:4px;padding:1px 4px;vertical-align:middle}
+.m5-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.m5-big{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;padding:14px;border:1.5px solid var(--line);
+  border-radius:10px;background:#fff;cursor:pointer;font:inherit;color:var(--ink)}
+.m5-big b{font-size:15px}.m5-big span{font-size:12px;color:var(--ink-3)}
+.m5-big:hover:not([disabled]){border-color:var(--accent);background:#f5f8ff}
+.m5-big[disabled]{opacity:.5;cursor:not-allowed}
+.m5-busy{display:flex;align-items:center;gap:10px;font-size:14px}
+.m5-spin{width:18px;height:18px;border:2.5px solid #d5dbe4;border-top-color:var(--accent);border-radius:50%;animation:m5spin .8s linear infinite}
+@keyframes m5spin{to{transform:rotate(360deg)}}
+@media(max-width:560px){.m5-two{grid-template-columns:1fr}.m5-row{grid-template-columns:1fr 1fr}.m5-rt{grid-column:1/-1}}
+
+/* invoice page */
+#m5-startrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-2px 0 12px}
+#m5-startrow select{max-width:300px}
+.m5-carry{background:#fff8e1;border:1px solid #f1d78b;color:#5c4400;border-radius:8px;padding:9px 11px;font-size:12.5px;line-height:1.5;margin-bottom:12px}
+.m5-tentative input:not([type=checkbox]):not([type=file]),.m5-tentative textarea{background:#fffbea;color:#6a5a2a}
+.m5-lastbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#ecf7ef;border:1px solid #bfe3c8;color:#14532d;
+  border-radius:8px;padding:8px 10px;font-size:12.5px;margin-bottom:12px}
+.m5-lastbar .btn{background:#fff}
+.m5-editing{color:#8a4b00;font-weight:600}
+#edit-flag b{color:var(--ink)}
+
+/* letters */
+.m5-lgrid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:1180px){.m5-lgrid{grid-template-columns:1fr}}
+.m5-side{position:sticky;top:12px}
+.m5-side .btnbar{margin-top:10px}
+.m5-side label{margin-top:12px}
+#m5-status{font-size:12.5px;line-height:1.5;background:#f4f6f9;border-radius:8px;padding:9px 10px;margin-top:12px}
+#m5-dirty{color:#b45309;font-size:12px;font-weight:600;min-height:16px;margin-top:6px}
+.m5-tools{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:12px}
+.m5-tools select{width:auto;padding:5px 6px;font-size:12.5px}
+.m5-tools .btn{min-width:32px;justify-content:center}
+.m5-tools .btn.on{background:#e8effd;border-color:var(--accent);color:var(--accent)}
+.m5-tools .sep{width:1px;height:24px;background:var(--line);margin:0 2px}
+.m5-tools svg{width:16px;height:16px;display:block}
+.m5-pagewrap{overflow:auto;padding:4px 0 24px}
+#m5-page{box-shadow:0 1px 3px rgba(16,24,40,.10),0 12px 34px rgba(16,24,40,.13)}
+#m5-body,#m5-encl{cursor:text}
+#m5-body:focus,#m5-encl:focus{outline:2px dashed #c7d6f5;outline-offset:6px}
+#m5-body .is-empty::before,#m5-encl li.is-empty::before{content:attr(data-ph);color:#9aa3ad;font-style:italic;pointer-events:none}
+#m5-encl li.is-empty::before{content:"Type an enclosure \2014  Enter adds the next"}
+.lt-nonum{color:#9aa3ad;font-size:10.5pt;font-style:italic}
+.lt-keep{display:none;position:absolute;right:100%;top:50%;transform:translate(-8px,-50%);white-space:nowrap;
+  font:600 11px system-ui,sans-serif;background:#1d2733;color:#fff;border:0;border-radius:6px;padding:5px 9px;cursor:pointer;z-index:5;
+  box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.lt-dopt:hover .lt-keep{display:block}
+.lt-dopt:hover{background:#eef3fd;border-radius:3px}
+.lt-both{font:12px system-ui,sans-serif;color:var(--accent);background:none;border:0;cursor:pointer;padding:2px 0;text-decoration:underline}
+.m5-regtabs{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.m5-regtabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+tr.m5-open td{background:#f5f8ff}
+.m5-del{color:var(--danger)}
+.m5-sigpaper{display:inline-block;padding:10px 18px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-top:8px}
+.m5-sigpaper img{height:64px;display:block}
+@media print{.m5-ov,.m5-tools,.m5-side{display:none !important}}
+</style>
+<style id="m5-lt-css">
+/* ---- the letter page: shared by the screen and the printed PDF ---- */
+.lt-sheet{font-family:Georgia,"Times New Roman",serif;color:#000;font-size:14pt;line-height:1.5}
+.lt-sheet *{box-sizing:border-box}
+.lt-page{width:210mm;min-height:297mm;background:#fff;padding:12.7mm 25.4mm 25.4mm 38.1mm;
+  display:flex;flex-direction:column;position:relative;margin:0 auto}
+.lt-head{display:flex;gap:6mm;align-items:flex-start;margin-left:-25.4mm;margin-right:-12.7mm}
+.lt-logo{width:26mm;height:26mm;flex:0 0 26mm;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.lt-logo img,.lt-logo svg{max-width:100%;max-height:100%;width:auto;height:auto}
+.lt-logo svg{width:100%;height:100%}
+.lt-firm{flex:1;padding-top:1mm;line-height:1.45}
+.lt-firm h1{margin:0 0 1.2mm;font-size:15pt;font-weight:700;line-height:1.2}
+.lt-firm p{margin:0;font-size:8.2pt}
+.lt-rule{border-top:1px solid #c9ced6;margin:4mm -12.7mm 0 -25.4mm;height:0}
+.lt-meta{display:flex;justify-content:space-between;align-items:baseline;margin:6mm 0 6mm;font-size:13pt;line-height:1.3}
+.lt-flow{display:block}
+.va-center .lt-flow{margin-top:auto;margin-bottom:auto}
+.va-bottom .lt-flow{margin-top:auto}
+.lt-body{white-space:pre-wrap;tab-size:12.7mm;-moz-tab-size:12.7mm;outline:none;word-wrap:break-word;overflow-wrap:break-word}
+.lt-body p,.lt-body div{margin:0 0 3mm;text-align:justify;text-justify:inter-word}
+.lt-body .lt-addr{margin:0;text-align:left}
+.lt-body .lt-addr + p:not(.lt-addr){margin-top:5mm}
+.lt-body .lt-subj{margin:0 0 5mm;text-align:left;font-weight:700}
+.lt-body .lt-sal{margin:0 0 3mm;text-align:left}
+.lt-body .lt-para{text-indent:12.7mm;text-align:justify}
+.lt-body .lt-head{text-align:center;font-weight:700;text-decoration:underline;margin:4mm 0 3mm}
+.lt-body .lt-quote{margin:0 12.7mm 3mm;font-size:12.5pt;line-height:1.4;text-align:justify}
+.lt-body ul,.lt-body ol{margin:0 0 3mm;padding-left:10mm}
+.lt-close{margin-top:5mm;break-inside:avoid;page-break-inside:avoid}
+.lt-thank{text-align:center}
+.lt-yours{width:78mm;margin-left:auto;margin-top:3mm;text-align:center;line-height:1.4}
+.lt-sigspace{height:20mm;position:relative}
+.lt-sigspace img{position:absolute;left:50%;bottom:0.5mm;transform:translateX(-50%);height:22mm;width:auto;max-width:60mm}
+.lt-name{font-weight:700}
+.lt-desig{line-height:1.35}
+.lt-dopt{position:relative;display:inline}
+.lt-encl{margin-top:7mm;font-size:13pt;line-height:1.45;break-inside:avoid;page-break-inside:avoid}
+.lt-encl-h{font-weight:700}
+.lt-encl-list{margin:1mm 0 0;padding-left:10mm;outline:none}
+.lt-encl-list li{padding-left:1mm}
 </style>
 </head>
 <body>
@@ -357,7 +470,7 @@ table.list tr:hover td{background:#f8fafc}
       <circle cx="32" cy="32" r="30" fill="none" stroke="#8b98ab" stroke-width="2"/>
       <path d="M32 16v32M20 26h24M20 26l-6 12h12zM44 26l-6 12h12zM24 50h16" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <div>Charpe Billing<small>Invoice generator</small></div>
+    <div>Charpe Billing<small>Invoices &amp; letters &middot; v3</small></div>
   </div>
   <nav class="tabs">
     <button class="tab on" data-view="build">New invoice</button>
@@ -380,6 +493,11 @@ table.list tr:hover td{background:#f8fafc}
       <div>
         <div class="card">
           <h2>Invoice details</h2>
+          <div id="m5-startrow">
+            <button class="btn sm" id="m5-copyprev" title="Fill this form from a bill already saved">Copy from a previous invoice</button>
+            <select id="m5-samples" title="Sample bills you have marked for an institution"><option value="">No samples yet</option></select>
+          </div>
+          <div class="m5-carry" id="m5-carry" hidden></div>
           <div class="row three">
             <div>
               <label for="f-number">Invoice #</label>
@@ -449,22 +567,30 @@ table.list tr:hover td{background:#f8fafc}
 
         <div class="card">
           <h2>Save</h2>
+          <div class="m5-lastbar" id="m5-lastbar" hidden>
+            <span>Just saved <b id="m5-lastno"></b>:</span>
+            <button class="btn sm" data-a="pdf">Get PDF</button>
+            <button class="btn sm" data-a="word">Get Word</button>
+            <button class="btn sm" data-a="share">Share</button>
+            <button class="btn sm" data-a="letter">Letter for it</button>
+            <button class="btn sm ghost" data-a="edit">Edit it</button>
+          </div>
           <div class="btnbar">
             <button class="btn primary" id="save-invoice">Save invoice</button>
+            <button class="btn" id="inv-getpdf">Get PDF</button>
+            <button class="btn" id="inv-getword">Get Word</button>
+            <button class="btn" id="inv-share">Share</button>
+            <button class="btn" id="make-letter">Letter for this invoice</button>
             <button class="btn" id="print-invoice">Print</button>
-            <button class="btn" id="pdf-save">Save PDF</button>
-            <button class="btn" id="share-email">Send by email</button>
-            <button class="btn" id="share-wa">Send on WhatsApp</button>
-            <button class="btn" id="make-letter">Generate a letter</button>
             <button class="btn ghost" id="new-invoice">Start a fresh one</button>
-            <div class="spacer"></div>
-            <span class="hint" id="edit-flag"></span>
+            <span hidden><button id="pdf-save"></button><button id="share-email"></button><button id="share-wa"></button></span>
           </div>
+          <div class="hint" id="edit-flag" style="margin-top:10px"></div>
           <div class="hint" style="margin-top:8px">
-            Saving a bill also writes its PDF into your PDFs folder. Sharing hands
-            that same file to Windows, which offers WhatsApp, Mail and anything else
-            you have installed. If Windows will not take the file, the message opens
-            with the wording filled in and the PDF waiting in the folder to attach.
+            Save always asks first and files the bill under the number shown, then the next
+            number comes up with this bill's text kept as a starting point. A saved bill is
+            changed only through <b>Edit</b> in Saved invoices. <b>Get PDF</b> and <b>Get Word</b>
+            download to your Downloads folder, as it stands or with your signature.
           </div>
         </div>
       </div>
@@ -503,6 +629,113 @@ table.list tr:hover td{background:#f8fafc}
 
   <!-- ========================= LETTER ========================= -->
   <section class="view" id="view-letter">
+    <div class="m5-lgrid">
+      <div class="m5-side">
+        <div class="card">
+          <h2>Letters</h2>
+          <div class="btnbar" style="margin-top:0">
+            <button class="btn" id="m5-new-inv">Letter for an invoice</button>
+            <button class="btn" id="m5-new-gen">General letter</button>
+          </div>
+          <div id="m5-status"></div>
+          <div id="m5-dirty"></div>
+          <label for="m5-date">Date of the letter</label>
+          <div class="btnbar" style="margin-top:0;flex-wrap:nowrap">
+            <input type="date" id="m5-date" style="flex:1;min-width:0">
+            <button class="btn sm ghost" id="m5-today">Today</button>
+          </div>
+          <label>Linked bill</label>
+          <div id="m5-bill" style="font-size:13px"></div>
+          <label for="m5-dname">Draft name <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></label>
+          <input type="text" id="m5-dname" placeholder="e.g. Reply to MSRTC Wardha">
+          <div class="btnbar">
+            <button class="btn primary" id="m5-save">Save letter</button>
+            <button class="btn" id="m5-draft">Save as draft</button>
+          </div>
+          <div class="btnbar">
+            <button class="btn" id="m5-pdf">Get PDF</button>
+            <button class="btn" id="m5-word">Get Word</button>
+            <button class="btn" id="m5-share">Share</button>
+          </div>
+          <div class="chk" style="margin-top:12px">
+            <input type="checkbox" id="m5-showsig">
+            <label for="m5-showsig" style="margin:0">Show my signature on the page</label>
+          </div>
+          <div class="hint" style="margin-top:10px;line-height:1.55">
+            Type straight onto the page. <b>Enter</b> starts a new paragraph and <b>Tab</b> indents &mdash;
+            neither saves anything. Copy a letter from Gemini and press <b>Ctrl+V</b> on the page: the
+            address, subject, paragraphs and enclosures are laid out for you. Hover over
+            <i>Advocate</i> or <i>Additional Standing Counsel</i> at the foot to keep only one.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="m5-tools" id="m5-tools">
+          <select id="m5-style" title="Paragraph style">
+            <option value="">Style…</option>
+            <option value="lt-para">Normal paragraph</option>
+            <option value="lt-addr">Address line</option>
+            <option value="lt-subj">Subject line</option>
+            <option value="lt-head">Heading</option>
+            <option value="lt-quote">Quoted passage</option>
+          </select>
+          <select id="m5-font" title="Font">
+            <option value="">Font…</option>
+            <option value="Georgia" style="font-family:Georgia">Georgia</option>
+            <option value="Times New Roman" style="font-family:'Times New Roman'">Times New Roman</option>
+            <option value="Arial" style="font-family:Arial">Arial</option>
+            <option value="Calibri" style="font-family:Calibri">Calibri</option>
+            <option value="Bookman Old Style" style="font-family:'Bookman Old Style'">Bookman Old Style</option>
+          </select>
+          <select id="m5-size" title="Font size">
+            <option value="">Size…</option>
+            <option>10</option><option>11</option><option>12</option><option>13</option>
+            <option>14</option><option>16</option><option>18</option>
+          </select>
+          <span class="sep"></span>
+          <button class="btn sm" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+          <button class="btn sm" data-cmd="italic" title="Italic (Ctrl+I)"><i style="font-family:Georgia">I</i></button>
+          <button class="btn sm" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <span class="sep"></span>
+          <button class="btn sm" data-align="left" title="Align left"><svg viewBox="0 0 16 16"><path d="M2 3h12M2 6.5h8M2 10h12M2 13.5h8" stroke="currentColor" stroke-width="1.6" fill="none"/></svg></button>
+          <button class="btn sm" data-align="center" title="Centre"><svg viewBox="0 0 16 16"><path d="M2 3h12M4 6.5h8M2 10h12M4 13.5h8" stroke="currentColor" stroke-width="1.6" fill="none"/></svg></button>
+          <button class="btn sm" data-align="right" title="Align right"><svg viewBox="0 0 16 16"><path d="M2 3h12M6 6.5h8M2 10h12M6 13.5h8" stroke="currentColor" stroke-width="1.6" fill="none"/></svg></button>
+          <button class="btn sm" data-align="justify" title="Justify"><svg viewBox="0 0 16 16"><path d="M2 3h12M2 6.5h12M2 10h12M2 13.5h12" stroke="currentColor" stroke-width="1.6" fill="none"/></svg></button>
+          <select id="m5-spacing" title="Line spacing">
+            <option value="">Spacing…</option>
+            <option value="1">1.0</option><option value="1.15">1.15</option>
+            <option value="1.5">1.5</option><option value="2">2.0</option>
+          </select>
+          <select id="m5-valign" title="Where the letter sits on a one-page sheet">
+            <option value="top">Page: top</option>
+            <option value="center">Page: centre</option>
+            <option value="bottom">Page: bottom</option>
+          </select>
+          <span class="sep"></span>
+          <button class="btn sm" id="m5-undo" title="Undo (Ctrl+Z)">&#8630; Undo</button>
+          <button class="btn sm" id="m5-redo" title="Redo (Ctrl+Y)">Redo &#8631;</button>
+          <button class="btn sm ghost" id="m5-clear" title="Remove bold, fonts and alignment from the selection">Clear formatting</button>
+          <button class="btn sm ghost" id="m5-paste" title="Paste a letter copied from Gemini">Paste from Gemini</button>
+        </div>
+        <div class="m5-pagewrap"><div id="m5-page" class="lt-page lt-sheet"></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>Letters on record</h2>
+      <div class="m5-regtabs">
+        <button class="btn sm on" data-reg="final">Saved letters</button>
+        <button class="btn sm" data-reg="draft">Drafts</button>
+        <input type="text" id="m5-lsearch" placeholder="Search by number, date, subject, party or bill" style="max-width:360px">
+        <div class="spacer"></div>
+        <span class="hint" id="m5-ltotal"></span>
+      </div>
+      <div id="m5-llist"></div>
+    </div>
+
+    <!-- the earlier letter screen, kept out of sight so its code still has its elements -->
+    <div hidden id="m5-oldletter">
     <div class="split">
       <div>
         <div class="card">
@@ -571,6 +804,7 @@ table.list tr:hover td{background:#f8fafc}
         </div>
         <div id="letter-host"></div>
       </div>
+    </div>
     </div>
   </section>
 
@@ -783,6 +1017,18 @@ table.list tr:hover td{background:#f8fafc}
             <button class="btn sm danger" id="s-logo-clear">Remove</button>
           </div>
           <div class="hint">Upload your own crest PNG so the letterhead matches your existing bills exactly. Until you do, the sheet uses a drawn stand-in.</div>
+        </div>
+
+        <div class="card">
+          <h2>Signature</h2>
+          <div class="btnbar">
+            <input type="file" id="s-sig-file" accept="image/*" style="max-width:250px">
+            <button class="btn sm danger" id="s-sig-clear">Remove</button>
+          </div>
+          <div id="s-sig-prev"></div>
+          <div class="hint" style="margin-top:8px">Upload a photo or scan of your signature on white paper once. The paper is
+            taken out so only the ink remains, and it sits on the page like real ink. It is used only when you choose
+            <b>With signature</b>. It is kept with your own billing data in your Google Drive, not in the program.</div>
         </div>
 
         <div class="card">
@@ -1778,6 +2024,10 @@ async function makePdf(inv, ctx){
     byy += 4.3;
   });
   txt("For " + s.firm, R, y + 2, { size:8.2, align:"right" });
+  if(ctx.sigData){
+    var sgh = 15, sgw = Math.min(44, sgh * (ctx.sigRatio || 1.66));
+    doc.addImage(ctx.sigData, "PNG", R - sgw - 3, y + 4.2, sgw, sgh, undefined, "FAST");
+  }
   txt("Authorized Signatory", R, y + 22, { size:8.2, align:"right" });
 
   /* ---- footer on every page, kept inside the one-inch bottom margin ---- */
@@ -2582,8 +2832,8 @@ function fillForm(){
   $("#f-clerkage-pct").value = draft.clerkagePct;
   $("#f-clerkage-label").value = draft.clerkageLabel;
   $("#f-client").value = clientName(draft.clientId);
-  $("#edit-flag").textContent = editingId ? ("Editing " + draft.number) : "";
   renderItems(); renderSheet();
+  if(window.CBformFilled) window.CBformFilled();
 }
 [["#f-number","number"],["#f-date","date"],["#f-due","due"],["#f-billto","billTo"],["#f-reference","reference"]]
 .forEach(function(p){
@@ -2653,17 +2903,20 @@ $("#reset-client").addEventListener("click", resetClientForm);
 
 /* ---------- rate card ---------- */
 function catalogOptions(){
+  function opt(k){ return '<option value="'+k.id+'">'+esc(k.name)+' — ₹'+money(k.rate)+'</option>'; }
+  var own = db.catalog.filter(function(k){ return !k.learned; });
+  var got = db.catalog.filter(function(k){ return k.learned; })
+    .sort(function(a,b){ return String(a.name).toLowerCase().localeCompare(String(b.name).toLowerCase()) || a.rate - b.rate; });
   $("#quick-add").innerHTML = '<option value="">Add from rate card…</option>' +
-    db.catalog.map(function(k){
-      return '<option value="'+k.id+'">'+esc(k.name)+' — ₹'+money(k.rate)+'</option>';
-    }).join("");
+    (own.length ? '<optgroup label="Rate card">' + own.map(opt).join("") + '</optgroup>' : '') +
+    (got.length ? '<optgroup label="Used in earlier bills">' + got.map(opt).join("") + '</optgroup>' : '');
 }
 function renderCatalog(){
   var h = $("#cat-list");
   if(!db.catalog.length){ h.innerHTML = '<div class="empty">No charges yet.</div>'; return; }
   h.innerHTML = '<table class="list"><thead><tr><th>Particulars</th><th class="num">Rate</th><th>Clerkage</th><th></th></tr></thead><tbody>' +
     db.catalog.map(function(k){
-      return '<tr><td>'+esc(k.name)+'</td><td class="num">₹'+money(k.rate)+
+      return '<tr><td>'+esc(k.name)+(k.learned ? ' <span class="hint" title="Added from a saved bill">from '+esc(k.from||"a bill")+'</span>' : '')+'</td><td class="num">₹'+money(k.rate)+
       '</td><td>'+(k.clerkable?"Yes":"No")+'</td><td class="num">'+
       '<button class="btn ghost sm" data-edit="'+k.id+'">Edit</button>'+
       '<button class="btn ghost sm" data-del="'+k.id+'">Delete</button></td></tr>';
@@ -2678,6 +2931,7 @@ $("#cat-list").addEventListener("click", function(e){
     $("#cat-form-title").textContent = "Edit charge";
   }
   if(dl && confirm("Delete this charge from the rate card?")){
+    if(window.CBunlearn) window.CBunlearn(db.catalog.find(function(x){ return x.id === dl; }));
     db.catalog = db.catalog.filter(function(x){ return x.id !== dl; });
     save(); renderCatalog(); catalogOptions();
   }
@@ -2744,7 +2998,9 @@ function renderSaved(){
   var list = db.invoices.filter(function(v){
     if(f !== "all" && statusOf(v) !== f) return false;
     if(!q) return true;
-    return (v.number+" "+v.billTo+" "+v.reference).toLowerCase().indexOf(q) > -1;
+    var hay = (v.number+" "+v.billTo+" "+v.reference+" "+(v.sample||"")+" "+
+      (v.items||[]).map(function(i){ return i.name; }).join(" ")).toLowerCase();
+    return q.split(/\s+/).every(function(t){ return hay.indexOf(t) > -1; });
   }).sort(function(a,b){ return (b.date||"").localeCompare(a.date||""); });
 
   var outstanding = db.invoices.reduce(function(s,v){ return s + outstandingOf(v); }, 0);
@@ -2763,6 +3019,7 @@ function renderSaved(){
       var st = statusOf(v), got = allocatedTo(v.id), bal = balanceOf(v);
       return '<tr>'+
         '<td><strong>'+esc(v.number)+'</strong>'+
+          (v.sample ? ' <span class="m5-tag" title="'+esc(v.sample)+'">SAMPLE</span>' : '')+
           (v.legacy ? ' <span title="Carried over from Swipe — the original PDF is kept in the folder" '+
             'style="font-size:9.5px;font-weight:700;color:#6b737d;border:1px solid #d7dbe0;'+
             'border-radius:4px;padding:1px 4px;vertical-align:middle">SWIPE</span>' : '')+
@@ -2775,11 +3032,13 @@ function renderSaved(){
         '<td class="num">'+(st==="paid"?"—":"₹"+money(Math.max(0,bal)))+'</td>'+
         '<td><span class="pill '+PILL[st][0]+'">'+PILL[st][1]+'</span></td>'+
         '<td class="num" style="white-space:nowrap">'+
-          '<button class="btn ghost sm" data-open="'+v.id+'">Open</button>'+
-          '<button class="btn ghost sm" data-pdf="'+v.id+'">'+(v.legacy?"Original":"PDF")+'</button>'+
-          '<button class="btn ghost sm" data-send="'+v.id+'">Send</button>'+
+          '<button class="btn ghost sm" data-open="'+v.id+'" title="Change this saved bill">Edit</button>'+
+          '<button class="btn ghost sm" data-gpdf="'+v.id+'">Get PDF</button>'+
+          '<button class="btn ghost sm" data-gword="'+v.id+'">Get Word</button>'+
+          '<button class="btn ghost sm" data-gshare="'+v.id+'">Share</button>'+
           '<button class="btn ghost sm" data-letter="'+v.id+'">Letter</button>'+
-          '<button class="btn ghost sm" data-copy="'+v.id+'">Duplicate</button>'+
+          '<button class="btn ghost sm" data-copy="'+v.id+'" title="Start a new bill from this one">Copy to new</button>'+
+          '<button class="btn ghost sm" data-sample="'+v.id+'">'+(v.sample?"Sample \u2713":"Mark as sample")+'</button>'+
           (allocatedTo(v.id) > 0
             ? '<button class="btn ghost sm" data-rcpt="'+v.id+'" title="Receipts are set against this bill">Receipts</button>'
             : '<button class="btn ghost sm" data-pay="'+v.id+'">'+(v.status==="paid"?"Mark unpaid":"Mark paid")+'</button>')+
@@ -2796,13 +3055,18 @@ $("#saved-list").addEventListener("click", function(e){
   if(!id) return;
   var v = db.invoices.find(function(x){ return x.id === id; });
   if(b.dataset.letter){
-    letter = letterFromInvoice(v); fillLetterForm(); go("letter");
-    toast("Letter started from " + v.number);
+    if(window.CBL) window.CBL.fromInvoice(v);
   } else if(b.dataset.open){
-    draft = JSON.parse(JSON.stringify(v)); editingId = v.id; fillForm(); go("build"); toast("Opened " + v.number);
+    if(draftHasContent(draft) && !editingId && draft.touched !== false &&
+       !confirm("The bill on screen has not been saved. Open " + v.number + " for editing anyway?")) return;
+    draft = JSON.parse(JSON.stringify(v)); editingId = v.id; fillForm(); go("build");
+    toast("Editing " + v.number + " — Save will ask before updating it");
   } else if(b.dataset.copy){
+    if(draftHasContent(draft) && !editingId && draft.touched !== false &&
+       !confirm("The bill on screen has not been saved. Replace it?")) return;
     draft = JSON.parse(JSON.stringify(v));
     draft.id = null; editingId = null;
+    draft.carriedFrom = v.number; draft.touched = false; delete draft.sample;
     delete draft.legacy;               /* a copy is a new bill, not the old PDF */
     draft.number = db.settings.prefix + db.settings.next;
     draft.date = todayISO(); draft.due = todayISO(); draft.status = "unpaid";
@@ -3207,30 +3471,59 @@ $("#rc-list").addEventListener("click", function(e){
   }
 });
 
+/* version 3: Save always files the bill under the number shown and then
+   brings up the next number, keeping this bill's text on screen as a starting
+   point. A saved bill is changed only after Edit, and only after a yes. */
+var lastSavedInv = null;
+function billBody(d){
+  return JSON.stringify([d.billTo, d.reference, (d.items || []).map(function(i){ return [i.name, i.rate, i.qty, i.note]; })]);
+}
 $("#save-invoice").addEventListener("click", function(){
   if(!draft.billTo.trim()){ toast("Fill in the Bill To block first."); return; }
-  draft.isDraft = false;            /* it is a real bill now, not a draft */
-  if(editingId){
-    var i = db.invoices.findIndex(function(x){ return x.id === editingId; });
-    draft.id = editingId; db.invoices[i] = JSON.parse(JSON.stringify(draft));
-    save(); toast("Saved " + draft.number);
-  } else {
-    draft.id = uid();
-    db.invoices.push(JSON.parse(JSON.stringify(draft)));
-    var m = String(draft.number).match(/(\d+)\s*$/);
-    if(m && parseInt(m[1],10) >= db.settings.next){ db.settings.next = parseInt(m[1],10) + 1; }
-    editingId = draft.id;
-    save(); toast("Saved " + draft.number + " — next will be " + db.settings.prefix + db.settings.next);
+  var num = String(draft.number || "").trim();
+  if(!num){ toast("Give the bill a number."); return; }
+  var clash = db.invoices.find(function(x){ return x.number === num && x.id !== editingId; });
+  if(clash){
+    alert(num + " is already used by a saved bill (" + fmtDate(clash.date) + ", " +
+      String(clash.billTo || "").split("\n")[0] + ").\n\nChange the number before saving.");
+    return;
   }
-  clearDraftStore();                /* it lives in the register from here on */
-  /* Spell out that the bill is filed and that saving again would amend it —
-     otherwise the next bill gets typed over the top of this one. */
-  $("#edit-flag").innerHTML = '<strong>' + esc(draft.number) + '</strong> is saved. ' +
-    'Editing here now amends it &mdash; press <strong>Start a fresh one</strong> for the next bill.';
-  renderSaved(); fillSettings(); renderSheet();
+  var rec;
+  if(editingId){
+    if(!confirm("Update the saved bill " + num + " with the changes on screen?")) return;
+    var i = db.invoices.findIndex(function(x){ return x.id === editingId; });
+    rec = JSON.parse(JSON.stringify(draft));
+    rec.id = editingId; rec.isDraft = false;
+    delete rec.carriedFrom; delete rec.touched;
+    if(i > -1) db.invoices[i] = rec; else db.invoices.push(rec);
+    toast("Updated " + num);
+  } else {
+    var same = lastSavedInv && billBody(lastSavedInv) === billBody(draft);
+    if(!confirm((same ? "This is identical to " + lastSavedInv.number + ", which you have just saved.\n\n" : "") +
+                "Save this bill as " + num + "?")) return;
+    rec = JSON.parse(JSON.stringify(draft));
+    rec.id = uid(); rec.isDraft = false;
+    delete rec.carriedFrom; delete rec.touched;
+    db.invoices.push(rec);
+    var m = num.match(/(\d+)\s*$/);
+    if(m && parseInt(m[1],10) >= db.settings.next){ db.settings.next = parseInt(m[1],10) + 1; }
+    toast("Saved " + num + " — the next bill is " + db.settings.prefix + db.settings.next);
+  }
+  lastSavedInv = JSON.parse(JSON.stringify(rec));
+  if(window.CBlearn) window.CBlearn(rec);
+  save();
+  /* the next bill starts from this one's text */
+  var next = JSON.parse(JSON.stringify(rec));
+  next.id = null; delete next.legacy; delete next.sample;
+  next.number = db.settings.prefix + db.settings.next;
+  next.date = todayISO(); next.due = todayISO(); next.status = "unpaid"; next.isDraft = true;
+  next.carriedFrom = rec.number; next.touched = false;
+  draft = next; editingId = null;
+  clearDraftStore();
+  renderSaved(); fillSettings(); fillForm();
 });
 $("#new-invoice").addEventListener("click", function(){
-  if(draftHasContent(draft) && !editingId &&
+  if(draftHasContent(draft) && !editingId && draft.touched !== false &&
      !confirm("The bill on screen has not been saved. Start a new one and discard it?")) return;
   draft = blankDraft(); editingId = null; clearDraftStore(); fillForm(); toast("New bill started");
 });
@@ -3500,6 +3793,7 @@ function boot(keepView){
   if(!draft) draft = blankDraft();
   fillForm();
   if(!keepView) go("build");
+  ((window.CBapp && window.CBapp.hooks) || []).forEach(function(f){ try{ f(keepView); }catch(e){ console.error(e); } });
 }
 
 (async function init(){
@@ -3557,7 +3851,15 @@ window.CBapp = {
   statusOf: statusOf, allocatedTo: allocatedTo, outstandingOf: outstandingOf,
   currentLetter: function(){ return letter; }, readLetterForm: readLetterForm,
   DESIG: DESIG, letterDate: letterDate, letterBlocks: letterBlocks,
-  renderLetterList: renderLetterList
+  renderLetterList: renderLetterList,
+  /* version 3 */
+  hooks: [],
+  setDraft: function(d, editId){ draft = d; editingId = editId || null; clearDraftStore(); fillForm(); },
+  editingId: function(){ return editingId; },
+  lastSaved: function(){ return lastSavedInv; },
+  draftHasContent: draftHasContent, blankDraft: blankDraft, todayISO: todayISO,
+  esc: esc, uid: uid, fillForm: fillForm,
+  saveNow: function(){ save(); }
 };
 
 /* autosave the draft's number sequence view when settings change elsewhere */
@@ -4005,6 +4307,8 @@ async function letterPdf(quiet){
   }catch(e){ console.error(e); if(!quiet) A.toast("Could not make the letter: " + (e.message || e)); }
 }
 window.CBletterPdf = letterPdf;
+window.CBpdfContext = pdfContext;
+window.CBpdfFor = pdfFor;
 $("#lt-pdf").addEventListener("click", function(){ letterPdf(false); });
 $("#lt-docx").addEventListener("click", function(){ letterDocx(); });
 
@@ -4017,9 +4321,12 @@ $("#bk-auto").addEventListener("change", function(e){
 });
 $("#save-invoice").addEventListener("click", function(){
   if(db().settings.autoPdf === false) return;
+  var before = A.lastSaved();
   setTimeout(async function(){
     try{
-      var got = await pdfFor(A.currentDraft());
+      var saved = A.lastSaved();
+      if(!saved || saved === before) return;          /* nothing was saved (he said no) */
+      var got = await pdfFor(saved);
       if(got.original) return;
       if(await keepInFolder(got)) A.toast("PDF stored in " + got.root.name + " / PDFs");
     }catch(e){ console.error(e); }
@@ -4177,7 +4484,7 @@ function candidates(q){
         return { key:c.id, main:c.name, sub:String(c.address||"").split("\n")[0], hay:c.name + " " + c.address, src:c };
       })
     : db.catalog.map(function(k){
-        return { key:k.id, main:k.name, sub:"\u20B9" + A.money(k.rate) + (k.clerkable ? "" : "  ·  no clerkage"), hay:k.name, src:k };
+        return { key:k.id, main:k.name, sub:"\u20B9" + A.money(k.rate) + (k.clerkable ? "" : "  ·  no clerkage") + (k.learned ? "  ·  from " + (k.from || "an earlier bill") : ""), hay:k.name, src:k };
       });
   return pool.map(function(o){ o.s = score(o.hay, q); return o; })
     .filter(function(o){ return o.s >= 0; })
@@ -4189,7 +4496,7 @@ function render(q){
   if(!list.length){
     panel.innerHTML = '<div class="ac-none">' +
       (kind === "client" ? "No matching client — type the Bill To block below, then Save as client."
-                         : "No matching charge — type the title and rate, they stay on this bill only.") +
+                         : "No matching charge — type the title and rate; it joins the rate card when the bill is saved.") +
       '</div>';
     panel.style.display = "block"; place(); return;
   }
@@ -4312,6 +4619,1705 @@ $("#f-client-save").addEventListener("click", function(){
 
 </script>
 
+<script>
+/* ============================================================
+   Charpe Billing — module 5 (version 3, October 2026)
+   - every charge used in a bill joins the rate card
+   - copy from a previous bill, sample bills per institution
+   - letters: a Word-like page editor, numbering YYYY/MM/NN,
+     drafts, register with edit / delete, Gemini paste
+   - Get PDF, Get Word and Share — as it stands or with signature
+   ============================================================ */
+(function(){
+"use strict";
+
+var $  = function(s, r){ return (r || document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var A = window.CBapp, F = window.CB;
+/* "Get PDF" means a plain download into Downloads. The phone adapter loaded
+   after this module turns downloads into the share sheet, so the original is
+   kept here; only the packaged Android app, which cannot download, uses its own. */
+var RAW_DL = F.download;
+function dl(name, blob){
+  if(window.AndroidBridge && typeof window.AndroidBridge.saveFile === "function") return F.download(name, blob);
+  return RAW_DL(name, blob);
+}
+function db(){ return A.db; }
+var esc = A.esc;
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function norm(s){ return String(s == null ? "" : s).toLowerCase().replace(/\s+/g, " ").trim(); }
+function hash(s){ var h = 5381; for(var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+function pad2(n){ return String(n).padStart(2, "0"); }
+var MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+var FALLBACK_LOGO =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">' +
+  '<circle cx="60" cy="60" r="52" fill="none" stroke="#1b2a41" stroke-width="3"/>' +
+  '<circle cx="60" cy="60" r="45" fill="none" stroke="#1b2a41" stroke-width="1.2"/>' +
+  '<path d="M46 30l5 7 9-9 9 9 5-7 3 10H43z" fill="#1b2a41"/>' +
+  '<path d="M60 46v40M38 56h44" stroke="#1b2a41" stroke-width="3" stroke-linecap="round"/>' +
+  '<path d="M38 56l-8 15h16zM82 56l-8 15h16z" fill="none" stroke="#1b2a41" stroke-width="2.4" stroke-linejoin="round"/>' +
+  '<path d="M48 88h24" stroke="#1b2a41" stroke-width="3.4" stroke-linecap="round"/>' +
+  '<path d="M30 78c-2 12 6 22 18 26M90 78c2 12-6 22-18 26" fill="none" stroke="#1b2a41" stroke-width="2.2" stroke-linecap="round"/>' +
+  '</svg>';
+
+/* ================================================================
+   1. THE RATE CARD LEARNS FROM EVERY BILL
+   Each charge (title + rate) used in a bill becomes a rate-card entry.
+   The id is made from the title and rate, so every device arrives at
+   the same entry and Drive sync never doubles it. A learned entry he
+   deletes is remembered, so it does not come back on its own.
+   ================================================================ */
+function itemKey(name, rate){ return norm(name) + "|" + (Math.round((Number(rate) || 0) * 100) / 100); }
+function learnFrom(inv, fromSave){
+  if(!inv || !inv.items) return 0;
+  var s = db().settings, gone = s.unlearn || [], have = {}, added = 0;
+  db().catalog.forEach(function(k){ have[itemKey(k.name, k.rate)] = 1; });
+  inv.items.forEach(function(it){
+    var name = String(it.name || "").replace(/\s+/g, " ").trim();
+    if(!name || !(Number(it.rate) > 0)) return;
+    var key = itemKey(name, it.rate);
+    if(have[key]) return;
+    var gi = gone.indexOf(key);
+    if(gi > -1){
+      if(!fromSave) return;            /* he deleted it; only a new bill brings it back */
+      gone.splice(gi, 1);
+    }
+    db().catalog.push({ id:"L" + hash(key), name:name, rate:Number(it.rate) || 0, hsn:"",
+                        clerkable:!!it.clerkable, learned:true, from:inv.number || "" });
+    have[key] = 1; added++;
+  });
+  return added;
+}
+function learnAll(){
+  var n = 0;
+  db().invoices.slice().sort(function(a, b){ return String(a.number).localeCompare(String(b.number)); })
+    .forEach(function(v){ n += learnFrom(v, false); });
+  if(n){ A.catalogOptions(); A.renderCatalog(); A.saveNow(); }
+}
+window.CBlearn = function(inv){
+  if(learnFrom(inv, true)){ A.catalogOptions(); A.renderCatalog(); }
+};
+window.CBunlearn = function(k){
+  if(!k || !k.learned) return;
+  var s = db().settings; s.unlearn = s.unlearn || [];
+  var key = itemKey(k.name, k.rate);
+  if(s.unlearn.indexOf(key) < 0) s.unlearn.push(key);
+};
+
+/* ================================================================
+   2. SMALL DIALOGS
+   ================================================================ */
+function modal(title, html, o){
+  o = o || {};
+  var ov = document.createElement("div");
+  ov.className = "m5-ov";
+  ov.innerHTML = '<div class="m5-dlg' + (o.wide ? " wide" : "") + '" role="dialog" aria-modal="true">' +
+    '<div class="m5-dh"><strong>' + esc(title) + '</strong><button class="btn ghost sm m5-x" title="Close">&#10005;</button></div>' +
+    '<div class="m5-db">' + html + '</div></div>';
+  document.body.appendChild(ov);
+  function close(){ ov.remove(); document.removeEventListener("keydown", key, true); if(o.onClose) o.onClose(); }
+  function key(e){ if(e.key === "Escape"){ e.stopPropagation(); close(); } }
+  document.addEventListener("keydown", key, true);
+  ov.addEventListener("mousedown", function(e){ if(e.target === ov) close(); });
+  $(".m5-x", ov).addEventListener("click", close);
+  return { el:ov, close:close };
+}
+function busy(msg){
+  var m = modal("Please wait", '<div class="m5-busy"><span class="m5-spin"></span>' + esc(msg) + '</div>');
+  return m;
+}
+
+/* ================================================================
+   3. FINDING A PREVIOUS BILL — one search box over everything
+   ================================================================ */
+function invHay(v){
+  return norm([v.number, v.billTo, v.reference, v.sample || "", A.fmtDate(v.date),
+    (v.items || []).map(function(i){ return i.name + " " + (i.note || ""); }).join(" ")].join(" "));
+}
+function numVal(v){ var m = String(v.number || "").match(/(\d+)\s*$/); return m ? parseInt(m[1], 10) : 0; }
+function pickInvoice(title, cb, hint){
+  var m = modal(title,
+    '<input type="text" class="m5-q" placeholder="Type client, case number, party name, reference or invoice number" autocomplete="off">' +
+    (hint ? '<div class="hint" style="margin:6px 0 0">' + esc(hint) + '</div>' : '') +
+    '<div class="m5-res"></div>', { wide:true });
+  var q = $(".m5-q", m.el), res = $(".m5-res", m.el), list = [];
+  function run(){
+    var toks = norm(q.value).split(" ").filter(Boolean);
+    list = db().invoices.filter(function(v){
+      var h = invHay(v);
+      return toks.every(function(t){ return h.indexOf(t) > -1; });
+    }).sort(function(a, b){ return numVal(b) - numVal(a); }).slice(0, 80);
+    if(!list.length){ res.innerHTML = '<div class="empty">No saved invoice matches.</div>'; return; }
+    res.innerHTML = list.map(function(v, i){
+      return '<button class="m5-row" data-i="' + i + '">' +
+        '<span class="m5-rn">' + esc(v.number) + (v.sample ? ' <span class="m5-tag">SAMPLE</span>' : '') + '</span>' +
+        '<span class="m5-rd">' + esc(A.fmtDate(v.date)) + '</span>' +
+        '<span class="m5-rt"><b>' + esc(String(v.billTo || "").split("\n").join(", ")) + '</b><br>' + esc(v.reference || "") + '</span>' +
+        '<span class="m5-ra">&#8377;' + A.money(A.totalOf(v)) + '</span></button>';
+    }).join("");
+  }
+  q.addEventListener("input", run);
+  res.addEventListener("click", function(e){
+    var b = e.target.closest(".m5-row"); if(!b) return;
+    var v = list[+b.dataset.i]; m.close(); cb(v);
+  });
+  run(); setTimeout(function(){ q.focus(); }, 30);
+}
+
+/* a saved bill turned into a starting point for a new one */
+function copyOf(v, from){
+  var d = clone(v);
+  d.id = null; delete d.legacy; delete d.sample; delete d.mod; delete d._srv; delete d._dev;
+  d.number = db().settings.prefix + db().settings.next;
+  d.date = A.todayISO(); d.due = A.todayISO(); d.status = "unpaid"; d.isDraft = true;
+  d.carriedFrom = from; d.touched = false;
+  return d;
+}
+function screenHasWork(){
+  var d = A.currentDraft();
+  return !A.editingId() && d && d.touched !== false && A.draftHasContent(d);
+}
+function loadIntoForm(d, msg){
+  if(screenHasWork() && !confirm("The bill on screen has not been saved. Replace it?")) return;
+  A.setDraft(d, null);
+  A.go("build");
+  A.toast(msg);
+}
+
+/* ================================================================
+   4. SAMPLE BILLS — a standard bill marked for an institution
+   ================================================================ */
+function sampleDefault(v){
+  var b = String(v.billTo || "").replace(/\s+/g, " ").trim();
+  return (b.length > 48 ? b.slice(0, 48) + "…" : b) + " — standard bill";
+}
+function markSample(v){
+  var m = modal(v.sample ? "Rename sample" : "Mark " + v.number + " as a sample",
+    '<label>Name of this sample</label>' +
+    '<input type="text" class="m5-sname" value="' + esc(v.sample || sampleDefault(v)) + '">' +
+    '<div class="hint" style="margin-top:6px">For example: "MSRTC Wardha — written statement and hearing". ' +
+    'It then appears under <b>Samples</b> on the New invoice page.</div>' +
+    '<div class="btnbar" style="margin-top:14px"><button class="btn primary m5-ok">Save sample</button>' +
+    (v.sample ? '<button class="btn danger m5-un">Stop using as sample</button>' : '') + '</div>');
+  var inp = $(".m5-sname", m.el);
+  setTimeout(function(){ inp.focus(); inp.select(); }, 30);
+  function ok(){
+    var name = inp.value.trim(); if(!name){ inp.focus(); return; }
+    v.sample = name; A.saveNow(); A.renderSaved(); renderSampleMenu(); m.close();
+    A.toast(v.number + " is now the sample “" + name + "”");
+  }
+  $(".m5-ok", m.el).addEventListener("click", ok);
+  inp.addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); ok(); } });
+  var un = $(".m5-un", m.el);
+  if(un) un.addEventListener("click", function(){
+    delete v.sample; A.saveNow(); A.renderSaved(); renderSampleMenu(); m.close();
+    A.toast(v.number + " is no longer a sample");
+  });
+}
+function samples(){
+  return db().invoices.filter(function(v){ return v.sample; })
+    .sort(function(a, b){ return String(a.sample).localeCompare(String(b.sample)); });
+}
+function renderSampleMenu(){
+  var sel = $("#m5-samples"); if(!sel) return;
+  var list = samples();
+  sel.innerHTML = '<option value="">' + (list.length ? "Use a sample bill…" : "No samples yet") + '</option>' +
+    list.map(function(v){
+      return '<option value="' + esc(v.id) + '">' + esc(v.sample) + '  (' + esc(v.number) + ')</option>';
+    }).join("");
+  sel.disabled = !list.length;
+}
+
+/* ================================================================
+   5. SIGNATURE — cleaned so only the ink remains
+   ================================================================ */
+function loadImg(src){
+  return new Promise(function(res, rej){
+    var im = new Image(); im.onload = function(){ res(im); }; im.onerror = rej; im.src = src;
+  });
+}
+async function cleanSignature(src){
+  var im = await loadImg(src);
+  var w = im.naturalWidth, h = im.naturalHeight;
+  var c = document.createElement("canvas"); c.width = w; c.height = h;
+  var x = c.getContext("2d"); x.drawImage(im, 0, 0);
+  var d = x.getImageData(0, 0, w, h), p = d.data, i, j;
+  var see = 0;
+  for(i = 3; i < p.length; i += 4) if(p[i] < 250) see++;
+  if(see < (w * h) * 0.2){
+    /* a photo or scan on paper: the paper becomes transparent, the ink keeps its colour */
+    var lum = new Uint8Array(w * h), hist = new Array(256).fill(0);
+    for(i = 0, j = 0; i < p.length; i += 4, j++){ var L = ((p[i] + p[i+1] + p[i+2]) / 3) | 0; lum[j] = L; hist[L]++; }
+    var target = w * h * 0.9, acc = 0, paper = 255;
+    for(var v = 0; v < 256; v++){ acc += hist[v]; if(acc >= target){ paper = v; break; } }
+    for(i = 0, j = 0; i < p.length; i += 4, j++){
+      var ink = (paper - lum[j]) / Math.max(40, paper - 60);
+      ink = Math.max(0, Math.min(1, ink));
+      ink = ink < 0.12 ? 0 : Math.pow((ink - 0.12) / 0.88, 0.85);
+      if(ink > 0.02){
+        for(var k = 0; k < 3; k++){
+          var cv = (p[i+k] - 255 * (1 - ink)) / ink;
+          p[i+k] = Math.max(0, Math.min(255, cv * 0.85));
+        }
+      }
+      p[i+3] = Math.round(ink * 255);
+    }
+    x.putImageData(d, 0, 0);
+  }
+  /* trim to the ink and keep it a sensible size */
+  var x0 = w, y0 = h, x1 = 0, y1 = 0;
+  for(j = 0; j < h; j++) for(i = 0; i < w; i++){
+    if(p[(j * w + i) * 4 + 3] > 12){ if(i < x0) x0 = i; if(i > x1) x1 = i; if(j < y0) y0 = j; if(j > y1) y1 = j; }
+  }
+  if(x1 <= x0 || y1 <= y0){ x0 = 0; y0 = 0; x1 = w - 1; y1 = h - 1; }
+  var pad = 4; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+  x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+  var cw = x1 - x0 + 1, ch = y1 - y0 + 1, sc = Math.min(1, 600 / cw);
+  var o = document.createElement("canvas"); o.width = Math.round(cw * sc); o.height = Math.round(ch * sc);
+  var ox = o.getContext("2d"); ox.imageSmoothingQuality = "high";
+  ox.drawImage(c, x0, y0, cw, ch, 0, 0, o.width, o.height);
+  return o.toDataURL("image/png");
+}
+function sigData(){ return db().settings.signature || ""; }
+async function sigRatio(){
+  var s = sigData(); if(!s) return 1.66;
+  try{ var im = await loadImg(s); return im.naturalWidth / im.naturalHeight; }catch(e){ return 1.66; }
+}
+function renderSigSettings(){
+  var box = $("#s-sig-prev"); if(!box) return;
+  var s = sigData();
+  box.innerHTML = s
+    ? '<div class="m5-sigpaper"><img src="' + esc(s) + '" alt="signature"></div>'
+    : '<div class="hint">No signature uploaded yet.</div>';
+}
+
+/* ================================================================
+   6. OUTPUT — Get PDF, Get Word, Share
+   ================================================================ */
+function safe(s){ return F.safeName(String(s || "").replace(/\//g, "-")); }
+
+/* "As it stands" or "With signature" */
+function askSignature(title, cb){
+  var has = !!sigData();
+  var m = modal(title,
+    '<div class="m5-two">' +
+      '<button class="m5-big" data-s="0"><b>As it stands</b><span>Without your signature</span></button>' +
+      '<button class="m5-big" data-s="1"' + (has ? '' : ' disabled') + '><b>With signature</b><span>' +
+        (has ? 'Your signature above your name' : 'Upload your signature in Settings first') + '</span></button>' +
+    '</div>');
+  $$(".m5-big", m.el).forEach(function(b){
+    b.addEventListener("click", function(){ m.close(); cb(b.dataset.s === "1"); });
+  });
+}
+
+/* the share sheet needs the click itself, so the file is made first and the
+   WhatsApp / Gmail buttons are pressed once it is ready */
+function shareFlow(title, make, text, subject){
+  askSignature(title + " — share", async function(sig){
+    var w = busy("Preparing the file…"), got;
+    try{ got = await make(sig); }catch(e){ w.close(); console.error(e); A.toast("Could not prepare the file: " + (e.message || e)); return; }
+    w.close();
+    var m = modal("Share " + got.name,
+      '<div class="m5-two">' +
+        '<button class="m5-big" data-h="wa"><b>WhatsApp</b><span>' + (MOBILE ? 'Choose WhatsApp in the share list' : 'WhatsApp on this computer') + '</span></button>' +
+        '<button class="m5-big" data-h="gm"><b>Gmail</b><span>' + (MOBILE ? 'Choose Gmail in the share list' : 'Opens a new email; attach the downloaded PDF') + '</span></button>' +
+      '</div>');
+    $$(".m5-big", m.el).forEach(function(b){
+      b.addEventListener("click", function(){ m.close(); sendFile(got, b.dataset.h, text, subject); });
+    });
+  });
+}
+function sendFile(got, how, text, subject){
+  var file = null;
+  try{ file = new File([got.blob], got.name, { type:got.blob.type }); }catch(e){}
+  var canFiles = !!(file && navigator.canShare && navigator.canShare({ files:[file] }));
+  if(canFiles && (MOBILE || how === "wa")){
+    navigator.share({ files:[file], title:subject, text:text }).then(function(){
+      A.toast("Shared " + got.name);
+    }).catch(function(e){
+      if(e && e.name === "AbortError") return;
+      fallback();
+    });
+    return;
+  }
+  fallback();
+  function fallback(){
+    dl(got.name, got.blob);
+    if(how === "wa") window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+    else window.open("https://mail.google.com/mail/?view=cm&fs=1&su=" + encodeURIComponent(subject) +
+                     "&body=" + encodeURIComponent(text), "_blank");
+    A.toast(got.name + " is in your Downloads — attach it to the message that opened");
+  }
+}
+
+/* ---------- invoices ---------- */
+async function invoiceCtx(sig){
+  var ctx = await window.CBpdfContext();
+  if(sig && sigData()){ ctx.sigData = sigData(); ctx.sigRatio = await sigRatio(); }
+  return ctx;
+}
+function invoiceFileName(inv, ext, sig){
+  var who = String(inv.billTo || "").split("\n")[0].slice(0, 42);
+  return safe(inv.number + " - " + who + " - " + (inv.date || "") + (sig ? " - signed" : "")) + "." + ext;
+}
+async function invoicePdf(inv, sig){
+  var ctx = await invoiceCtx(sig);
+  var doc = await F.makePdf(inv, ctx);
+  return { blob:doc.output("blob"), name:invoiceFileName(inv, "pdf", sig) };
+}
+async function invoiceWord(inv, sig){
+  var ctx = await invoiceCtx(sig);
+  return { blob:makeInvoiceDocx(inv, ctx), name:invoiceFileName(inv, "docx", sig) };
+}
+function invoiceText(inv){
+  var s = db().settings;
+  return "Invoice " + inv.number + " dated " + A.fmtDate(inv.date) +
+    (inv.reference ? "\nRe: " + inv.reference : "") +
+    "\nAmount payable: Rs " + A.money(A.totalOf(inv)) + "\n\n" + s.firm + "\n" + s.mobile;
+}
+function invoiceAction(inv, what){
+  if(!inv || !String(inv.billTo || "").trim()){ A.toast("Fill in the Bill To block first."); return; }
+  if(what === "share"){
+    shareFlow(inv.number, function(sig){ return invoicePdf(inv, sig); },
+      invoiceText(inv), "Invoice " + inv.number + " — " + db().settings.firm);
+    return;
+  }
+  askSignature((what === "word" ? "Get Word — " : "Get PDF — ") + inv.number, async function(sig){
+    var w = busy(what === "word" ? "Making the Word file…" : "Making the PDF…");
+    try{
+      var got = what === "word" ? await invoiceWord(inv, sig) : await invoicePdf(inv, sig);
+      dl(got.name, got.blob);
+      A.toast("Downloaded " + got.name);
+    }catch(e){ console.error(e); A.toast("Could not make the file: " + (e.message || e)); }
+    w.close();
+  });
+}
+window.CBinvoiceAction = invoiceAction;
+
+/* ================================================================
+   7. WORD FILES (.docx), built by hand like the rest of the tool
+   ================================================================ */
+var TW = function(inches){ return Math.round(inches * 1440); };
+var MM = function(mm){ return Math.round(mm / 25.4 * 1440); };
+function xe(s){
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function b64bytes(d){
+  var bin = atob(String(d).replace(/^data:[^,]*,/, "")), out = new Uint8Array(bin.length);
+  for(var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function rPr(o){
+  o = o || {};
+  var f = o.font || "Georgia", sz = Math.round((o.size || 14) * 2);
+  return '<w:rPr><w:rFonts w:ascii="' + xe(f) + '" w:hAnsi="' + xe(f) + '" w:cs="' + xe(f) + '"/>' +
+    (o.b ? '<w:b/>' : '') + (o.i ? '<w:i/>' : '') + (o.u ? '<w:u w:val="single"/>' : '') +
+    (o.color ? '<w:color w:val="' + o.color + '"/>' : '') +
+    '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/></w:rPr>';
+}
+function wRun(text, o){
+  var parts = String(text).split(/(\t|\n)/), out = "";
+  parts.forEach(function(p){
+    if(p === "\t") out += '<w:r>' + rPr(o) + '<w:tab/></w:r>';
+    else if(p === "\n") out += '<w:r>' + rPr(o) + '<w:br/></w:r>';
+    else if(p) out += '<w:r>' + rPr(o) + '<w:t xml:space="preserve">' + xe(p) + '</w:t></w:r>';
+  });
+  return out;
+}
+function wPara(runs, o){
+  o = o || {};
+  var ppr = '<w:pPr>' +
+    (o.keepNext ? '<w:keepNext/>' : '') +
+    (o.tabs ? '<w:tabs>' + o.tabs + '</w:tabs>' : '') +
+    '<w:spacing w:before="' + (o.before || 0) + '" w:after="' + (o.after == null ? 0 : o.after) + '"' +
+      (o.lineExact ? ' w:line="' + o.lineExact + '" w:lineRule="exact"' : ' w:line="' + (o.line || 360) + '" w:lineRule="auto"') + '/>' +
+    ((o.left || o.right || o.first || o.hanging)
+      ? '<w:ind' + (o.left ? ' w:left="' + o.left + '"' : '') + (o.right ? ' w:right="' + o.right + '"' : '') +
+        (o.first ? ' w:firstLine="' + o.first + '"' : '') + (o.hanging ? ' w:hanging="' + o.hanging + '"' : '') + '/>'
+      : '') +
+    (o.rule ? '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="4" w:color="C9CED6"/></w:pBdr>' : '') +
+    (o.shade ? '<w:shd w:val="clear" w:color="auto" w:fill="' + o.shade + '"/>' : '') +
+    (o.align ? '<w:jc w:val="' + o.align + '"/>' : '') +
+    '</w:pPr>';
+  return '<w:p>' + ppr + (runs || '') + '</w:p>';
+}
+function Docx(){
+  this.media = []; this.rels = []; this.nextRel = 4; this.nextPic = 1;
+}
+Docx.prototype.image = function(dataUrl, wmm, hmm){
+  var id = "rId" + (this.nextRel++), n = this.nextPic++, name = "img" + n + ".png";
+  this.media.push({ name:"word/media/" + name, data:b64bytes(dataUrl) });
+  this.rels.push('<Relationship Id="' + id + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/' + name + '"/>');
+  var cx = Math.round(wmm * 36000), cy = Math.round(hmm * 36000);
+  return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+    '<wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:docPr id="' + n + '" name="' + name + '"/>' +
+    '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
+    '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    '<pic:nvPicPr><pic:cNvPr id="' + n + '" name="' + name + '"/><pic:cNvPicPr/></pic:nvPicPr>' +
+    '<pic:blipFill><a:blip r:embed="' + id + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+    '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>' +
+    '</a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
+};
+Docx.prototype.pack = function(body, margins){
+  var mg = margins;
+  var docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"' +
+    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"' +
+    ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">' +
+    '<w:body>' + body +
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>' +
+    '<w:pgMar w:top="' + mg.top + '" w:right="' + mg.right + '" w:bottom="' + mg.bottom + '" w:left="' + mg.left + '" w:header="0" w:footer="0" w:gutter="0"/>' +
+    '</w:sectPr></w:body></w:document>';
+  var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Georgia" w:hAnsi="Georgia" w:cs="Georgia"/>' +
+    '<w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="en-IN"/></w:rPr></w:rPrDefault>' +
+    '<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>' +
+    '<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/>' +
+    '<w:tblPr><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style>' +
+    '</w:styles>';
+  var settings = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:defaultTabStop w:val="720"/></w:settings>';
+  var types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+    '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>' +
+    '</Types>';
+  var rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+  var docRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>' +
+    this.rels.join("") + '</Relationships>';
+  var files = [
+    { name:"[Content_Types].xml", data:types }, { name:"_rels/.rels", data:rootRels },
+    { name:"word/document.xml", data:docXml }, { name:"word/styles.xml", data:styles },
+    { name:"word/settings.xml", data:settings }, { name:"word/_rels/document.xml.rels", data:docRels }
+  ].concat(this.media);
+  return new Blob([F.zipWrite(files)], { type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+};
+function noBorders(){
+  return '<w:tblBorders>' + ["top","left","bottom","right","insideH","insideV"].map(function(e){
+    return '<w:' + e + ' w:val="none" w:sz="0" w:space="0" w:color="auto"/>'; }).join("") + '</w:tblBorders>';
+}
+function cell(w, content, o){
+  o = o || {};
+  return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/>' +
+    (o.shade ? '<w:shd w:val="clear" w:color="auto" w:fill="' + o.shade + '"/>' : '') +
+    (o.borderBottom ? '<w:tcBorders><w:bottom w:val="single" w:sz="4" w:space="0" w:color="DFE3E8"/></w:tcBorders>' : '') +
+    (o.vAlign ? '<w:vAlign w:val="' + o.vAlign + '"/>' : '') +
+    '</w:tcPr>' + (content || '<w:p/>') + '</w:tc>';
+}
+function table(widths, rows, o){
+  o = o || {};
+  return '<w:tbl><w:tblPr><w:tblW w:w="' + widths.reduce(function(a, b){ return a + b; }, 0) + '" w:type="dxa"/>' +
+    (o.indent ? '<w:tblInd w:w="' + o.indent + '" w:type="dxa"/>' : '') +
+    noBorders() + '<w:tblLayout w:type="fixed"/>' +
+    '<w:tblCellMar><w:left w:w="' + (o.padX == null ? 60 : o.padX) + '" w:type="dxa"/><w:right w:w="' + (o.padX == null ? 60 : o.padX) + '" w:type="dxa"/></w:tblCellMar></w:tblPr>' +
+    '<w:tblGrid>' + widths.map(function(w){ return '<w:gridCol w:w="' + w + '"/>'; }).join("") + '</w:tblGrid>' +
+    rows.join("") + '</w:tbl>';
+}
+function letterheadDocx(D, ctx, width, indent, rightCell){
+  var s = ctx.settings;
+  var logo = ctx.logoData ? wPara(D.image(ctx.logoData, 26, 26), { line:240 }) : '<w:p/>';
+  var firm = wPara(wRun(s.firm, { size:15, b:true }), { line:240, after:60 });
+  String(s.addr || "").split("\n").forEach(function(ln){ firm += wPara(wRun(ln, { size:8.2 }), { line:240 }); });
+  firm += wPara(wRun("Mobile ", { size:8.2, b:true }) + wRun(s.mobile, { size:8.2 }), { line:240 });
+  firm += wPara(wRun("Email ", { size:8.2, b:true }) + wRun(s.email, { size:8.2 }), { line:240 });
+  var wl = MM(32), wr = rightCell ? MM(40) : 0, wf = width - wl - wr;
+  var cells = [cell(wl, logo), cell(wf, firm)];
+  if(rightCell) cells.push(cell(wr, rightCell));
+  return table(rightCell ? [wl, wf, wr] : [wl, wf], ['<w:tr>' + cells.join("") + '</w:tr>'], { indent:indent, padX:0 }) +
+    wPara('', { rule:true, line:120, left:indent < 0 ? indent : 0, right:indent < 0 ? -MM(12.7) : 0 });
+}
+
+/* ---------- the invoice as a Word file ---------- */
+function makeInvoiceDocx(inv, ctx){
+  var D = new Docx(), s = ctx.settings, rows = ctx.printedRows(inv);
+  var total = rows.reduce(function(a, r){ return a + r.amount; }, 0);
+  var qty = rows.reduce(function(a, r){ return a + r.qty; }, 0);
+  var W = MM(186), acc = String(s.accent || "#1668e3").replace("#", "").toUpperCase();
+  var body = letterheadDocx(D, ctx, W, 0,
+    wPara(wRun("INVOICE", { size:11, b:true, color:acc }), { align:"right", line:240 }) +
+    (inv.isDraft ? wPara(wRun("DRAFT — NOT ISSUED", { size:7.6, color:"B02A2A" }), { align:"right", line:240 }) : ''));
+  /* bill to and fields */
+  var bt = wPara(wRun("Bill To:", { size:11, b:true }), { line:276, before:120 });
+  String(inv.billTo || "-").split("\n").forEach(function(ln){ bt += wPara(wRun(ln, { size:12, b:true }), { line:276 }); });
+  var fl = "";
+  [["Invoice #:", inv.number], ["Invoice Date:", ctx.fmtDate(inv.date)], ["Due Date:", ctx.fmtDate(inv.due)]].forEach(function(p, i){
+    fl += wPara(wRun(p[0] + " ", { size:10.5, b:true }) + wRun(p[1], { size:11, b:true }), { align:"right", line:276, before:i ? 0 : 120 });
+  });
+  body += table([MM(110), MM(76)], ['<w:tr>' + cell(MM(110), bt) + cell(MM(76), fl) + '</w:tr>'], { padX:0 });
+  if(inv.reference) body += wPara(wRun("Reference: ", { size:11, b:true }) + wRun(inv.reference, { size:11 }), { before:160, after:160, line:276 });
+  /* items */
+  var cw = [MM(9), MM(103), MM(28), MM(16), MM(30)];
+  var hdr = '<w:tr>' + [["#","center"],["Particulars","left"],["Rate","right"],["Qty","center"],["Amount","right"]].map(function(h, i){
+    return cell(cw[i], wPara(wRun(h[0], { size:11, b:true, color:"FFFFFF" }), { align:h[1], line:276, before:60, after:60 }), { shade:acc });
+  }).join("") + '</w:tr>';
+  var trs = [hdr];
+  rows.forEach(function(r, i){
+    var part = wPara(wRun(r.name, { size:12, b:true }), { line:300, before:60 });
+    if(r.note) String(r.note).split("\n").forEach(function(ln){ part += wPara(wRun(ln, { size:10 }), { line:264 }); });
+    part += wPara('', { line:120 });
+    trs.push('<w:tr><w:trPr><w:cantSplit/></w:trPr>' +
+      cell(cw[0], wPara(wRun(String(i + 1), { size:12 }), { align:"center", line:300, before:60 }), { borderBottom:true }) +
+      cell(cw[1], part, { borderBottom:true }) +
+      cell(cw[2], wPara(wRun(ctx.money(r.rate), { size:12, b:true }), { align:"right", line:300, before:60 }), { borderBottom:true }) +
+      cell(cw[3], wPara(wRun(String(r.qty), { size:12 }), { align:"center", line:300, before:60 }), { borderBottom:true }) +
+      cell(cw[4], wPara(wRun(ctx.money(r.amount), { size:12 }), { align:"right", line:300, before:60 }), { borderBottom:true }) +
+      '</w:tr>');
+  });
+  body += table(cw, trs, { padX:60 });
+  body += wPara(wRun("Total   ", { size:11.5, b:true }) + wRun("₹" + ctx.money(total), { size:12.5, b:true }),
+    { align:"right", before:200, after:60, line:276, rule:true });
+  body += wPara(wRun("Total Items / Qty : " + rows.length + " / " + qty, { size:10.5 }), { line:276, before:60 });
+  body += wPara(wRun("Total amount (in words): " + ctx.amountWords(total), { size:10.5 }), { align:"right", line:276 });
+  body += wPara(wRun("Amount Payable: ", { size:10, b:true }) + wRun("₹" + ctx.money(total), { size:10, b:true }), { align:"right", line:276, after:240 });
+  /* bank details and signatory */
+  var bank = wPara(wRun("Bank Details:", { size:9.5, b:true }), { line:264 });
+  [["Bank:", s.bank], ["Account #:", s.acc], ["IFSC Code:", s.ifsc], ["Branch:", s.branch]].forEach(function(p){
+    bank += wPara(wRun(p[0] + " ", { size:9 }) + wRun(p[1], { size:9.5, b:true, font:"Arial" }), { line:264 });
+  });
+  var qr = ctx.qrData ? wPara(wRun("Pay using UPI:", { size:9, b:true }), { line:240 }) + wPara(D.image(ctx.qrData, 26, 26), { line:240 }) : '<w:p/>';
+  var sign = wPara(wRun("For " + s.firm, { size:8.6 }), { align:"right", line:240 });
+  if(ctx.sigData){
+    var h = 15, w = Math.min(44, h * (ctx.sigRatio || 1.66));
+    sign += wPara(D.image(ctx.sigData, w, h), { align:"right", line:240, before:60 });
+  } else sign += wPara('', { lineExact:MM(15) });
+  sign += wPara(wRun("Authorized Signatory", { size:8.6 }), { align:"right", line:240 });
+  body += table([MM(36), MM(90), MM(60)], ['<w:tr>' + cell(MM(36), qr) + cell(MM(90), bank) + cell(MM(60), sign) + '</w:tr>'], { padX:0 });
+  body += wPara(wRun(inv.number + "  •  " + (s.footer || ""), { size:7.4, color:"3D444D" }), { before:360, line:240 });
+  return D.pack(body, { top:MM(12), right:MM(12), bottom:MM(12), left:MM(12) });
+}
+
+/* ================================================================
+   8. LETTERS
+   ================================================================ */
+var DESIG_ADV = "Advocate";
+var DESIG_ASC = "Additional Standing Counsel, Central Government";
+var L = null;            /* the letter open in the editor */
+var dirty = false;
+var regTab = "final";
+var BODY = null, ENCL = null;
+
+function isFinal(l){ return l.status !== "draft"; }
+function monthKey(iso){ return String(iso || "").slice(0, 7); }
+function fmtNo(k, n){ return k.replace("-", "/") + "/" + pad2(n); }
+function seqOf(no){ var m = String(no || "").match(/\/(\d+)\s*$/); return m ? parseInt(m[1], 10) : 0; }
+
+/* numbers for every saved letter: its own if it has one, otherwise the
+   older letters are numbered within their month by date */
+function numberMap(){
+  var by = {}, out = {};
+  (db().letters || []).filter(isFinal).forEach(function(l){
+    var k = monthKey(l.date); (by[k] = by[k] || []).push(l);
+  });
+  Object.keys(by).forEach(function(k){
+    var used = {};
+    by[k].forEach(function(l){ if(l.no){ out[l.id] = l.no; used[seqOf(l.no)] = 1; } });
+    var n = 1;
+    by[k].filter(function(l){ return !l.no; })
+      .sort(function(a, b){ return (a.date + (a.savedAt || "")).localeCompare(b.date + (b.savedAt || "")); })
+      .forEach(function(l){ while(used[n]) n++; out[l.id] = fmtNo(k, n); used[n] = 1; });
+  });
+  return out;
+}
+function nextNo(dateIso){
+  var k = monthKey(dateIso), map = numberMap(), max = 0;
+  (db().letters || []).forEach(function(l){
+    if(isFinal(l) && monthKey(l.date) === k && (!L || l.id !== L.id)) max = Math.max(max, seqOf(map[l.id]));
+  });
+  return fmtNo(k, max + 1);
+}
+/* write the older letters' numbers down once Drive has caught up, so they never shift */
+function fixLegacyNumbers(){
+  var cfg = {}, st = {};
+  try{ cfg = JSON.parse(localStorage.getItem("cs2_cfg") || "{}") || {}; }catch(e){}
+  try{ st = JSON.parse(localStorage.getItem("cs2b_state") || "{}") || {}; }catch(e){}
+  if(cfg.url && cfg.token && !st.lastOk) return;
+  var map = numberMap(), changed = 0;
+  (db().letters || []).forEach(function(l){ if(isFinal(l) && !l.no && map[l.id]){ l.no = map[l.id]; changed++; } });
+  if(changed) A.saveNow();
+}
+function nextDraftNo(){
+  return (db().letters || []).reduce(function(m, l){ return Math.max(m, l.draftNo || 0); }, 0) + 1;
+}
+
+function blank(kind){
+  return { id:null, v:3, kind:kind || "general", invoiceId:null, invoiceNo:"", billDate:"",
+    date:A.todayISO(), no:"", status:"new", draftNo:0, draftName:"",
+    html:"", encl:[], desig:"both", valign:"top", text:"" };
+}
+
+/* ---------- reading pasted or old letter text ---------- */
+var RX = {
+  to:      /^\s*to\s*[,:\-]?\s*$/i,
+  toLine:  /^\s*to\s*[:,]\s*(.+)$/i,
+  from:    /^\s*from\s*[,:\-]?\s*(.*)$/i,
+  subj:    /^\s*(?:sub(?:ject)?\.?|re)\s*[:\-–—]\s*(.*)$/i,
+  ref:     /^\s*(?:ref(?:erence)?\.?(?:\s*no\.?)?|your\s+ref\.?)\s*[:\-–—]\s*(.*)$/i,
+  sal:     /^\s*(?:(?:respected|dear)\s+)?(?:sir|madam|sir\s*\/\s*madam|sir\s+or\s+madam|sirs|ma'?am)\s*[,.:]?\s*$|^\s*dear\s+[^,]{1,40},\s*$/i,
+  date:    /^\s*(?:dated?\s*[:\-]?\s*)?(?:\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[a-z]{3,9},?\s+\d{4}|[a-z]{3,9}\s+\d{1,2},?\s+\d{4})\s*$/i,
+  close:   /^\s*(?:thanking\s+you|thank\s+you|yours\s+(?:sincerely|faithfully|truly|obediently)|sincerely|regards|with\s+(?:warm\s+|kind\s+|best\s+)?regards|warm\s+regards|best\s+regards)\b/i,
+  encl:    /^\s*(?:encl\.|encls\.|enclosures?\s*[:\-–]|encl\s*[:\-–]|enc\.\s*[:\-–]?|enclosures?\s*$|encl\s*$)\s*(.*)$/i,
+  bullet:  /^\s*(?:\d{1,2}[.)]|[a-z][.)]|[ivx]{1,4}[.)]|[-•*●▪])\s+/i,
+  preface: /^\s*(?:sure|certainly|okay|ok|here(?:'|’)?s|here\s+is|below\s+is|please\s+find\s+below)\b.*(?::|letter|draft|version|text)\s*[.!]?\s*$/i
+};
+function cleanLine(x){
+  return String(x).replace(/^\s*#{1,6}\s+/, "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1")
+    .replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s).,;:]|$)/g, "$1$2").replace(/`/g, "").replace(/[ \t]+$/, "");
+}
+function parseLetter(raw){
+  var lines = String(raw || "").replace(/\r\n?/g, "\n").replace(/ /g, " ").split("\n").map(cleanLine);
+  while(lines.length && !lines[0].trim()) lines.shift();
+  if(lines.length && RX.preface.test(lines[0])) lines.shift();
+  lines = lines.filter(function(x){ return !/^\s*(?:-{3,}|_{3,}|\*{3,}|={3,})\s*$/.test(x) && !/^\s*\[[^\]]*\]\s*$/.test(x); });
+
+  var out = { to:[], subject:"", ref:"", salutation:"", paras:[], encl:[], toMarker:false };
+  var state = "head", para = [], toDone = false, inFrom = false, subjOpen = false, head = [];
+  function flush(){ if(para.length){ out.paras.push(para.join(" ").replace(/\s+/g, " ").trim()); para = []; } }
+
+  lines.forEach(function(ln){
+    var t = ln.trim(), m;
+    if(state === "head"){
+      if(!t){ if(inFrom) inFrom = false; if(out.to.length) toDone = true; subjOpen = false; return; }
+      if(inFrom) return;
+      if(RX.from.test(t) && !out.to.length && !out.subject){ inFrom = true; return; }
+      if(RX.to.test(t)){ out.toMarker = true; return; }
+      if((m = t.match(RX.toLine)) && !out.to.length){ out.toMarker = true; out.to.push(m[1].trim()); return; }
+      if(RX.date.test(t)) return;
+      if((m = t.match(RX.subj))){ out.subject = m[1].trim(); subjOpen = true; return; }
+      if((m = t.match(RX.ref))){ out.ref = m[1].trim(); return; }
+      if(RX.sal.test(t)){ out.salutation = t.replace(/[.:]$/, ","); if(!/,$/.test(out.salutation)) out.salutation += ","; state = "body"; return; }
+      if(subjOpen){ out.subject += " " + t; return; }
+      if(out.subject || out.ref){ state = "body"; para.push(t); return; }
+      if(!toDone){ out.to.push(t); head.push(t); return; }
+      state = "body"; para.push(t); return;
+    }
+    if(state === "body"){
+      if(RX.close.test(t)){ flush(); state = "closing"; return; }
+      if((m = t.match(RX.encl))){ flush(); state = "encl"; if(m[1] && m[1].trim()) out.encl.push(m[1].replace(RX.bullet, "").trim()); return; }
+      if(!t){ flush(); return; }
+      if(RX.bullet.test(t)){ flush(); para.push(t.replace(/^\s*[-*●▪]\s+/, "• ")); flush(); return; }
+      para.push(t); return;
+    }
+    if(state === "closing"){
+      if((m = t.match(RX.encl))){ state = "encl"; if(m[1] && m[1].trim()) out.encl.push(m[1].replace(RX.bullet, "").trim()); }
+      return;
+    }
+    if(state === "encl"){
+      if(!t || RX.close.test(t)) return;
+      out.encl.push(t.replace(RX.bullet, "").trim());
+    }
+  });
+  flush();
+  /* nothing that looks like a letter's head: it is all body text */
+  if(!out.salutation && !out.subject && !out.ref && !out.toMarker && out.to.length){
+    var body = [], cur = [];
+    lines.forEach(function(ln){
+      var t = ln.trim();
+      if(RX.close.test(t)) cur = null;
+      if(cur === null) return;
+      if(!t){ if(cur.length) body.push(cur.join(" ")); cur = []; } else cur.push(t);
+    });
+    if(cur && cur.length) body.push(cur.join(" "));
+    out.to = []; out.paras = body.filter(function(x){ return !RX.encl.test(x); });
+  }
+  return out;
+}
+function paraHTML(t){ return '<p class="lt-para">' + esc(t) + '</p>'; }
+function addrHTML(lines){
+  return '<p class="lt-addr">To,</p>' + lines.map(function(x){ return '<p class="lt-addr">' + esc(x) + '</p>'; }).join("");
+}
+function subjHTML(label, t){ return '<p class="lt-subj">' + label + ' ' + esc(t) + '</p>'; }
+function buildFromParsed(p){
+  var h = "";
+  if(p.to.length) h += addrHTML(p.to);
+  if(p.subject) h += subjHTML("Subject:", p.subject);
+  if(p.ref) h += subjHTML("Ref.:", p.ref);
+  h += '<p class="lt-sal">' + esc(p.salutation || "Sir/Madam,") + '</p>';
+  h += p.paras.length ? p.paras.map(paraHTML).join("") : '<p class="lt-para" data-ph="Type or paste the letter here."><br></p>';
+  return h;
+}
+
+/* old letters were one block of typed text — read them into the new layout */
+function upgradeLegacy(l){
+  if(l.html) return l;
+  var x = clone(l);
+  var p = parseLetter(x.text || "");
+  x.html = buildFromParsed(p);
+  x.encl = p.encl;
+  var t = String(l.text || "");
+  x.desig = x.desig || (l.sign === "asc" || /additional\s+standing\s+counsel/i.test(t) ? "asc"
+          : (l.sign === "adv" || /\badvocate\b/i.test(t) ? "adv" : "both"));
+  x.kind = x.invoiceId ? "invoice" : "general";
+  x.valign = x.valign || "top";
+  x.v = 3;
+  return x;
+}
+
+/* ---------- starting letters ---------- */
+function addressLines(billTo){
+  var lines = String(billTo || "").split("\n").map(function(x){ return x.trim(); }).filter(Boolean);
+  if(!lines.length) return [];
+  if(lines.length === 1 && lines[0].length > 34 && lines[0].indexOf(",") > -1){
+    var i = lines[0].indexOf(",");
+    lines = [lines[0].slice(0, i + 1), lines[0].slice(i + 1).trim()];
+  }
+  if(!/^(the|m\/s|shri|smt|dr|sri)\b/i.test(lines[0])) lines[0] = "The " + lines[0];
+  return lines;
+}
+function invoiceLetter(v){
+  var l = blank("invoice");
+  l.invoiceId = v.id || null; l.invoiceNo = v.number || ""; l.billDate = v.date || "";
+  l.html = addrHTML(addressLines(v.billTo)) +
+    (v.reference ? subjHTML("Subject:", v.reference) : '<p class="lt-subj">Subject: </p>') +
+    '<p class="lt-sal">Sir/Madam,</p>' +
+    '<p class="lt-para lt-auto">Please find enclosed herewith my bill No. ' + esc(v.number) + ' dated ' +
+      esc(A.letterDate(v.date)) + ' towards fee and expenses in the above matter. You are requested to ' +
+      'process the same and release the amount at the earliest.</p>';
+  l.encl = ["My bill No. " + v.number + " dated " + A.letterDate(v.date) + " towards fee and expenses in the matter."];
+  l.enclAuto = true;
+  return l;
+}
+function generalLetter(){
+  var l = blank("general");
+  l.html = '<p class="lt-addr">To,</p>' +
+    '<p class="lt-addr" data-ph="The addressee — designation, office and address"><br></p>' +
+    '<p class="lt-subj">Subject: </p>' +
+    '<p class="lt-sal">Sir/Madam,</p>' +
+    '<p class="lt-para" data-ph="Type the letter here, or copy it from Gemini and press Ctrl+V — it is laid out automatically."><br></p>';
+  return l;
+}
+
+/* ---------- the page ---------- */
+function logoMarkup(){
+  var s = db().settings;
+  return s.logo ? '<img src="' + esc(s.logo) + '" alt="">' : FALLBACK_LOGO;
+}
+function letterheadHTML(){
+  var s = db().settings;
+  return '<div class="lt-head"><div class="lt-logo">' + logoMarkup() + '</div><div class="lt-firm">' +
+    '<h1>' + esc(s.firm) + '</h1><p>' + esc(s.addr).replace(/\n/g, "<br>") + '</p>' +
+    '<p><b>Mobile</b> ' + esc(s.mobile) + '</p><p><b>Email</b> ' + esc(s.email) + '</p></div></div>' +
+    '<div class="lt-rule"></div>';
+}
+function desigHTML(l, edit){
+  var d = l.desig || "both";
+  var adv = '<span class="lt-dopt" data-d="adv">' + DESIG_ADV + (d === "both" ? ' /' : '') +
+    (edit && d === "both" ? '<button class="lt-keep lt-ui" data-keep="adv" contenteditable="false">Retain only “Advocate”</button>' : '') + '</span>';
+  var asc = '<span class="lt-dopt" data-d="asc">Additional Standing Counsel,<br>Central Government' +
+    (edit && d === "both" ? '<button class="lt-keep lt-ui" data-keep="asc" contenteditable="false">Retain only \u201CAdditional Standing Counsel\u201D</button>' : '') + '</span>';
+  var h = d === "adv" ? adv : d === "asc" ? asc : adv + '<br>' + asc;
+  if(edit && d !== "both") h += '<br><button class="lt-both lt-ui" data-keep="both">↺ show both again</button>';
+  return '<div class="lt-desig">' + h + '</div>';
+}
+function closingHTML(l, o){
+  var sig = (o.sig && sigData()) ? '<img src="' + esc(sigData()) + '" alt="">' : '';
+  return '<div class="lt-close"><div class="lt-thank">Thanking you,</div>' +
+    '<div class="lt-yours"><div>Yours sincerely,</div><div class="lt-sigspace">' + sig + '</div>' +
+    '<div class="lt-name">Sanket Charpe</div>' + desigHTML(l, o.edit) + '</div></div>';
+}
+function enclHTML(l, o){
+  if(o.edit){
+    var items = (l.encl && l.encl.length ? l.encl : [""]).map(function(t){ return '<li>' + (t ? esc(t) : '<br>') + '</li>'; }).join("");
+    return '<div class="lt-encl"><div class="lt-encl-h">Encl.:</div><ol class="lt-encl-list" id="m5-encl" contenteditable="true">' + items + '</ol></div>';
+  }
+  var list = (l.encl || []).map(function(t){ return String(t).trim(); }).filter(Boolean);
+  if(!list.length) return '';
+  return '<div class="lt-encl"><div class="lt-encl-h">Encl.:</div><ol class="lt-encl-list">' +
+    list.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join("") + '</ol></div>';
+}
+function cleanBody(html){
+  var d = document.createElement("div"); d.innerHTML = html || "";
+  $$("[data-ph]", d).forEach(function(n){ if(!n.textContent.trim()) n.remove(); else n.removeAttribute("data-ph"); });
+  $$(".is-empty", d).forEach(function(n){ n.classList.remove("is-empty"); });
+  $$(".lt-ui", d).forEach(function(n){ n.remove(); });
+  $$("[contenteditable]", d).forEach(function(n){ n.removeAttribute("contenteditable"); });
+  $$(".lt-subj", d).forEach(function(n){ if(!n.textContent.replace(/^\s*(subject|sub\.?|ref\.?)\s*:?\s*/i, "").trim()) n.remove(); });
+  var addr = $$(".lt-addr", d);
+  if(addr.length && addr.every(function(n){ return /^\s*to\s*[,:]?\s*$/i.test(n.textContent) || !n.textContent.trim(); }))
+    addr.forEach(function(n){ n.remove(); });
+  /* drop empty paragraphs at the end */
+  var last = d.lastElementChild;
+  while(last && !last.textContent.trim() && !last.querySelector("img")){ var p = last.previousElementSibling; last.remove(); last = p; }
+  return d.innerHTML;
+}
+function metaHTML(l, edit){
+  var no = l.no ? "No. " + esc(l.no)
+    : (edit ? '<span class="lt-ui lt-nonum">' + (l.status === "draft" ? "Draft " + (l.draftNo || "") + " — numbered when saved as a letter" : "Number is given on saving") + '</span>' : "");
+  return '<div class="lt-meta"><span>' + no + '</span><span>Date: ' + esc(A.letterDate(l.date)) + '</span></div>';
+}
+function flowHTML(l, o){
+  return metaHTML(l, o.edit) +
+    '<div class="lt-flow">' +
+      (o.edit ? '<div class="lt-body" id="m5-body" contenteditable="true" spellcheck="true">' + (l.html || "") + '</div>'
+              : '<div class="lt-body">' + cleanBody(l.html) + '</div>') +
+      closingHTML(l, o) + enclHTML(l, o) +
+    '</div>';
+}
+
+/* ---------- editor ---------- */
+function editorMount(){
+  var page = $("#m5-page"); if(!page) return;
+  page.className = "lt-page lt-sheet va-" + (L.valign || "top");
+  page.innerHTML = letterheadHTML() + flowHTML(L, { edit:true, sig:$("#m5-showsig") && $("#m5-showsig").checked });
+  BODY = $("#m5-body"); ENCL = $("#m5-encl");
+  bindEditor();
+  markEmpty();
+  sidePanel();
+  fitPage();
+}
+function fitPage(){
+  var page = $("#m5-page"), wrap = $(".m5-pagewrap"); if(!page || !wrap) return;
+  var room = wrap.clientWidth - 8, full = 210 * (96 / 25.4);
+  page.style.zoom = room < full ? String(Math.max(0.4, room / full)) : "";
+}
+window.addEventListener("resize", fitPage);
+function readEditor(){
+  if(!L || !BODY) return;
+  L.html = BODY.innerHTML;
+  L.encl = $$("li", ENCL).map(function(li){ return li.textContent.replace(/\s+/g, " ").trim(); }).filter(Boolean);
+  L.text = (BODY.innerText || "").trim();
+  L.date = $("#m5-date").value || L.date;
+  L.draftName = $("#m5-dname").value.trim();
+}
+function markEmpty(){
+  if(!BODY) return;
+  $$("[data-ph]", BODY).forEach(function(n){
+    if(n.textContent.trim()) n.removeAttribute("data-ph");
+    else n.classList.add("is-empty");
+  });
+  $$(".is-empty", BODY).forEach(function(n){ if(n.textContent.trim() || !n.hasAttribute("data-ph")) n.classList.remove("is-empty"); });
+  if(ENCL){
+    if(!ENCL.querySelector("li")) ENCL.innerHTML = "<li><br></li>";
+    $$("li", ENCL).forEach(function(li, i, all){
+      li.classList.toggle("is-empty", !li.textContent.trim() && all.length === 1);
+    });
+  }
+}
+function setDirty(v){
+  dirty = v;
+  var st = $("#m5-dirty"); if(st) st.textContent = v ? "Unsaved changes" : "";
+  if(v) saveWip();
+}
+
+/* --- undo / redo: snapshots of the page, at least a hundred steps --- */
+var U = { undo:[], redo:[], burst:null };
+function caretGet(){
+  var sel = window.getSelection(); if(!sel.rangeCount || !BODY) return null;
+  var r = sel.getRangeAt(0);
+  if(!BODY.contains(r.startContainer)) return null;
+  var pre = document.createRange(); pre.selectNodeContents(BODY); pre.setEnd(r.startContainer, r.startOffset);
+  return pre.toString().length;
+}
+function caretSet(n){
+  if(n == null || !BODY) return;
+  var w = document.createTreeWalker(BODY, NodeFilter.SHOW_TEXT), node, left = n;
+  while((node = w.nextNode())){
+    if(node.length >= left){
+      var r = document.createRange(); r.setStart(node, left); r.collapse(true);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); return;
+    }
+    left -= node.length;
+  }
+  var r2 = document.createRange(); r2.selectNodeContents(BODY); r2.collapse(false);
+  var s2 = window.getSelection(); s2.removeAllRanges(); s2.addRange(r2);
+}
+function snap(){ return { b:BODY ? BODY.innerHTML : "", e:ENCL ? ENCL.innerHTML : "", c:caretGet(), d:L ? L.desig : "both", v:L ? L.valign : "top" }; }
+function pushUndo(){
+  if(!BODY) return;
+  var s = snap(), top = U.undo[U.undo.length - 1];
+  if(top && top.b === s.b && top.e === s.e && top.d === s.d && top.v === s.v) return;
+  U.undo.push(s); if(U.undo.length > 150) U.undo.shift();
+  U.redo.length = 0; undoButtons();
+}
+function restore(s){
+  BODY.innerHTML = s.b; ENCL.innerHTML = s.e;
+  if(L && (L.desig !== s.d || L.valign !== s.v)){
+    L.desig = s.d; L.valign = s.v; readEditor(); editorMount(); BODY.focus();
+  }
+  caretSet(s.c); markEmpty(); setDirty(true); undoButtons();
+}
+function doUndo(){ if(!U.undo.length) return; var cur = snap(); U.redo.push(cur); restore(U.undo.pop()); }
+function doRedo(){ if(!U.redo.length) return; U.undo.push(snap()); restore(U.redo.pop()); }
+function undoButtons(){
+  var u = $("#m5-undo"), r = $("#m5-redo");
+  if(u){ u.disabled = !U.undo.length; u.title = "Undo (Ctrl+Z) — " + U.undo.length + " step" + (U.undo.length === 1 ? "" : "s") + " available"; }
+  if(r){ r.disabled = !U.redo.length; r.title = "Redo (Ctrl+Y) — " + U.redo.length + " step" + (U.redo.length === 1 ? "" : "s") + " available"; }
+}
+function resetUndo(){ U.undo = []; U.redo = []; U.burst = null; undoButtons(); }
+
+/* --- selection helpers --- */
+var savedRange = null;
+function inEditor(node){ return node && ((BODY && BODY.contains(node)) || (ENCL && ENCL.contains(node))); }
+document.addEventListener("selectionchange", function(){
+  var sel = window.getSelection();
+  if(sel.rangeCount && inEditor(sel.getRangeAt(0).startContainer)){ savedRange = sel.getRangeAt(0).cloneRange(); syncToolbar(); }
+});
+function restoreRange(){
+  if(!savedRange) { if(BODY) BODY.focus(); return; }
+  var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(savedRange);
+}
+function blocksInSelection(){
+  if(!BODY) return [];
+  var sel = window.getSelection(); if(!sel.rangeCount) return [];
+  var r = sel.getRangeAt(0);
+  var kids = Array.prototype.slice.call(BODY.children);
+  var hit = kids.filter(function(k){ return r.intersectsNode(k); });
+  if(!hit.length){
+    var n = r.startContainer; while(n && n.parentNode !== BODY) n = n.parentNode;
+    if(n && n.nodeType === 1) hit = [n];
+  }
+  return hit;
+}
+function currentBlock(){
+  var sel = window.getSelection(); if(!sel.rangeCount) return null;
+  var n = sel.getRangeAt(0).startContainer;
+  while(n && n.parentNode !== BODY) n = n.parentNode;
+  return n && n.nodeType === 1 ? n : null;
+}
+function atBlockStart(blk){
+  var sel = window.getSelection(); if(!sel.rangeCount || !blk) return false;
+  var r = sel.getRangeAt(0);
+  var pre = document.createRange(); pre.selectNodeContents(blk); pre.setEnd(r.startContainer, r.startOffset);
+  return pre.toString().replace(/​/g, "").length === 0;
+}
+
+/* --- toolbar commands --- */
+function cmd(name, val){
+  restoreRange(); pushUndo(); U.burst = null;
+  document.execCommand("styleWithCSS", false, true);
+  document.execCommand(name, false, val);
+  afterEdit();
+}
+function setFont(face){ cmd("fontName", face); }
+function setSize(pt){
+  restoreRange(); pushUndo();
+  document.execCommand("styleWithCSS", false, false);
+  document.execCommand("fontSize", false, "7");
+  $$('font[size="7"]', BODY).forEach(function(f){
+    var sp = document.createElement("span"); sp.style.fontSize = pt + "pt";
+    while(f.firstChild) sp.appendChild(f.firstChild);
+    f.parentNode.replaceChild(sp, f);
+  });
+  document.execCommand("styleWithCSS", false, true);
+  afterEdit();
+}
+function setAlign(a){
+  restoreRange(); pushUndo();
+  blocksInSelection().forEach(function(b){ b.style.textAlign = a; });
+  afterEdit();
+}
+function setSpacing(v){
+  restoreRange(); pushUndo();
+  blocksInSelection().forEach(function(b){ b.style.lineHeight = v; });
+  afterEdit();
+}
+var STYLES = { "lt-para":"Normal paragraph", "lt-addr":"Address line", "lt-subj":"Subject line", "lt-head":"Heading", "lt-quote":"Quoted passage" };
+function setStyle(cls){
+  restoreRange(); pushUndo();
+  blocksInSelection().forEach(function(b){
+    if(b.tagName !== "P"){ var p = document.createElement("p"); while(b.firstChild) p.appendChild(b.firstChild); b.parentNode.replaceChild(p, b); b = p; }
+    b.className = cls; b.style.textAlign = ""; b.style.textIndent = ""; b.style.marginLeft = ""; b.style.marginRight = "";
+  });
+  afterEdit();
+}
+function clearFormat(){
+  restoreRange(); pushUndo();
+  document.execCommand("removeFormat");
+  blocksInSelection().forEach(function(b){ b.removeAttribute("style"); });
+  afterEdit();
+}
+function afterEdit(){ markEmpty(); setDirty(true); syncToolbar(); }
+function syncToolbar(){
+  var blk = currentBlock(); if(!blk) return;
+  var cs = getComputedStyle(blk);
+  var al = cs.textAlign === "start" ? "left" : cs.textAlign;
+  $$("[data-align]").forEach(function(b){ b.classList.toggle("on", b.dataset.align === al); });
+  var st = $("#m5-style"); if(st){ var c = Object.keys(STYLES).filter(function(k){ return blk.classList.contains(k); })[0]; st.value = c || ""; }
+}
+
+/* --- paste: Gemini text is arranged into the letter --- */
+function insertParasAt(paras){
+  var blk = currentBlock();
+  var frag = document.createElement("div"); frag.innerHTML = paras.map(paraHTML).join("");
+  var nodes = Array.prototype.slice.call(frag.children);
+  if(blk && blk.parentNode === BODY){
+    var after = blk;
+    if(!blk.textContent.trim()){ BODY.insertBefore(nodes[0], blk); blk.remove(); after = nodes[0]; nodes.shift(); }
+    nodes.forEach(function(n){ after.parentNode.insertBefore(n, after.nextSibling); after = n; });
+  } else nodes.forEach(function(n){ BODY.appendChild(n); });
+}
+function smartPaste(text){
+  pushUndo(); U.burst = null;
+  var p = parseLetter(text), parts = [];
+  if(p.to.length || p.subject || p.ref){
+    var keepAddr = !p.to.length;
+    var addrNodes = keepAddr ? $$(".lt-addr", BODY).map(function(n){ return n.outerHTML; }).join("") : "";
+    BODY.innerHTML = addrNodes + buildFromParsed(p);
+    parts.push(p.to.length ? "address" : null, p.subject ? "subject" : null);
+  } else {
+    var auto = $$(".lt-auto, .lt-para.is-empty, .lt-para[data-ph]", BODY);
+    if(auto.length){
+      var first = auto[0], frag = document.createElement("div");
+      frag.innerHTML = p.paras.map(paraHTML).join("");
+      Array.prototype.slice.call(frag.children).forEach(function(n){ BODY.insertBefore(n, first); });
+      auto.forEach(function(n){ n.remove(); });
+    } else insertParasAt(p.paras);
+  }
+  if(p.encl.length){
+    var cur = $$("li", ENCL).map(function(li){ return li.textContent.trim(); }).filter(Boolean);
+    var list = (L.enclAuto || !cur.length) ? p.encl : cur.concat(p.encl);
+    ENCL.innerHTML = list.map(function(t){ return "<li>" + esc(t) + "</li>"; }).join("");
+    L.enclAuto = false;
+  }
+  afterEdit();
+  A.toast("Pasted and arranged: " + [parts.filter(Boolean).join(", "), p.paras.length + " paragraph" + (p.paras.length === 1 ? "" : "s"),
+    p.encl.length ? p.encl.length + " enclosure" + (p.encl.length === 1 ? "" : "s") : ""].filter(Boolean).join(" · "));
+}
+function plainInsert(text){
+  pushUndo(); U.burst = null;
+  document.execCommand("insertText", false, text);
+  afterEdit();
+}
+
+function bindEditor(){
+  [BODY, ENCL].forEach(function(el){
+    el.addEventListener("beforeinput", function(e){
+      if(e.inputType === "historyUndo"){ e.preventDefault(); doUndo(); return; }
+      if(e.inputType === "historyRedo"){ e.preventDefault(); doRedo(); return; }
+      if(!U.burst) pushUndo();
+      clearTimeout(U.burst); U.burst = setTimeout(function(){ U.burst = null; }, 900);
+    });
+    el.addEventListener("input", function(){
+      $$(".lt-auto", BODY).forEach(function(n){
+        var sel = window.getSelection();
+        if(sel.rangeCount && n.contains(sel.getRangeAt(0).startContainer)) n.classList.remove("lt-auto");
+      });
+      if(el === ENCL) L.enclAuto = false;
+      afterEdit();
+    });
+    el.addEventListener("keydown", function(e){
+      var k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
+      if(mod && k === "z" && !e.shiftKey){ e.preventDefault(); doUndo(); return; }
+      if(mod && (k === "y" || (k === "z" && e.shiftKey))){ e.preventDefault(); doRedo(); return; }
+      if(mod && k === "b"){ e.preventDefault(); cmd("bold"); return; }
+      if(mod && k === "i"){ e.preventDefault(); cmd("italic"); return; }
+      if(mod && k === "u"){ e.preventDefault(); cmd("underline"); return; }
+      if(mod && k === "s"){ e.preventDefault(); saveLetter("final"); return; }
+      if(e.key === "Enter"){ e.stopPropagation(); return; }      /* a new paragraph, never a save */
+      if(e.key === "Tab"){
+        e.preventDefault(); e.stopPropagation();
+        if(el === ENCL) return;
+        pushUndo(); U.burst = null;
+        var blk = currentBlock();
+        var ind = blk ? parseFloat(getComputedStyle(blk).textIndent) || 0 : 0;
+        if(e.shiftKey){ if(blk){ blk.style.textIndent = "0"; } afterEdit(); return; }
+        if(blk && atBlockStart(blk) && ind < 40){ blk.style.textIndent = "12.7mm"; afterEdit(); return; }
+        document.execCommand("insertText", false, "\t");
+        afterEdit();
+      }
+    });
+    el.addEventListener("paste", function(e){
+      e.preventDefault();
+      var t = (e.clipboardData || window.clipboardData).getData("text/plain") || "";
+      if(!t) return;
+      if(el === ENCL){
+        pushUndo();
+        var items = t.split(/\r?\n/).map(function(x){ return cleanLine(x).replace(RX.bullet, "").trim(); }).filter(Boolean);
+        if(items.length > 1){
+          var cur = $$("li", ENCL).map(function(li){ return li.textContent.trim(); }).filter(Boolean);
+          ENCL.innerHTML = cur.concat(items).map(function(x){ return "<li>" + esc(x) + "</li>"; }).join("");
+          afterEdit();
+        } else plainInsert(items[0] || "");
+        return;
+      }
+      if(/\n/.test(t.trim())) smartPaste(t); else plainInsert(t.replace(/\s+/g, " "));
+    });
+  });
+  /* designation: hover shows "Retain"; click keeps only that part */
+  $("#m5-page").addEventListener("click", function(e){
+    var b = e.target.closest("[data-keep]"); if(!b) return;
+    e.preventDefault();
+    readEditor(); pushUndo();
+    L.desig = b.dataset.keep;
+    var c = caretGet(); editorMount(); caretSet(c);
+    setDirty(true);
+    A.toast(L.desig === "both" ? "Both designations shown" : "Kept “" + (L.desig === "adv" ? DESIG_ADV : DESIG_ASC) + "”");
+  });
+}
+
+/* --- side panel and status --- */
+function linkedInvoice(){ return L && L.invoiceId ? db().invoices.find(function(v){ return v.id === L.invoiceId; }) : null; }
+function sidePanel(){
+  if(!L) return;
+  $("#m5-date").value = L.date;
+  $("#m5-dname").value = L.draftName || "";
+  $("#m5-valign").value = L.valign || "top";
+  var inv = linkedInvoice();
+  $("#m5-bill").innerHTML = L.invoiceNo
+    ? '<b>' + esc(L.invoiceNo) + '</b>' + (inv ? ' — ' + esc(String(inv.reference || "").slice(0, 80)) : ' (bill no longer in the register)')
+    : '<span class="hint">Not linked to a bill</span>';
+  var s;
+  if(L.status === "final") s = 'Letter <b>No. ' + esc(L.no) + '</b> is saved. Changes you make now update this letter.';
+  else if(L.status === "draft") s = '<b>Draft ' + esc(L.draftNo) + '</b>' + (L.draftName ? ' — ' + esc(L.draftName) : '') + ' is saved as a draft. <b>Save letter</b> gives it a number.';
+  else s = (L.kind === "invoice" ? 'New letter for bill <b>' + esc(L.invoiceNo) + '</b>' : 'New general letter') + ' — not saved yet.';
+  $("#m5-status").innerHTML = s;
+  $("#m5-save").textContent = L.status === "final" ? "Save changes" : "Save letter";
+}
+
+/* --- open / new --- */
+function openLetter(l, msg){
+  L = l; resetUndo(); editorMount(); setDirty(false); clearWip();
+  A.go("letter"); window.scrollTo(0, 0);
+  if(msg) A.toast(msg);
+}
+function okToLeave(){
+  return !dirty || confirm("The letter on the page has unsaved changes. Leave it and start another?");
+}
+function letterForInvoice(v){
+  if(!v) return;
+  if(!okToLeave()) return;
+  openLetter(invoiceLetter(v), "Letter started for " + v.number + " — type or paste the text");
+  setTimeout(function(){ focusBody(); }, 60);
+}
+window.CBL = { fromInvoice:letterForInvoice };
+function newGeneral(){
+  if(!okToLeave()) return;
+  openLetter(generalLetter(), "New general letter");
+  setTimeout(function(){ focusBody(); }, 60);
+}
+function focusBody(){
+  if(!BODY) return;
+  var target = $(".lt-addr.is-empty", BODY) || $(".lt-para.is-empty", BODY) || $(".lt-auto", BODY) || BODY.lastElementChild;
+  BODY.focus();
+  if(target){
+    var r = document.createRange(); r.selectNodeContents(target); r.collapse(!target.classList.contains("lt-auto") || true);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    target.scrollIntoView({ block:"center" });
+  }
+}
+
+/* --- saving --- */
+function saveLetter(mode){
+  if(!L || !BODY) return;
+  readEditor();
+  if(!L.text && !L.encl.length){ A.toast("There is nothing in the letter yet."); return; }
+  if(!db().letters) db().letters = [];
+  var rec = clone(L);
+  rec.html = BODY.innerHTML;
+  delete rec.enclAuto;
+  rec.savedAt = new Date().toISOString();
+  if(mode === "draft"){
+    if(rec.status === "final"){
+      if(!confirm("This letter already has No. " + rec.no + ". Keep it as a numbered letter and just save the changes?")) return;
+      mode = "final";
+    } else {
+      rec.status = "draft";
+      if(!rec.draftNo) rec.draftNo = nextDraftNo();
+    }
+  }
+  if(mode === "final"){
+    if(rec.status !== "final"){ rec.status = "final"; rec.no = nextNo(rec.date); }
+  }
+  if(!rec.id) rec.id = A.uid();
+  var i = db().letters.findIndex(function(x){ return x.id === rec.id; });
+  if(i > -1) db().letters[i] = rec; else db().letters.push(rec);
+  L = clone(rec);
+  A.saveNow(); clearWip(); setDirty(false);
+  var page = $("#m5-page .lt-meta"); if(page) page.outerHTML = metaHTML(L, true);
+  sidePanel(); renderRegister();
+  A.toast(L.status === "final" ? "Letter No. " + L.no + " saved" : "Saved as Draft " + L.draftNo);
+}
+
+/* --- work in progress survives a closed tab --- */
+var WIP = "charpe-billing-letter-wip", wipTimer = null;
+function saveWip(){
+  clearTimeout(wipTimer);
+  wipTimer = setTimeout(function(){
+    if(!L || !BODY) return;
+    readEditor();
+    try{ localStorage.setItem(WIP, JSON.stringify({ l:Object.assign({}, L, { html:BODY.innerHTML }), at:Date.now() })); }catch(e){}
+  }, 500);
+}
+function clearWip(){ clearTimeout(wipTimer); try{ localStorage.removeItem(WIP); }catch(e){} }
+function takeWip(){
+  try{ var w = JSON.parse(localStorage.getItem(WIP) || "null"); return w && w.l ? w : null; }catch(e){ return null; }
+}
+
+/* --- register --- */
+function gist(l){
+  var d = document.createElement("div"); d.innerHTML = l.html || "";
+  var sub = $(".lt-subj", d);
+  if(sub && sub.textContent.replace(/^\s*(subject|ref\.?)\s*:\s*/i, "").trim()) return sub.textContent.trim();
+  var t = String(l.text || d.textContent || "");
+  var m = t.match(/(?:^|\n)[ \t]*sub(?:ject)?[ \t]*[:.\-][ \t]*([^\n]+)/i);
+  if(m && m[1].trim()) return "Subject: " + m[1].trim();
+  var addr = $$(".lt-addr", d).map(function(n){ return n.textContent.trim(); }).filter(function(x){ return x && !/^to\s*[:,]?$/i.test(x); });
+  if(addr.length) return "To: " + addr.join(" ");
+  return t.split("\n").map(function(x){ return x.trim(); }).filter(function(x){ return x && !/^to\s*[:,]?$/i.test(x) && !RX.sal.test(x); })[0] || "(empty)";
+}
+function renderRegister(){
+  var host = $("#m5-llist"); if(!host) return;
+  var map = numberMap();
+  var q = norm($("#m5-lsearch") ? $("#m5-lsearch").value : "");
+  var all = (db().letters || []).filter(function(l){ return regTab === "draft" ? l.status === "draft" : isFinal(l); });
+  var list = all.filter(function(l){
+    if(!q) return true;
+    var h = norm([map[l.id] || "", "draft " + (l.draftNo || ""), l.draftName || "", A.letterDate(l.date), l.invoiceNo || "", l.text || "", (l.encl || []).join(" ")].join(" "));
+    return q.split(" ").every(function(t){ return h.indexOf(t) > -1; });
+  }).sort(function(a, b){
+    if(regTab === "draft") return (b.draftNo || 0) - (a.draftNo || 0);
+    var x = (b.date || "").localeCompare(a.date || ""); return x || seqOf(map[b.id]) - seqOf(map[a.id]);
+  });
+  $("#m5-ltotal").textContent = all.length + (regTab === "draft" ? " draft" : " letter") + (all.length === 1 ? "" : "s");
+  $$("[data-reg]").forEach(function(b){ b.classList.toggle("on", b.dataset.reg === regTab); });
+  if(!list.length){ host.innerHTML = '<div class="empty">' + (regTab === "draft" ? "No drafts." : "No letters saved yet.") + '</div>'; return; }
+  host.innerHTML = '<table class="list"><thead><tr><th>' + (regTab === "draft" ? "Draft" : "No.") + '</th><th>Date</th><th>Subject / addressee</th><th>Bill</th><th></th></tr></thead><tbody>' +
+    list.map(function(l){
+      var open = L && L.id === l.id;
+      return '<tr' + (open ? ' class="m5-open"' : '') + '><td style="white-space:nowrap"><b>' +
+        (l.status === "draft" ? "Draft " + esc(l.draftNo || "") : esc(map[l.id] || "")) + '</b>' +
+        (l.draftName ? '<div class="hint">' + esc(l.draftName) + '</div>' : '') + '</td>' +
+        '<td style="white-space:nowrap">' + esc(A.letterDate(l.date)) + '</td>' +
+        '<td style="max-width:420px">' + esc(gist(l).slice(0, 160)) + '</td>' +
+        '<td>' + esc(l.invoiceNo || "—") + '</td>' +
+        '<td class="num" style="white-space:nowrap">' +
+          '<button class="btn ghost sm" data-ledit="' + l.id + '">' + (open ? "Open" : "Edit") + '</button>' +
+          '<button class="btn ghost sm" data-lpdf="' + l.id + '">Get PDF</button>' +
+          '<button class="btn ghost sm" data-lword="' + l.id + '">Get Word</button>' +
+          '<button class="btn ghost sm" data-lshare="' + l.id + '">Share</button>' +
+          '<button class="btn ghost sm m5-del" data-ldel="' + l.id + '">Delete</button>' +
+        '</td></tr>';
+    }).join("") + '</tbody></table>';
+}
+function letterById(id){ return (db().letters || []).find(function(x){ return x.id === id; }); }
+function withNumber(l){ var x = upgradeLegacy(l); if(isFinal(x) && !x.no) x.no = numberMap()[l.id] || ""; if(!x.status) x.status = "final"; return x; }
+
+/* ================================================================
+   9. LETTER → PDF, drawn exactly as the page looks
+   The page is laid out by the browser itself and photographed at
+   print resolution, so what is on screen is what is printed —
+   fonts, justification, the signature and all.
+   ================================================================ */
+var PX = 96 / 25.4;
+var PAGE_W = 210, PAGE_H = 297, M_T = 12.7, M_L = 38.1, M_R = 25.4, M_B = 25.4;
+var COL_W = PAGE_W - M_L - M_R, COL_H = PAGE_H - M_T - M_B, GAP = M_L + M_R;
+function cssText(){ var el = $("#m5-lt-css"); return el ? el.textContent : ""; }
+function measureBox(html, style){
+  var host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-30000px;top:0;visibility:hidden;pointer-events:none";
+  host.innerHTML = '<div class="lt-sheet lt-print" style="' + style + '">' + html + '</div>';
+  document.body.appendChild(host);
+  return host;
+}
+async function waitImages(el){
+  await Promise.all($$("img", el).map(function(im){
+    return im.complete ? null : new Promise(function(r){ im.onload = im.onerror = r; });
+  }));
+}
+async function letterPdf(l, sig){
+  var jsPDF = window.jspdf.jsPDF;
+  var flow = letterheadHTML() + flowHTML(l, { edit:false, sig:sig });
+  var va = l.valign || "top";
+
+  /* one page or several? */
+  var m1 = measureBox(flow, "width:" + COL_W + "mm");
+  await waitImages(m1);
+  var h = m1.firstChild.offsetHeight / PX;
+  m1.remove();
+  var pages = 1, inner;
+  if(h <= COL_H){
+    inner = '<div class="lt-sheet lt-print va-' + va + '" style="position:absolute;left:' + M_L + 'mm;top:' + M_T + 'mm;width:' + COL_W + 'mm;height:' + COL_H + 'mm;display:flex;flex-direction:column">' + flow + '</div>';
+  } else {
+    var cols = "height:" + COL_H + "mm;width:" + COL_W + "mm;column-width:" + COL_W + "mm;column-gap:" + GAP + "mm;column-fill:auto";
+    var m2 = measureBox(flow, cols);
+    await waitImages(m2);
+    pages = Math.max(1, Math.round((m2.firstChild.scrollWidth + GAP * PX) / ((COL_W + GAP) * PX)));
+    m2.remove();
+    inner = '<div class="lt-sheet lt-print" style="position:absolute;left:' + M_L + 'mm;top:' + M_T + 'mm;height:' + COL_H + 'mm;width:' +
+      (pages * COL_W + (pages - 1) * GAP) + 'mm;column-count:' + pages + ';column-gap:' + GAP + 'mm;column-fill:auto">' + flow + '</div>';
+  }
+
+  var doc = new jsPDF({ unit:"mm", format:"a4", compress:true });
+  var S = 2.6, Wpx = PAGE_W * PX, Hpx = PAGE_H * PX;
+  for(var p = 0; p < pages; p++){
+    var root = document.createElement("div");
+    root.setAttribute("style", "position:relative;width:" + PAGE_W + "mm;height:" + PAGE_H + "mm;background:#fff;overflow:hidden");
+    root.innerHTML = '<style>' + cssText() + '</style><div style="position:absolute;left:' + (-p * PAGE_W) + 'mm;top:0;width:' + ((p + 1) * PAGE_W) + 'mm;height:' + PAGE_H + 'mm">' + inner + '</div>';
+    var xhtml = new XMLSerializer().serializeToString(root);
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + Math.round(Wpx * S) + '" height="' + Math.round(Hpx * S) + '" viewBox="0 0 ' + Wpx + ' ' + Hpx + '">' +
+      '<foreignObject x="0" y="0" width="' + Wpx + '" height="' + Hpx + '">' + xhtml + '</foreignObject></svg>';
+    var img = await loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
+    var c = document.createElement("canvas"); c.width = Math.round(Wpx * S); c.height = Math.round(Hpx * S);
+    var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(img, 0, 0, c.width, c.height);
+    if(p) doc.addPage();
+    doc.addImage(c.toDataURL("image/jpeg", 0.93), "JPEG", 0, 0, PAGE_W, PAGE_H, undefined, "FAST");
+  }
+  doc.setProperties({ title:"Letter " + (l.no || ""), author:db().settings.firm });
+  return doc;
+}
+function letterName(l, ext, sig){
+  var g = gist(l).replace(/^\s*(subject|ref\.?)\s*:\s*/i, "").slice(0, 46);
+  var head = l.status === "draft" ? "Draft " + (l.draftNo || "") : (l.no ? "Letter " + l.no.replace(/\//g, "-") : "Letter");
+  return safe(head + " - " + g + (sig ? " - signed" : "")) + "." + ext;
+}
+
+/* ---------- letter → Word ---------- */
+function ptFrom(v){
+  if(!v) return null; var n = parseFloat(v); if(!n) return null;
+  if(/px/.test(v)) return n * 0.75; if(/pt/.test(v)) return n;
+  if(/mm/.test(v)) return n * 2.835; if(/em/.test(v)) return n * 14; return n;
+}
+function twFrom(v){
+  if(!v) return 0; var n = parseFloat(v); if(!n) return 0;
+  if(/mm/.test(v)) return MM(n); if(/in/.test(v)) return TW(n); if(/pt/.test(v)) return Math.round(n * 20);
+  if(/px/.test(v)) return Math.round(n * 15); return Math.round(n * 15);
+}
+function runsOf(node, f){
+  var out = "";
+  Array.prototype.forEach.call(node.childNodes, function(c){
+    if(c.nodeType === 3){ var t = c.nodeValue.replace(/[\r\n]+/g, " "); if(t) out += wRun(t, f); return; }
+    if(c.nodeType !== 1 || c.classList.contains("lt-ui")) return;
+    var g = Object.assign({}, f), tag = c.tagName, st = c.style;
+    if(tag === "BR"){ out += '<w:r>' + rPr(f) + '<w:br/></w:r>'; return; }
+    if(tag === "B" || tag === "STRONG" || st.fontWeight === "bold" || parseInt(st.fontWeight, 10) >= 600) g.b = true;
+    if(st.fontWeight === "normal" || st.fontWeight === "400") g.b = false;
+    if(tag === "I" || tag === "EM" || st.fontStyle === "italic") g.i = true;
+    if(tag === "U" || /underline/.test(st.textDecoration || st.textDecorationLine || "")) g.u = true;
+    var face = st.fontFamily || (tag === "FONT" && c.getAttribute("face"));
+    if(face) g.font = face.split(",")[0].replace(/["']/g, "").trim();
+    var sz = ptFrom(st.fontSize); if(sz) g.size = sz;
+    out += runsOf(c, g);
+  });
+  return out;
+}
+var CLS = {
+  "lt-addr":{ align:"left", after:0 }, "lt-sal":{ align:"left", after:120 },
+  "lt-subj":{ align:"left", b:true, before:120, after:240 }, "lt-para":{ align:"both", first:720, after:120 },
+  "lt-head":{ align:"center", b:true, u:true, before:120, after:120 }, "lt-quote":{ align:"both", left:720, right:720, size:12.5, after:120, line:336 }
+};
+function blockToDocx(b, base){
+  var cls = Object.keys(CLS).filter(function(k){ return b.classList && b.classList.contains(k); })[0];
+  var c = cls ? CLS[cls] : { align:"both", after:120 };
+  var f = Object.assign({}, base, { b:!!c.b, u:!!c.u }); if(c.size) f.size = c.size;
+  var st = b.style || {};
+  var o = { align:c.align, after:c.after == null ? 120 : c.after, before:c.before || 0, first:c.first || 0,
+            left:c.left || 0, right:c.right || 0, line:c.line || 360 };
+  var a = st.textAlign; if(a) o.align = a === "justify" ? "both" : (a === "start" ? "left" : a);
+  if(st.textIndent !== undefined && st.textIndent !== "") o.first = twFrom(st.textIndent);
+  if(st.lineHeight){ var lh = parseFloat(st.lineHeight); if(lh) o.line = Math.round(240 * lh); }
+  if(st.marginLeft) o.left = twFrom(st.marginLeft);
+  if(cls === "lt-addr" && b.nextElementSibling && !b.nextElementSibling.classList.contains("lt-addr")) o.after = 240;
+  if(o.first < 0){ o.hanging = -o.first; o.first = 0; }
+  return wPara(runsOf(b, f), o);
+}
+async function letterWord(l, sig){
+  var ctx = await window.CBpdfContext(), D = new Docx();
+  var CW = MM(COL_W), body = "";
+  body += letterheadDocx(D, ctx, MM(PAGE_W - 12.7 * 2), -MM(M_L - 12.7), null);
+  body += wPara(wRun(l.no ? "No. " + l.no : "", { size:13 }) + wRun("\tDate: " + A.letterDate(l.date), { size:13 }),
+    { tabs:'<w:tab w:val="right" w:pos="' + CW + '"/>', before:240, after:240 });
+  var base = { font:"Georgia", size:14 };
+  var d = document.createElement("div"); d.innerHTML = cleanBody(l.html);
+  Array.prototype.forEach.call(d.childNodes, function(n){
+    if(n.nodeType === 3){ if(n.nodeValue.trim()) body += wPara(wRun(n.nodeValue, base), { align:"both", after:120 }); return; }
+    if(n.nodeType !== 1) return;
+    if(n.tagName === "UL" || n.tagName === "OL"){
+      $$("li", n).forEach(function(li, i){ body += wPara(wRun((n.tagName === "OL" ? (i + 1) + "." : "•") + "\t", base) + runsOf(li, base), { left:720, hanging:360, after:60 }); });
+      return;
+    }
+    body += blockToDocx(n, base);
+  });
+  /* closing: Thanking you centred, the rest on the right */
+  body += wPara(wRun("Thanking you,", base), { align:"center", before:240, after:120, keepNext:true });
+  var BW = MM(78), ind = CW - BW;
+  var R = function(t, o){ return wPara(wRun(t, Object.assign({}, base, o || {})), { align:"center", left:ind, keepNext:true }); };
+  body += R("Yours sincerely,");
+  if(sig && sigData()){
+    var ratio = await sigRatio(), hh = 22, ww = Math.min(60, hh * ratio);
+    body += wPara(D.image(sigData(), ww, hh), { align:"center", left:ind, keepNext:true, line:240 });
+  } else body += wPara('', { lineExact:MM(20), left:ind, keepNext:true });
+  body += R("Sanket Charpe", { b:true });
+  var dz = l.desig || "both";
+  if(dz !== "asc") body += R(dz === "both" ? "Advocate /" : "Advocate");
+  if(dz !== "adv"){ body += R("Additional Standing Counsel,"); body += R("Central Government"); }
+  var enc = (l.encl || []).map(function(t){ return String(t).trim(); }).filter(Boolean);
+  if(enc.length){
+    body += wPara(wRun("Encl.:", Object.assign({}, base, { b:true, size:13 })), { before:360, after:60, keepNext:true });
+    enc.forEach(function(t, i){ body += wPara(wRun((i + 1) + ".\t" + t, Object.assign({}, base, { size:13 })), { left:567, hanging:567, after:60, line:348 }); });
+  }
+  return { blob:D.pack(body, { top:MM(M_T), right:MM(M_R), bottom:MM(M_B), left:MM(M_L) }), name:letterName(l, "docx", sig) };
+}
+
+function letterAction(l, what){
+  if(!l) return;
+  var title = l.status === "draft" ? "Draft " + (l.draftNo || "") : (l.no ? "Letter No. " + l.no : "This letter");
+  if(what === "share"){
+    shareFlow(title, async function(sig){
+      var doc = await letterPdf(l, sig);
+      return { blob:doc.output("blob"), name:letterName(l, "pdf", sig) };
+    }, "Letter " + (l.no ? "No. " + l.no + " " : "") + "dated " + A.letterDate(l.date) + "\n" + gist(l) + "\n\n" + db().settings.firm,
+       "Letter " + (l.no || "") + " — " + gist(l).replace(/^\s*(subject|ref\.?)\s*:\s*/i, "").slice(0, 90));
+    return;
+  }
+  askSignature((what === "word" ? "Get Word — " : "Get PDF — ") + title, async function(sig){
+    var w = busy(what === "word" ? "Making the Word file…" : "Making the PDF…");
+    try{
+      if(what === "word"){ var got = await letterWord(l, sig); dl(got.name, got.blob); A.toast("Downloaded " + got.name); }
+      else { var doc = await letterPdf(l, sig); var name = letterName(l, "pdf", sig); dl(name, doc.output("blob")); A.toast("Downloaded " + name); }
+    }catch(e){ console.error(e); A.toast("Could not make the file: " + (e.message || e)); }
+    w.close();
+  });
+}
+function currentForOutput(){
+  readEditor();
+  var x = clone(L); x.html = BODY.innerHTML;
+  if(x.status === "new" && !x.no) x.no = "";
+  return x;
+}
+
+/* ================================================================
+   10. WIRING
+   ================================================================ */
+function wire(){
+  /* ---- invoice page ---- */
+  var ml = $("#make-letter"), nl = ml.cloneNode(true); ml.parentNode.replaceChild(nl, ml);
+  nl.addEventListener("click", function(){
+    var d = A.currentDraft();
+    if(A.editingId()){ letterForInvoice(db().invoices.find(function(v){ return v.id === A.editingId(); })); return; }
+    if(d && d.carriedFrom && !d.touched){
+      var from = db().invoices.find(function(v){ return v.number === d.carriedFrom; });
+      if(from){ letterForInvoice(from); return; }
+    }
+    alert("This bill is not saved yet. Save it first, then make its letter.");
+  });
+  $("#inv-getpdf").addEventListener("click", function(){ invoiceAction(A.currentDraft(), "pdf"); });
+  $("#inv-getword").addEventListener("click", function(){ invoiceAction(A.currentDraft(), "word"); });
+  $("#inv-share").addEventListener("click", function(){ invoiceAction(A.currentDraft(), "share"); });
+  $("#m5-copyprev").addEventListener("click", function(){
+    pickInvoice("Copy from a previous invoice", function(v){
+      loadIntoForm(copyOf(v, v.number), "Copied " + v.number + " — change what differs and save as " + db().settings.prefix + db().settings.next);
+    }, "The bill you pick fills the form as a starting point. It is saved as a new bill with the next number.");
+  });
+  $("#m5-samples").addEventListener("change", function(e){
+    var v = db().invoices.find(function(x){ return x.id === e.target.value; });
+    e.target.value = "";
+    if(v) loadIntoForm(copyOf(v, "sample “" + v.sample + "”"), "Sample “" + v.sample + "” loaded — check it and press Save invoice");
+  });
+  $("#m5-lastbar").addEventListener("click", function(e){
+    var b = e.target.closest("[data-a]"); if(!b) return;
+    var v = A.lastSaved(); if(!v) return;
+    var live = db().invoices.find(function(x){ return x.id === v.id; }) || v;
+    if(b.dataset.a === "letter") letterForInvoice(live);
+    else if(b.dataset.a === "edit"){
+      if(screenHasWork() && !confirm("The bill on screen has not been saved. Replace it?")) return;
+      A.setDraft(clone(live), live.id); A.toast("Opened " + live.number + " for editing");
+    }
+    else invoiceAction(live, b.dataset.a);
+  });
+  /* any change on the left marks the carried-over text as his own */
+  var left = $("#view-build .split > div:first-child");
+  ["input", "change"].forEach(function(ev){
+    left.addEventListener(ev, function(e){
+      if(e.target.closest("#m5-startrow")) return;
+      var d = A.currentDraft();
+      if(d && d.touched === false){ d.touched = true; formState(); }
+    });
+  });
+  $("#items").addEventListener("click", function(e){
+    if(e.target.closest("button[data-act]")){ var d = A.currentDraft(); if(d && d.touched === false){ d.touched = true; formState(); } }
+  });
+
+  /* ---- saved invoices ---- */
+  $("#saved-list").addEventListener("click", function(e){
+    var b = e.target, id = b.dataset.gpdf || b.dataset.gword || b.dataset.gshare || b.dataset.sample;
+    if(!id) return;
+    var v = db().invoices.find(function(x){ return x.id === id; }); if(!v) return;
+    if(b.dataset.gpdf) invoiceAction(v, "pdf");
+    else if(b.dataset.gword) invoiceAction(v, "word");
+    else if(b.dataset.gshare) invoiceAction(v, "share");
+    else if(b.dataset.sample) markSample(v);
+  });
+
+  /* ---- settings: signature ---- */
+  $("#s-sig-file").addEventListener("change", function(e){
+    var f = e.target.files && e.target.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = async function(){
+      try{
+        db().settings.signature = await cleanSignature(r.result);
+        A.saveNow(); renderSigSettings();
+        if(L) editorMount();
+        A.toast("Signature saved — it is used only when you choose With signature");
+      }catch(err){ console.error(err); A.toast("Could not read that image"); }
+      e.target.value = "";
+    };
+    r.readAsDataURL(f);
+  });
+  $("#s-sig-clear").addEventListener("click", function(){
+    if(!sigData() || !confirm("Remove the saved signature?")) return;
+    db().settings.signature = ""; A.saveNow(); renderSigSettings(); A.toast("Signature removed");
+  });
+
+  /* ---- letters ---- */
+  $("#m5-new-inv").addEventListener("click", function(){
+    pickInvoice("Letter for an invoice", function(v){ letterForInvoice(v); },
+      "Pick the bill. The letter starts with today's date, the addressee, the case and the parties filled in.");
+  });
+  $("#m5-new-gen").addEventListener("click", newGeneral);
+  $("#m5-save").addEventListener("click", function(){ saveLetter("final"); });
+  $("#m5-draft").addEventListener("click", function(){ saveLetter("draft"); });
+  $("#m5-pdf").addEventListener("click", function(){ letterAction(currentForOutput(), "pdf"); });
+  $("#m5-word").addEventListener("click", function(){ letterAction(currentForOutput(), "word"); });
+  $("#m5-share").addEventListener("click", function(){ letterAction(currentForOutput(), "share"); });
+  $("#m5-date").addEventListener("change", function(){
+    readEditor(); var m = $("#m5-page .lt-meta"); if(m) m.outerHTML = metaHTML(L, true); setDirty(true);
+  });
+  $("#m5-today").addEventListener("click", function(){ $("#m5-date").value = A.todayISO(); $("#m5-date").dispatchEvent(new Event("change")); });
+  $("#m5-dname").addEventListener("input", function(){ setDirty(true); });
+  $("#m5-showsig").addEventListener("change", function(){
+    if(this.checked && !sigData()){ this.checked = false; A.toast("Upload your signature in Settings first"); return; }
+    readEditor(); var c = caretGet(); editorMount(); caretSet(c);
+  });
+  $("#m5-valign").addEventListener("change", function(e){
+    readEditor(); pushUndo(); L.valign = e.target.value; editorMount(); setDirty(true);
+  });
+
+  /* toolbar: keep the selection in the page while using it */
+  var tb = $("#m5-tools");
+  tb.addEventListener("mousedown", function(e){ if(e.target.closest("button")) e.preventDefault(); });
+  tb.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    if(b.dataset.cmd) cmd(b.dataset.cmd);
+    else if(b.dataset.align) setAlign(b.dataset.align);
+    else if(b.id === "m5-undo"){ doUndo(); }
+    else if(b.id === "m5-redo"){ doRedo(); }
+    else if(b.id === "m5-clear") clearFormat();
+    else if(b.id === "m5-paste"){
+      if(!navigator.clipboard || !navigator.clipboard.readText){ A.toast("Press Ctrl+V on the page to paste"); return; }
+      navigator.clipboard.readText().then(function(t){
+        if(!t){ A.toast("The clipboard is empty"); return; }
+        restoreRange(); if(/\n/.test(t.trim())) smartPaste(t); else plainInsert(t);
+      }).catch(function(){ A.toast("Press Ctrl+V on the page to paste"); });
+    }
+  });
+  $("#m5-font").addEventListener("change", function(e){ if(e.target.value) setFont(e.target.value); e.target.value = ""; });
+  $("#m5-size").addEventListener("change", function(e){ if(e.target.value) setSize(e.target.value); e.target.value = ""; });
+  $("#m5-spacing").addEventListener("change", function(e){ if(e.target.value) setSpacing(e.target.value); e.target.value = ""; });
+  $("#m5-style").addEventListener("change", function(e){ if(e.target.value) setStyle(e.target.value); });
+
+  /* register */
+  $$("[data-reg]").forEach(function(b){ b.addEventListener("click", function(){ regTab = b.dataset.reg; renderRegister(); }); });
+  $("#m5-lsearch").addEventListener("input", renderRegister);
+  $("#m5-llist").addEventListener("click", function(e){
+    var b = e.target, id = b.dataset.ledit || b.dataset.lpdf || b.dataset.lword || b.dataset.lshare || b.dataset.ldel;
+    if(!id) return;
+    var l = letterById(id); if(!l) return;
+    if(b.dataset.ledit){
+      if(L && L.id === id){ window.scrollTo(0, 0); return; }
+      if(!okToLeave()) return;
+      openLetter(withNumber(l), "Opened " + (l.status === "draft" ? "Draft " + l.draftNo : "letter No. " + (numberMap()[id] || "")) + " for editing");
+    }
+    else if(b.dataset.lpdf) letterAction(withNumber(l), "pdf");
+    else if(b.dataset.lword) letterAction(withNumber(l), "word");
+    else if(b.dataset.lshare) letterAction(withNumber(l), "share");
+    else if(b.dataset.ldel){
+      var nm = l.status === "draft" ? "Draft " + l.draftNo : "letter No. " + (numberMap()[id] || "");
+      if(!confirm("Delete " + nm + " dated " + A.letterDate(l.date) + "?\n\nThis cannot be undone.")) return;
+      db().letters = db().letters.filter(function(x){ return x.id !== id; });
+      A.saveNow();
+      if(L && L.id === id){ L.id = null; L.status = "new"; L.no = ""; sidePanel(); }
+      renderRegister(); A.toast("Deleted " + nm);
+    }
+  });
+
+  document.querySelectorAll('.tab[data-view="letter"]').forEach(function(t){
+    t.addEventListener("click", function(){ if(!L) openStart(); renderRegister(); setTimeout(fitPage, 30); });
+  });
+  window.addEventListener("beforeunload", function(e){
+    if(dirty){ saveWip(); }
+  });
+}
+function openStart(){
+  var w = takeWip();
+  if(w){ L = w.l; resetUndo(); editorMount(); setDirty(true); A.toast("Recovered the letter you were writing"); }
+  else { L = generalLetter(); resetUndo(); editorMount(); setDirty(false); }
+}
+
+/* ---------- the invoice form's state line ---------- */
+function formState(){
+  var d = A.currentDraft(); if(!d) return;
+  var ban = $("#m5-carry"), left = $("#view-build .split > div:first-child");
+  if(d.carriedFrom && !A.editingId()){
+    ban.hidden = false;
+    ban.innerHTML = (d.touched === false
+      ? 'The text below is carried over from <b>' + esc(d.carriedFrom) + '</b> as a starting point. Change what differs, then <b>Save invoice</b> files it as a new bill <b>' + esc(d.number) + '</b>.'
+      : 'Started from <b>' + esc(d.carriedFrom) + '</b>. Saving files a new bill <b>' + esc(d.number) + '</b>.') +
+      ' <button class="btn ghost sm" id="m5-fresh">Start a fresh one instead</button>';
+    $("#m5-fresh").addEventListener("click", function(){ $("#new-invoice").click(); });
+  } else ban.hidden = true;
+  left.classList.toggle("m5-tentative", !!(d.carriedFrom && d.touched === false && !A.editingId()));
+  var last = lastInvoice();
+  var flag = $("#edit-flag");
+  flag.innerHTML = (A.editingId()
+      ? '<span class="m5-editing">Editing saved bill <b>' + esc(d.number) + '</b> — Save will update it</span>'
+      : 'This bill: <b>' + esc(d.number) + '</b> (new)') +
+    (last ? ' &nbsp;·&nbsp; Last saved: <b>' + esc(last.number) + '</b>' : '');
+  var bar = $("#m5-lastbar"), ls = A.lastSaved();
+  if(ls){ bar.hidden = false; $("#m5-lastno").textContent = ls.number; } else bar.hidden = true;
+}
+function lastInvoice(){
+  return db().invoices.slice().sort(function(a, b){ return numVal(b) - numVal(a); })[0] || null;
+}
+window.CBformFilled = formState;
+
+/* ---------- start ---------- */
+var started = false;
+function onBoot(){
+  learnAll();
+  fixLegacyNumbers();
+  renderSampleMenu();
+  renderSigSettings();
+  formState();
+  if(started){
+    renderRegister();
+    if(L && !dirty && L.status === "new") editorMount();
+    var m = $("#m5-page .lt-meta"); if(m && L) m.outerHTML = metaHTML(L, true);
+    if(L && !dirty) sidePanel();
+  }
+}
+(A.hooks || (A.hooks = [])).push(function(){
+  try{ if(!started) start(); onBoot(); }catch(e){ console.error("module 5", e); }
+});
+function start(){
+  if(started) return;
+  if(!$("#m5-page") || !$("#inv-getpdf")){ console.error("module 5: page markup missing"); return; }
+  started = true;
+  wire();
+  openStart();
+}
+
+/* exposed for testing */
+window.CBm5 = { parseLetter:parseLetter, buildFromParsed:buildFromParsed, letterPdf:letterPdf, letterWord:letterWord,
+  invoicePdf:invoicePdf, invoiceWord:invoiceWord, numberMap:numberMap, nextNo:nextNo, current:function(){ return L; },
+  upgradeLegacy:upgradeLegacy, saveLetter:saveLetter, letterForInvoice:letterForInvoice, newGeneral:newGeneral,
+  smartPaste:smartPaste, undo:doUndo, redo:doRedo, cleanSignature:cleanSignature, withNumber:withNumber };
+})();
+
+</script>
 <script src="assets/shim.js"></script>
 </body>
 </html>
