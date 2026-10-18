@@ -1,0 +1,71 @@
+CHARPE SUITE — OFFICIAL eCOURTS: ONE-TIME SETUP (about 15 minutes)
+====================================================================
+
+PART A — Put the eCourts backend in your Google account
+--------------------------------------------------------
+1. Open https://script.google.com on your laptop and click "New project" (top left).
+2. Click on "Untitled project" at the top and rename it:  Charpe eCourts
+3. Delete everything in the editor (Ctrl+A, then Delete).
+4. Open the file  eCourtsOfficial.gs  from this zip in Notepad, press Ctrl+A, Ctrl+C,
+   and paste it into the editor (Ctrl+V).
+5. Near the top, fill in the two lines:
+     var SECRET    = 'PUT-YOUR-SYNC-PASSWORD-HERE';
+       → replace the text between the quotes with a password of your choice
+         (you may use the same password as your Drive sync).
+     var FOLDER_ID = 'PUT-YOUR-DRIVE-FOLDER-ID-HERE';
+       → open your "Charpe Suite Data" folder in Google Drive, copy the long code
+         after /folders/ in the address bar, and paste it between the quotes.
+6. Press Ctrl+S to save.
+7. In the toolbar, pick the function "authorise" from the drop-down next to "Debug",
+   then click "Run". Google asks for permission:
+     Review permissions → choose your account → "Advanced" → "Go to Charpe eCourts (unsafe)"
+     → Allow.   (It says "unsafe" only because you wrote the script yourself.)
+8. Click the blue "Deploy" button (top right) → "New deployment".
+     - Click the gear icon next to "Select type" → choose "Web app".
+     - Description: eCourts
+     - Execute as: Me
+     - Who has access: Anyone
+     - Click "Deploy".
+9. Copy the "Web app URL" it shows (it ends in /exec). Keep it handy.
+
+PART B — Put the new files on your GitHub site
+----------------------------------------------
+1. Go to https://github.com/sanketcharpe/Charpe-suite
+2. Click "Add file" → "Upload files".
+3. From this zip, drag in:
+     cases.html
+     sw.js
+     the "assets" folder (it contains ecourts.js)
+     the "apps-script" folder (keeps a copy of the backend with your site)
+4. At the bottom, click "Commit changes". Wait one or two minutes.
+
+PART C — Connect the app
+------------------------
+1. Open your Charpe Suite, sign in to Cases.
+2. Settings → "Official eCourts".
+3. Paste the Web app URL from Part A step 9 and the password from Part A step 5.
+   Choose which cases to offer (default: next date today or earlier). Click "Save".
+4. Click "Test connection". You should see two green ticks:
+     ✓ Backend answers   ✓ eCourts site reachable
+5. On the master desktop (Chrome/Edge): click "Choose folder" and pick a folder such as
+   Documents\Charpe Orders. Every order will also be saved there as a PDF.
+   Do the same on the second desktop if you want copies there; then click
+   "Copy all saved orders to this PC" once.
+   These settings reach your other computers and phone through Drive sync automatically
+   (except the PC folder, which is chosen on each computer).
+
+DAILY USE
+---------
+• Click "⚖ eCourts" at the top. Today's and overdue cases are already ticked.
+• Click "Show CAPTCHAs", type each one (Enter jumps to the next), then "Fetch all"
+  — or "Fetch" on a single row.
+• Orders download in the background. Each case shows "Orders (n)" — click Open.
+• Orders open from this browser first, then the PC folder, then Drive. No CAPTCHA.
+
+IF SOMETHING LOOKS WRONG
+------------------------
+• If a case shows "eCourts has no case for this CNR" or comes back with no dates,
+  the backend saves what eCourts sent as  _ecourts_last_response.html  in your
+  Charpe Suite Data folder. Send that file to Claude and the reading can be adjusted.
+• After changing the script later: Deploy → Manage deployments → pencil icon →
+  Version: "New version" → Deploy. The URL stays the same.
