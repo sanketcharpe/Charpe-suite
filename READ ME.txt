@@ -1,0 +1,21 @@
+CHARPE HELPER  (Oct 2026)
+
+Why: the Supreme Court site turns away Google's servers, and the MAT site
+cannot be reached from them. Charpe Helper runs quietly on this PC and fetches
+those two sites for Charpe Suite from this office's own internet connection.
+CAT, eCourts and Google Drive keep working through the eCourts backend as before.
+
+Install (once on each PC that fetches cases):
+  1. Right-click Charpe-Helper.zip > Extract All > Extract.
+  2. Open the extracted folder and double-click "Install Charpe Helper.bat".
+  3. If Windows shows "Windows protected your PC": click More info > Run anyway.
+  4. A browser tab opens saying "Charpe helper is running". Close it.
+  5. In Charpe Suite: Sync Centre > Supreme Court · CAT · MAT should show
+     "Charpe Helper is running on this PC". If Chrome asks to allow
+     sanketcharpe.github.io to access devices on your local network, click Allow.
+
+It starts by itself with Windows. To check it at any time, open
+http://127.0.0.1:8770/ in the browser.
+
+It listens only on this computer and answers only Charpe Suite's web address.
+To remove it: double-click "Remove Charpe Helper.bat".
