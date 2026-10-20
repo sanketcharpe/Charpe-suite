@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Charpe Law &mdash; Legal Case Management v5.5</title>
+<script src="assets/activation.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Segoe UI,Arial,sans-serif;background:#f4f1ea;color:#1a2744;font-size:13px}
@@ -150,7 +151,7 @@ table.board .num{width:26px;opacity:.65}
 table.board .par{font-style:italic;text-decoration:underline;font-weight:700;letter-spacing:.2px}
 table.board tr.ghead td{background:#1a2744 !important;color:#fff;font-family:Segoe UI,Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:5px 8px;border-bottom:2px solid #b8932a}
 table.board tr.ghead .gdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;border:1px solid rgba(255,255,255,.6)}
-table.board tr.hcrow td{font-weight:800}
+table.board tr.hcrow td{font-weight:900;-webkit-text-stroke:.25px currentColor}
 /* action column pinned to the right edge so Post/Delete are always reachable
    even when the board scrolls sideways */
 table.board th.act{position:sticky;right:0;z-index:4;background:#1a2744;width:84px;text-align:center}
@@ -192,7 +193,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
   <div class="fg"><label>Username</label><input id="luser" placeholder="username" onkeydown="if(event.key==='Enter')login()"></div>
   <div class="fg"><label>Password</label><input id="lpass" type="password" placeholder="password" onkeydown="if(event.key==='Enter')login()"></div>
   <button onclick="login()" style="width:100%;padding:9px;font-size:13px;background:#b8932a;color:#1a2744;border:none;border-radius:5px;font-weight:700;cursor:pointer;margin-top:3px">Login</button>
-  <div id="lhint" style="margin-top:8px;font-size:11px;color:#888">Default: <b>admin</b> / <b>admin123</b></div>
+  <div id="lhint" style="margin-top:8px;font-size:11px;color:#888"></div>
 </div>
 </div>
 
@@ -465,7 +466,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
       <div class="tabs">
         <button class="tbt on" onclick="stab(this,'tbk')">Backup &amp; Restore</button>
         <button class="tbt" onclick="stab(this,'tdt')">Update dates from file</button>
-        <button class="tbt" onclick="stab(this,'tu')">Users</button>
+        <button class="tbt" id="tbUsers" onclick="stab(this,'tu')">Users</button>
         <button class="tbt" onclick="stab(this,'tfirm')">Letterhead</button>
         <button class="tbt" onclick="stab(this,'tsync')">Online sync</button>
         <button class="tbt" id="tbEcs" onclick="stab(this,'tecs');renderECS()">Official eCourts</button>
@@ -501,8 +502,14 @@ table.board td.act .btn:last-child{margin-bottom:0}
   <div class="mh"><span id="cmtit">Add case</span><button class="mx" onclick="closeM('mcase')">&#x2715;</button></div>
   <div class="mb">
     <div class="fgr">
-      <div class="fg"><label>Court</label><input id="fc" placeholder="e.g. Civil Court, Nagpur"></div>
+      <div class="fg"><label>Court</label><input id="fc" list="courtList" placeholder="e.g. Civil Court, Nagpur"><datalist id="courtList">
+        <option value="Supreme Court of India"><option value="Bombay High Court, Nagpur Bench"><option value="Bombay High Court, Aurangabad Bench">
+        <option value="Bombay High Court, Principal Seat, Mumbai"><option value="Central Administrative Tribunal, Mumbai Bench (Nagpur circuit)">
+        <option value="Maharashtra Administrative Tribunal, Nagpur Bench"><option value="School Tribunal, Nagpur"><option value="Industrial Court, Nagpur">
+        <option value="Labour Court, Nagpur"><option value="Civil Judge Senior Division, Nagpur"><option value="Civil Judge Junior Division, Nagpur">
+        <option value="District and Sessions Court, Nagpur"><option value="Motor Accident Claims Tribunal, Nagpur"><option value="Railway Court, Nagpur"></datalist></div>
       <div class="fg"><label>Case no.</label><input id="fcn" placeholder="e.g. R.C.S. 123/2024"></div>
+      <div class="fg"><label>CNR number <span style="font-weight:400;font-size:9px;color:#888">(16 characters &mdash; needed for the CAPTCHA fetch)</span></label><input id="fcnr" placeholder="e.g. MHNG010012342024, HCBM030012342024 or Supreme Court SCIN010384712025" style="text-transform:uppercase"></div>
       <div class="fg"><label>Presiding judge</label><input id="fjd" placeholder="e.g. Shri A. B. Deshmukh"></div>
       <div class="fg"><label>Plaintiff / Petitioner</label><input id="fp" placeholder="Party name"></div>
       <div class="fg"><label>Defendant / Respondent</label><input id="fd" placeholder="Party name"></div>
@@ -622,6 +629,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
       <label style="display:flex;align-items:center;gap:3px;margin-top:2px;font-weight:400"><input type="checkbox" id="aunset"> Cannot access settings</label>
       <label style="display:flex;align-items:center;gap:3px;margin-top:2px;font-weight:400"><input type="checkbox" id="aunexp"> Cannot export</label>
       <label style="display:flex;align-items:center;gap:3px;margin-top:2px;font-weight:400"><input type="checkbox" id="auro"> Read only</label>
+      <label style="display:flex;align-items:center;gap:3px;margin-top:2px;font-weight:400"><input type="checkbox" id="aubill" checked> Can open Billing &mdash; only the last 5 bills and last 5 letters</label>
     </div>
     <div class="fa"><button class="btn bo" onclick="closeM('musr')">Cancel</button><button class="btn bg" onclick="saveUsr()">Save user</button></div>
   </div>
@@ -659,16 +667,19 @@ var PURGE_DAYS=30;
    Boards are always grouped in this sequence, with each block
    printed in its own colour.
    ----------------------------------------------------------- */
+/* Oct 2026 colours: High Court & Supreme Court thick red, District Court black,
+   Labour & Industrial Court dark blue, CAT / MAT / School Tribunal green */
 var GRPS=[
-  {k:'hc',  t:'High Court',                                  c:'#c0392b', bold:true},
+  {k:'sc',  t:'Supreme Court of India',                      c:'#b00000', bold:true},
+  {k:'hc',  t:'High Court',                                  c:'#b00000', bold:true},
   {k:'dist',t:'District Court',                              c:'#000000', bold:false},
-  {k:'cat', t:'Central Administrative Tribunal',             c:'#1546a0', bold:false},
-  {k:'mat', t:'Maharashtra Administrative Tribunal',         c:'#1546a0', bold:false},
-  {k:'sch', t:'School Tribunal, Nagpur',                     c:'#d6187f', bold:false},
-  {k:'mrt', t:'Maharashtra Revenue Tribunal, Nagpur',        c:'#1546a0', bold:false},
-  {k:'oth', t:'Other courts and special courts',             c:'#1546a0', bold:false},
-  {k:'ind', t:'Industrial Court',                            c:'#1e8449', bold:false},
-  {k:'lab', t:'Labour Court',                                c:'#c05600', bold:false}
+  {k:'cat', t:'Central Administrative Tribunal',             c:'#13692f', bold:false},
+  {k:'mat', t:'Maharashtra Administrative Tribunal',         c:'#13692f', bold:false},
+  {k:'sch', t:'School Tribunal, Nagpur',                     c:'#13692f', bold:false},
+  {k:'mrt', t:'Maharashtra Revenue Tribunal, Nagpur',        c:'#4a4a4a', bold:false},
+  {k:'oth', t:'Other courts and special courts',             c:'#4a4a4a', bold:false},
+  {k:'ind', t:'Industrial Court',                            c:'#0b2a6f', bold:false},
+  {k:'lab', t:'Labour Court',                                c:'#0b2a6f', bold:false}
 ];
 var GRANK={},GMETA={};
 GRPS.forEach(function(g,i){GRANK[g.k]=i;GMETA[g.k]=g;});
@@ -680,6 +691,7 @@ function courtGroup(c){
   var s=' '+raw.replace(/[.\-_,/()]/g,' ').replace(/\s+/g,' ').trim()+' ';
   var z=' '+raw.replace(/\./g,'').replace(/[\-_,/()]/g,' ').replace(/\s+/g,' ').trim()+' ';
   var hit=function(re){return re.test(s)||re.test(z);};
+  if(hit(/supreme court|\bsci\b|\bslp\b/))return 'sc';
   if(hit(/high court|\bhc\b/))return 'hc';
   if(hit(/central administrative tribunal|\bcat\b/))return 'cat';
   if(hit(/maharashtra administrative tribunal|\bmat\b/))return 'mat';
@@ -836,8 +848,9 @@ function loadAll(){
   try{L=JSON.parse(localStorage.getItem('cpm_l')||'[]');}catch(e){L=[];}
   try{
     U=JSON.parse(localStorage.getItem('cpm_u')||'[]');
-    if(!U.length){U=[{id:'admin',name:'Administrator',username:'admin',password:'admin123',role:'admin'}];saveU();}
-  }catch(e){U=[{id:'admin',name:'Administrator',username:'admin',password:'admin123',role:'admin'}];}
+    /* no built-in account any more: a brand-new device either connects to the
+       office data (users come down from Drive) or creates its own administrator */
+  }catch(e){U=[];}
   if(!S.firm)S.firm={n:'Adv. R.S. Charpe  |  Adv. S.R. Charpe',a:'Nagpur',p:''};
   purge();
   applyFirm();
@@ -897,6 +910,7 @@ function logout(){
 function initApp(){
   initCal();initPlan();
   document.getElementById('navSett').style.display=can('set')?'':'none';
+  var tbu=document.getElementById('tbUsers');if(tbu)tbu.style.display=cu&&cu.role==='admin'?'':'none';
   document.getElementById('rpdate').value=td();
   document.getElementById('rfrom').value=td();
   document.getElementById('rto').value=shift(td(),30);
@@ -980,7 +994,7 @@ function tOn(iso){return LT().filter(function(t){return t.due===iso&&!t.done;});
 
 /* Unupdated: open matters with no future date on record.
    Subordinate courts and tribunals are listed first; High Court last. */
-function isHC(c){return courtGroup(c)==='hc';}
+function isHC(c){var g=courtGroup(c);return g==='hc'||g==='sc';}
 function unupdated(){
   var t=td();
   return LC().filter(function(c){return isOpen(c)&&(!c.nd||c.nd<t);})
@@ -1131,7 +1145,7 @@ function boardTable(iso,pfx){
     var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'';
     var j=judgeOn(c,iso);
     var sty=' style="color:'+g.c+'"';
-    h+='<tr class="brow'+(x.g==='hc'?' hcrow':'')+'"'+sty+'>'+
+    h+='<tr class="brow'+(x.g==='hc'||x.g==='sc'?' hcrow':'')+'"'+sty+'>'+
       (can('edit')?'<td><input type="checkbox" class="'+pfx+'chk" value="'+c.id+'"'+(x.cur?' checked':'')+'></td>':'')+
       '<td class="num"'+sty+'>'+n+'</td>'+
       '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini" style="color:'+g.c+';opacity:.8">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
@@ -1297,7 +1311,7 @@ function unupdSect(title,arr,col){
 /* ===========================================================
    ADD / EDIT CASE
    =========================================================== */
-var CF=['fc','fcn','fjd','fp','fd','fcl','fcp','fcm','fps','fns','fno'];
+var CF=['fc','fcn','fcnr','fjd','fp','fd','fcl','fcp','fcm','fps','fns','fno'];
 function openAdd(pd){
   if(!guard('edit'))return;
   eid=null;document.getElementById('cmtit').textContent='Add case';
@@ -1313,6 +1327,7 @@ function editC(id){
   var c=find(id);if(!c)return;eid=id;
   document.getElementById('cmtit').textContent='Edit case';
   document.getElementById('fc').value=c.court||'';document.getElementById('fcn').value=c.cn||'';
+  document.getElementById('fcnr').value=c.cnr||'';
   document.getElementById('fjd').value=c.jd||'';
   document.getElementById('fp').value=c.pl||'';document.getElementById('fd').value=c.de||'';
   document.getElementById('fcl').value=c.cl||'';document.getElementById('fcp').value=c.cp||'';
@@ -1325,7 +1340,7 @@ function editC(id){
 }
 function saveCase(){
   if(!guard('edit'))return;
-  var d={court:val('fc'),cn:val('fcn'),jd:val('fjd'),pl:val('fp'),de:val('fd'),
+  var d={court:val('fc'),cn:val('fcn'),cnr:val('fcnr').toUpperCase().replace(/[^A-Z0-9]/g,''),jd:val('fjd'),pl:val('fp'),de:val('fd'),
     cl:val('fcl'),cp:val('fcp'),cm:val('fcm'),pd:document.getElementById('fpd').value,ps:val('fps'),
     nd:document.getElementById('fnd').value,ns:val('fns'),st:document.getElementById('fst').value};
   if(!d.pl&&!d.de&&!d.court){toast('Enter at least a party name or the court.','err');return;}
@@ -1725,7 +1740,7 @@ function prtStyle(){
   'tr{page-break-inside:avoid}'+
   'thead{display:table-header-group}'+
   '.par{font-style:italic;text-decoration:underline;font-weight:700}'+
-  '.hcrow td{font-weight:800}'+
+  '.hcrow td{font-weight:900;-webkit-text-stroke:.3px currentColor}'+
   '.hd{border:1px solid #b8932a;padding:.4em .6em;margin-bottom:.5em;text-align:center}'+
   '.hd b{font-size:1.35em;color:#1a2744;letter-spacing:.5px}'+
   '.hd small{font-size:.82em;color:#555;display:block;margin-top:.1em}'+
@@ -1776,7 +1791,7 @@ function boardRowsHTML(iso){
     var ln=(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'';
     var j=judgeOn(c,iso);
     var sty=' style="color:'+g.c+'"';
-    h+='<tr class="'+(x.g==='hc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
+    h+='<tr class="'+(x.g==='hc'||x.g==='sc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
       '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(j?'<br><span class="mini">Judge: '+he(j)+'</span>':'<br><span class="mini">Judge: ______________</span>')+'</td>'+
       '<td class="par"'+sty+'>'+he(ctit(c))+'</td>'+
@@ -1883,7 +1898,7 @@ function dlWord(doc,fname){
     'td{border:1px solid #999;padding:3pt;vertical-align:top}'+
     'tr.ghead td{background:#1a2744;color:#ffffff;font-family:Arial,sans-serif;font-weight:700;font-size:'+Math.max(7,bfS-2)+'pt}'+
     '.par{font-style:italic;text-decoration:underline;font-weight:700}'+
-    '.hcrow td{font-weight:800}'+
+    '.hcrow td{font-weight:900}'+
     '.hd{border:1px solid #b8932a;padding:6pt;text-align:center;margin-bottom:8pt}'+
     '.hd b{font-size:'+(bfS+4)+'pt}.hd small{font-size:'+Math.max(7,bfS-2)+'pt;color:#555}'+
     '.mini{font-size:'+Math.max(6,bfS-3)+'pt;font-style:normal;text-decoration:none;font-weight:400}'+
@@ -2761,29 +2776,35 @@ function renderLog(){
 }
 function addU(){
   if(!guard('set'))return;
+  if(!cu||cu.role!=='admin'){toast('Only the administrator can manage users.','err');return;}
   euid=null;['aun','auu','aup'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('aur').value='user';
-  ['aundel','aunset','aunexp','auro'].forEach(function(id){document.getElementById(id).checked=false;});
+  ['aunset','aunexp','auro'].forEach(function(id){document.getElementById(id).checked=false;});
+  document.getElementById('aundel').checked=true;document.getElementById('aubill').checked=true;
   openM('musr');
 }
 function editU(id){
   if(!guard('set'))return;
+  if(!cu||cu.role!=='admin'){toast('Only the administrator can manage users.','err');return;}
   var u=U.find(function(x){return x.id===id;});if(!u)return;euid=id;
   document.getElementById('aun').value=u.name||'';document.getElementById('auu').value=u.username||'';
   document.getElementById('aup').value='';document.getElementById('aur').value=u.role||'user';
   document.getElementById('aundel').checked=!!u.noDel;document.getElementById('aunset').checked=!!u.noSet;
   document.getElementById('aunexp').checked=!!u.noExp;document.getElementById('auro').checked=!!u.rOnly;
+  document.getElementById('aubill').checked=u.bill!==false;
   openM('musr');
 }
 function saveUsr(){
   if(!guard('set'))return;
+  if(!cu||cu.role!=='admin'){toast('Only the administrator can manage users.','err');return;}
   var name=val('aun'),uname=val('auu'),pass=document.getElementById('aup').value;
   if(!name||!uname){toast('Name and username are required.','err');return;}
   if(!euid&&!pass){toast('A password is required for a new user.','err');return;}
   if(U.find(function(x){return (x.username||'').toLowerCase()===uname.toLowerCase()&&x.id!==euid;})){toast('That username already exists.','err');return;}
   var d={name:name,username:uname,role:document.getElementById('aur').value,
     noDel:document.getElementById('aundel').checked,noSet:document.getElementById('aunset').checked,
-    noExp:document.getElementById('aunexp').checked,rOnly:document.getElementById('auro').checked};
+    noExp:document.getElementById('aunexp').checked,rOnly:document.getElementById('auro').checked,
+    bill:document.getElementById('aubill').checked};
   var done=function(){
     if(euid){var t=U.find(function(x){return x.id===euid;});Object.assign(t,d);if(cu&&cu.id===euid)cu=t;}
     else{d.id=uid();U.push(d);}
@@ -2799,6 +2820,7 @@ function saveUsr(){
 }
 function delU(id){
   if(!guard('set'))return;
+  if(!cu||cu.role!=='admin'){toast('Only the administrator can manage users.','err');return;}
   if(cu&&cu.id===id){toast('You cannot delete the account you are signed in with.','err');return;}
   if(!confirm('Delete this user?'))return;
   U=U.filter(function(u){return u.id!==id;});saveU();toast('User deleted.');logAct('Deleted a user');renderSett();popMsgSel();
@@ -3163,6 +3185,12 @@ function cs2OrderPdf(id,file){
 window.addEventListener('load',function(){setTimeout(cs2Start,1500);});
 </script>
 <script src="assets/ecourts.js"></script>
+<script src="assets/office.js"></script>
+<script src="assets/stickers.js"></script>
+<script src="assets/orders.js"></script>
+<script src="assets/courts.js"></script>
+<script src="assets/mat-split.js"></script>
+<script src="assets/tribunals.js"></script>
 <script src="assets/shim.js"></script>
 </body>
 </html>
