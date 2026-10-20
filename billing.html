@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="assets/activation.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Charpe Billing — Invoice Generator</title>
@@ -2995,7 +2996,7 @@ var PILL = { paid:["paid","Paid"], part:["unpaid","Part paid"], unpaid:["unpaid"
 function renderSaved(){
   var q = $("#saved-search").value.trim().toLowerCase();
   var f = $("#saved-filter").value;
-  var list = db.invoices.filter(function(v){
+  var list = (window.CBvisInv ? window.CBvisInv(db.invoices) : db.invoices).filter(function(v){
     if(f !== "all" && statusOf(v) !== f) return false;
     if(!q) return true;
     var hay = (v.number+" "+v.billTo+" "+v.reference+" "+(v.sample||"")+" "+
@@ -3005,7 +3006,7 @@ function renderSaved(){
 
   var outstanding = db.invoices.reduce(function(s,v){ return s + outstandingOf(v); }, 0);
   var billed = db.invoices.reduce(function(s,v){ return s + totalOf(v); }, 0);
-  $("#saved-totals").textContent = db.invoices.length + " invoices  ·  ₹" + money(billed) +
+  $("#saved-totals").textContent = window.CB_CLERK ? "Your last " + list.length + " bills" : db.invoices.length + " invoices  ·  ₹" + money(billed) +
     " billed  ·  ₹" + money(outstanding) + " outstanding";
 
   var h = $("#saved-list");
@@ -3231,7 +3232,7 @@ $("#lt-save").addEventListener("click", function(){
 
 function renderLetterList(){
   var q = $("#lt-search").value.trim().toLowerCase();
-  var all = (db.letters || []).slice().sort(function(a,b){
+  var all = (window.CBvisLet ? window.CBvisLet(db.letters || []) : (db.letters || [])).slice().sort(function(a,b){
     return String(b.savedAt||"").localeCompare(String(a.savedAt||"")); });
   var list = all.filter(function(x){
     if(!q) return true;
@@ -3680,6 +3681,9 @@ async function makeAuth(user, pass){
 }
 function usingDefaults(){ return !db.settings.auth || !db.settings.auth.hash; }
 async function passwordOk(user, pass){
+  /* Case Manager accounts may also open Billing (a clerk sees only the last 5 bills and letters) */
+  if(window.CBaltAuth){ try{ if(await window.CBaltAuth(user, pass)) return true; }catch(e){ console.error(e); } }
+  window.CB_CLERK = false;
   var a = db.settings.auth;
   if(!a || !a.hash) return String(user).toLowerCase() === DEFAULT_USER && pass === DEFAULT_PASS;
   if(String(user).toLowerCase() !== String(a.user||"").toLowerCase()) return false;
@@ -3692,11 +3696,10 @@ async function passwordOk(user, pass){
 function unlock(){
   return new Promise(function(resolve){
     var lock = $("#lock"), msg = $("#lg-msg"), tries = 0, wasDefault = usingDefaults();
-    $("#lg-hint").innerHTML = wasDefault
-      ? "First time in: <strong>" + DEFAULT_USER + "</strong> / <strong>" + DEFAULT_PASS +
-        "</strong> &mdash; change it under Settings once you are in."
-      : "";
-    $("#lg-user").value = wasDefault ? DEFAULT_USER : (db.settings.auth.user || "");
+    /* Oct 2026: the sign-in screen no longer shows or fills in any username or password */
+    $("#lg-hint").innerHTML = "";
+    $("#lg-user").value = "";
+    setTimeout(function(){ $("#lg-user").focus(); }, 80);
     setTimeout(function(){ $("#lg-pass").focus(); }, 60);
 
     $("#lg-form").addEventListener("submit", async function(e){
@@ -3706,8 +3709,8 @@ function unlock(){
         lock.classList.add("off");
         $("#lg-pass").value = "";
         resolve();
-        if(wasDefault) setTimeout(function(){
-          toast("You are on the default password — change it under Settings.");
+        if(wasDefault && !window.CB_ALT) setTimeout(function(){
+          toast("Billing still has its first-time password — change it under Settings.");
         }, 1200);
       } else {
         tries++;
@@ -4744,7 +4747,7 @@ function pickInvoice(title, cb, hint){
   var q = $(".m5-q", m.el), res = $(".m5-res", m.el), list = [];
   function run(){
     var toks = norm(q.value).split(" ").filter(Boolean);
-    list = db().invoices.filter(function(v){
+    list = (window.CBvisInv ? window.CBvisInv(db().invoices) : db().invoices).filter(function(v){
       var h = invHay(v);
       return toks.every(function(t){ return h.indexOf(t) > -1; });
     }).sort(function(a, b){ return numVal(b) - numVal(a); }).slice(0, 80);
@@ -4922,6 +4925,7 @@ function shareFlow(title, make, text, subject){
       '<div class="m5-two">' +
         '<button class="m5-big" data-h="wa"><b>WhatsApp</b><span>' + (MOBILE ? 'Choose WhatsApp in the share list' : 'WhatsApp on this computer') + '</span></button>' +
         '<button class="m5-big" data-h="gm"><b>Gmail</b><span>' + (MOBILE ? 'Choose Gmail in the share list' : 'Opens a new email; attach the downloaded PDF') + '</span></button>' +
+        (window.CBemail ? '<button class="m5-big" data-h="em"><b>Email to a client</b><span>Choose the client; address filled in; PDF attached and sent from your Gmail</span></button>' : '') +
       '</div>');
     $$(".m5-big", m.el).forEach(function(b){
       b.addEventListener("click", function(){ m.close(); sendFile(got, b.dataset.h, text, subject); });
@@ -4929,6 +4933,7 @@ function shareFlow(title, make, text, subject){
   });
 }
 function sendFile(got, how, text, subject){
+  if(how === "em" && window.CBemail){ window.CBemail(got, text, subject, window.CBshareCtx || {}); return; }
   var file = null;
   try{ file = new File([got.blob], got.name, { type:got.blob.type }); }catch(e){}
   var canFiles = !!(file && navigator.canShare && navigator.canShare({ files:[file] }));
@@ -4979,6 +4984,7 @@ function invoiceText(inv){
 function invoiceAction(inv, what){
   if(!inv || !String(inv.billTo || "").trim()){ A.toast("Fill in the Bill To block first."); return; }
   if(what === "share"){
+    window.CBshareCtx = { kind:"invoice", billTo:inv.billTo, clientId:inv.clientId || "", ref:inv.reference || "", number:inv.number };
     shareFlow(inv.number, function(sig){ return invoicePdf(inv, sig); },
       invoiceText(inv), "Invoice " + inv.number + " — " + db().settings.firm);
     return;
@@ -5872,7 +5878,7 @@ function renderRegister(){
   var host = $("#m5-llist"); if(!host) return;
   var map = numberMap();
   var q = norm($("#m5-lsearch") ? $("#m5-lsearch").value : "");
-  var all = (db().letters || []).filter(function(l){ return regTab === "draft" ? l.status === "draft" : isFinal(l); });
+  var all = (window.CBvisLet ? window.CBvisLet(db().letters || []) : (db().letters || [])).filter(function(l){ return regTab === "draft" ? l.status === "draft" : isFinal(l); });
   var list = all.filter(function(l){
     if(!q) return true;
     var h = norm([map[l.id] || "", "draft " + (l.draftNo || ""), l.draftName || "", A.letterDate(l.date), l.invoiceNo || "", l.text || "", (l.encl || []).join(" ")].join(" "));
@@ -6066,6 +6072,8 @@ function letterAction(l, what){
   if(!l) return;
   var title = l.status === "draft" ? "Draft " + (l.draftNo || "") : (l.no ? "Letter No. " + l.no : "This letter");
   if(what === "share"){
+    var lv = l.invoiceId ? (db().invoices || []).find(function(v){ return v.id === l.invoiceId; }) : null;
+    window.CBshareCtx = { kind:"letter", billTo:(lv && lv.billTo) || l.billTo || l.to || "", text:l.text || "", html:l.html || "", number:l.no || "" };
     shareFlow(title, async function(sig){
       var doc = await letterPdf(l, sig);
       return { blob:doc.output("blob"), name:letterName(l, "pdf", sig) };
@@ -6318,6 +6326,8 @@ window.CBm5 = { parseLetter:parseLetter, buildFromParsed:buildFromParsed, letter
 })();
 
 </script>
+<script src="assets/stickers.js"></script>
+<script src="assets/billing-extra.js"></script>
 <script src="assets/shim.js"></script>
 </body>
 </html>
