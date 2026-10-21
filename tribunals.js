@@ -59,8 +59,9 @@ function tpost(body) {
 }
 /* order PDFs from the Supreme Court / MAT: fetched by the helper, then kept in Drive through the backend */
 window.trOrderPost = function (c, o, b) {
-  if (!o || !o.a || (o.a[0] !== 'SCI' && o.a[0] !== 'MAT') || TR.helper !== true) return null;
-  return helperPost({ action: 'pdf', url: o.a[1] }).then(function (r) {
+  var hcLane = o && o.a && o.a[0] === 'HC' && String(b.sid || '').indexOf('H:') === 0;
+  if (!o || !o.a || (!hcLane && ((o.a[0] !== 'SCI' && o.a[0] !== 'MAT') || TR.helper !== true))) return null;
+  return helperPost(hcLane ? { action: 'hcpdf', sid: String(b.sid).slice(2), url: o.a[1] } : { action: 'pdf', url: o.a[1] }).then(function (r) {
     if (r.missing || !r.b64) return { ok: true, missing: true, msg: r.msg || 'not available' };
     return api().post({ action: 'upload', cnr: b.cnr, label: b.label, name: ((b.d || 'undated') + ' ' + (b.title || 'Order') + (b.no ? ' No ' + b.no : '')).slice(0, 120), b64: r.b64 })
       .then(function (x) { x.b64 = r.b64; return x; });
@@ -504,8 +505,108 @@ function hcNo(text) {
 }
 window.trHcNo = hcNo;
 var HCQ = {};
+/* ---- reading the High Court case page here in the browser (same rules as the backend) ---- */
+var HMON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function hpad(n) { n = String(n); return n.length < 2 ? '0' + n : n; }
+function hIso(s) {
+  s = String(s || ''); var m = s.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/);
+  if (m) return m[3] + '-' + hpad(m[2]) + '-' + hpad(m[1]);
+  m = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,})\.?,?\s+(\d{4})/);
+  if (m) { var mi = HMON.indexOf(m[2].slice(0, 3).toLowerCase()); if (mi >= 0) return m[3] + '-' + hpad(mi + 1) + '-' + hpad(m[1]); }
+  m = s.match(/(\d{4})-(\d{2})-(\d{2})/); return m ? m[0] : '';
+}
+function hUnent(h) { return String(h || '').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#0?39;|&apos;/gi, "'").replace(/&#(\d+);/g, function (_, n) { return String.fromCharCode(+n); }); }
+function hStrip(h) {
+  return hUnent(String(h || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|tr|li|h\d)>/gi, '\n').replace(/<[^>]+>/g, ' '))
+    .replace(/[ \t\r\f\v]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{2,}/g, '\n').trim();
+}
+function hNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z]/g, ''); }
+function hTables(html) {
+  var list = [], re = /<table([^>]*)>([\s\S]*?)<\/table>/gi, m;
+  while ((m = re.exec(html))) {
+    var cls = ((m[1].match(/class\s*=\s*["']([^"']*)/i) || [])[1] || '') + ' ' + ((m[1].match(/id\s*=\s*["']([^"']*)/i) || [])[1] || '');
+    var rows = [], rr = /<tr[^>]*>([\s\S]*?)<\/tr>/gi, r;
+    while ((r = rr.exec(m[2]))) {
+      var cells = [], cr = /<t([dh])([^>]*)>([\s\S]*?)<\/t[dh]>/gi, c;
+      while ((c = cr.exec(r[1]))) cells.push({ raw: hUnent(c[2] + ' ' + c[3]), t: hStrip(c[3]) });
+      if (cells.length) rows.push(cells);
+    }
+    list.push({ cls: cls.toLowerCase(), rows: rows });
+  }
+  return list;
+}
+function hIdx(row, words) { for (var i = 0; i < row.length; i++) { var t = hNorm(row[i].t); for (var w = 0; w < words.length; w++) if (t.indexOf(words[w]) >= 0) return i; } return -1; }
+function hcParse(html, c) {
+  var d = { found: false, hist: [], orders: [] }, kv = {}, hOrd = [];
+  hTables(html).forEach(function (tb) {
+    var first = tb.rows[0] || [], ht = hNorm(first.map(function (x) { return x.t; }).join('|'));
+    if (/history_table/.test(tb.cls) || (ht.indexOf('businessondate') >= 0 && ht.indexOf('hearingdate') >= 0)) {
+      var iJ = hIdx(first, ['judge']), iB = hIdx(first, ['businessondate']), iH = hIdx(first, ['hearingdate']), iP = hIdx(first, ['purpose']);
+      if (iB < 0) { iJ = 0; iB = 1; iH = 2; iP = 3; }
+      tb.rows.slice(1).forEach(function (r) {
+        if (r.length < 3) return;
+        var bd = hIso(r[iB] && r[iB].t), hd = iH >= 0 ? hIso(r[iH] && r[iH].t) : '';
+        if (!bd && !hd) return;
+        d.hist.push({ bd: bd, d: hd, j: iJ >= 0 && r[iJ] ? r[iJ].t : '', p: iP >= 0 && r[iP] ? r[iP].t : '', a: null });
+      });
+      d.found = true; return;
+    }
+    /* orders table: Order Number | Order on | Judge | Order Date | Order Details (link to display_pdf.php) */
+    if (/order_table/.test(tb.cls) || ht.indexOf('orderdate') >= 0) {
+      var oN = hIdx(first, ['ordernumber', 'orderno']), oD = hIdx(first, ['orderdate']), oJ = hIdx(first, ['judge']);
+      tb.rows.forEach(function (r) {
+        var raw = r.map(function (x) { return x.raw; }).join(' '), lm = raw.match(/href\s*=\s*["']([^"']*display_pdf[^"']*)["']/i);
+        if (!lm) return;
+        var url = hUnent(lm[1]).trim(), od = oD >= 0 && r[oD] ? hIso(r[oD].t) : hIso(r.map(function (x) { return x.t; }).join(' '));
+        var txt = r.map(function (x) { return x.t; }).join(' ');
+        hOrd.push({ url: url, no: oN >= 0 && r[oN] ? r[oN].t.trim() : '', d: od, title: /judg/i.test(txt) ? 'Judgment' : 'Order', j: oJ >= 0 && r[oJ] ? r[oJ].t : '' });
+      });
+      d.found = true; return;
+    }
+    tb.rows.forEach(function (r) { for (var i = 0; i + 1 < r.length; i += 2) { var k = hNorm(r[i].t); if (k && kv[k] === undefined) kv[k] = r[i + 1].t; } });
+    if (tb.cls.indexOf('petitioner') >= 0) d.pet = hStrip(tb.rows.map(function (r) { return r.map(function (x) { return x.t; }).join(' '); }).join('\n'));
+    if (tb.cls.indexOf('respondent') >= 0) d.res = hStrip(tb.rows.map(function (r) { return r.map(function (x) { return x.t; }).join(' '); }).join('\n'));
+  });
+  if (!d.pet) { var pm = html.match(/class=["'][^"']*Petitioner_Advocate_table[^"']*["'][^>]*>([\s\S]*?)<\/(?:table|span|div)>/i); if (pm) d.pet = hStrip(pm[1]); }
+  if (!d.res) { var rm = html.match(/class=["'][^"']*Respondent_Advocate_table[^"']*["'][^>]*>([\s\S]*?)<\/(?:table|span|div)>/i); if (rm) d.res = hStrip(rm[1]); }
+  function g() { for (var i = 0; i < arguments.length; i++) { var v = kv[arguments[i]]; if (v) return v; } return ''; }
+  d.ctype = g('casetype'); d.filing = g('filingnumber'); d.reg = g('registrationnumber'); d.cnr = g('cnrnumber');
+  d.first = hIso(g('firsthearingdate')); d.next = hIso(g('nexthearingdate', 'nextdate')); d.decision = hIso(g('decisiondate', 'dateofdecision'));
+  d.stage = g('casestage', 'stageofcase'); d.status = g('casestatus', 'status'); d.disposal = g('natureofdisposal'); d.judge = g('courtnumberandjudge', 'courtnoandjudge', 'coram');
+  d.disposed = !!(d.decision || d.disposal || /dispos/i.test(d.status + ' ' + d.stage));
+  if (d.ctype || d.reg || d.cnr || d.next || d.stage || d.status) d.found = true;
+  if (d.next) d.hist.forEach(function (h) { if (h.d === d.next && h.p) d.purpose = h.p; });
+  d.pet = (d.pet || '').slice(0, 600); d.res = (d.res || '').slice(0, 600);
+  /* order PDFs: links to display_pdf.php (an order already known by the same link keeps its key) */
+  var known = {}; ((c && c.eco && c.eco.ord) ? Object.keys(c.eco.ord) : []).forEach(function (k) { var o = c.eco.ord[k]; if (o && o.a && o.a[0] === 'HC') known[o.a[1]] = k; });
+  var seen = {};
+  hOrd.forEach(function (o) {
+    if (seen[o.url]) return; seen[o.url] = 1;
+    d.orders.push({ key: known[o.url] || ('h' + hash(o.url).slice(1)), no: o.no, d: o.d, title: o.title, a: ['HC', o.url] });
+  });
+  /* any other link to an order PDF elsewhere on the page */
+  var re = /<a[^>]+href\s*=\s*["']([^"']*display_pdf[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, m;
+  while ((m = re.exec(html))) {
+    var url = hUnent(m[1]).trim(); if (seen[url]) continue; seen[url] = 1;
+    var row = html.slice(Math.max(0, m.index - 400), m.index + 50);
+    var dd = (row.match(/(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4})(?![\s\S]*\d{1,2}[-\/.]\d{1,2}[-\/.]\d{4})/) || [])[1];
+    d.orders.push({ key: known[url] || ('h' + hash(url).slice(1)), no: '', d: hIso(dd || ''), title: /judg/i.test(hStrip(m[2])) ? 'Judgment' : 'Order', a: ['HC', url] });
+    d.found = true;
+  }
+  return d;
+}
+window.trHcParse = hcParse;
 function hcGuess(types, abbr) {
   if (!abbr) return '';
+  /* "Cri. WP", "CRWP", "Cr.Appeal"…: the criminal type of the same short name (e.g. WP(Criminal Writ Petition)) */
+  var crim = /^CRI?/.test(abbr) && abbr.length > 3, core = abbr.replace(/^CRI?/, '');
+  var firstOf = function (x) { return (String(x.t || '').toUpperCase().match(/^[A-Z.()\s\/-]+?(?=\s*[-(]|\s{2}|$)/) || [''])[0].replace(/[^A-Z]/g, ''); };
+  var same = types.filter(function (x) { return firstOf(x) === abbr; });
+  if (!same.length && crim) same = types.filter(function (x) { return firstOf(x) === core && /crim|\bcr\b|cr\./i.test(x.t); });
+  if (same.length) {
+    var pick = same.filter(function (x) { return crim === /crim|\bcr\b|cr\./i.test(x.t); })[0] || same[0];
+    return pick.v;
+  }
   var best = '', score = 0;
   types.forEach(function (x) {
     var t = String(x.t || '').toUpperCase(), lead = t.replace(/[^A-Z]/g, ''), first = (t.match(/^[A-Z.()\s\/-]+?(?=\s*[-(]|\s{2}|$)/) || [''])[0].replace(/[^A-Z]/g, '');
@@ -517,13 +618,14 @@ function hcGuess(types, abbr) {
 window.trHcFind = function (id) {
   var c = find(id); if (!c) return;
   var q = hcNo(c.cn || '') || { abbr: '', no: '', year: '' };
-  HCQ = { id: id, bench: hcBench(c), abbr: q.abbr, no: q.no, year: q.year, sid: '', img: '', types: [], type: '', via: '' };
+  HCQ = { id: id, bench: hcBench(c), abbr: q.abbr, no: q.no, year: q.year, sid: '', img: '', types: [], type: '', via: '', cnr: (window.ECO && ECO.api ? ECO.api.cleanCnr(c.cnr) : String(c.cnr || '')).toUpperCase() };
+  if (!/^HC[A-Z]{2}\d{12}$/.test(HCQ.cnr)) HCQ.cnr = '';
   window.HCQ = HCQ;
   hcPaint('Opening the High Court search (' + HCQ.bench + ' bench)…');
   /* through Charpe Helper on this PC when it is running (Google's servers are often turned away
      by the High Court site); otherwise through the backend as before */
   helperCheck().then(function (ok) {
-    HCQ.via = ok && (TR.helperV || 1) >= 2 ? 'helper' : 'backend';
+    HCQ.via = ok && (TR.helperV || 1) >= 3 ? 'helper' : 'backend';
     if (HCQ.via === 'helper') hcPaint('Opening the High Court search through Charpe Helper (' + HCQ.bench + ' bench)…');
     return HCQ.via === 'helper' ? helperPost({ action: 'hcopen', bench: HCQ.bench }) : api().post({ action: 'sopen', via: 'hc', bench: HCQ.bench });
   }).then(function (r) {
@@ -533,10 +635,12 @@ window.trHcFind = function (id) {
 };
 function hcPaint(msg, rows) {
   var c = find(HCQ.id);
-  scBox('<div style="font-weight:700;font-size:14px;margin-bottom:4px">Bombay High Court &mdash; find this case\'s CNR</div>' +
+  var one = HCQ.via === 'helper';
+  scBox('<div style="font-weight:700;font-size:14px;margin-bottom:4px">Bombay High Court &mdash; ' + (one ? 'fetch this case' : 'find this case\'s CNR') + '</div>' +
     (c ? '<div class="mini" style="margin-bottom:8px">' + he(ctit(c)) + ' &middot; ' + he(c.cn || '(no case number)') + ' &middot; ' + he(HCQ.bench) + ' bench</div>' : '') +
-    '<div class="mini" style="margin-bottom:8px">Only needed once: the CNR is saved on the case, and Official eCourts / Update Status then fetch it like any other case.</div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><select id="hcqT" class="sinp" style="max-width:260px">' +
+    '<div class="mini" style="margin-bottom:8px">' + (one ? (HCQ.cnr ? 'Searching by its CNR <b>' + HCQ.cnr + '</b>. ' : 'Check the case type, number and year. ') + 'One CAPTCHA: the case is found, its CNR saved, and its next date, history and orders fetched (through Charpe Helper on this PC).'
+      : 'Only needed once: the CNR is saved on the case, and Official eCourts / Update Status then fetch it like any other case. (Start Charpe Helper on this PC to find and fetch in one step.)') + '</div>' +
+    '<div style="display:' + (one && HCQ.cnr ? 'none' : 'flex') + ';gap:6px;flex-wrap:wrap;margin-bottom:8px"><select id="hcqT" class="sinp" style="max-width:260px">' +
       (HCQ.types.length ? '<option value="">— case type —</option>' + HCQ.types.map(function (x) { return '<option value="' + he(x.v) + '"' + (x.v === HCQ.type ? ' selected' : '') + '>' + he(x.t) + '</option>'; }).join('') : '<option value="">(loading case types…)</option>') + '</select>' +
     '<input id="hcqN" class="sinp" style="max-width:110px" placeholder="Number" value="' + he(HCQ.no) + '"><input id="hcqY" class="sinp" style="max-width:80px" placeholder="Year" value="' + he(HCQ.year) + '"></div>' +
     (HCQ.img ? '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><img src="' + HCQ.img + '" style="height:48px;border:1px solid #ccc;border-radius:4px">' +
@@ -552,15 +656,18 @@ window.HCQ = HCQ;
 window.trHcGo = function () {
   HCQ.type = document.getElementById('hcqT').value; HCQ.no = document.getElementById('hcqN').value.replace(/\D/g, ''); HCQ.year = document.getElementById('hcqY').value.replace(/\D/g, '');
   var cap = (document.getElementById('hcqC') || {}).value || '';
-  if (!HCQ.type) { hcPaint('<span style="color:#b3261e">Choose the case type.</span>'); return; }
-  if (!HCQ.no || HCQ.year.length !== 4) { hcPaint('<span style="color:#b3261e">Give the number and a four-digit year.</span>'); return; }
+  var byCnr = HCQ.via === 'helper' && HCQ.cnr;
+  if (!byCnr && !HCQ.type) { hcPaint('<span style="color:#b3261e">Choose the case type.</span>'); return; }
+  if (!byCnr && (!HCQ.no || HCQ.year.length !== 4)) { hcPaint('<span style="color:#b3261e">Give the number and a four-digit year.</span>'); return; }
   if (!cap.trim()) { hcPaint('<span style="color:#b3261e">Type the CAPTCHA.</span>'); return; }
   hcPaint('Searching…');
   var body = { sid: HCQ.sid, via: 'hc', bench: HCQ.bench, mode: 'cno', captcha: cap.trim(), type: HCQ.type, no: HCQ.no, year: HCQ.year, status: 'Both', q: '' };
-  (HCQ.via === 'helper' ? helperPost(Object.assign({ action: 'hcsearch' }, body)) : api().post(Object.assign({ action: 'ssearch' }, body))).then(function (r) {
+  (HCQ.via === 'helper' ? helperPost(Object.assign({ action: byCnr ? 'hccnr' : 'hcsearch', cnr: HCQ.cnr }, body)) : api().post(Object.assign({ action: 'ssearch' }, body))).then(function (r) {
     if (r.expired) return trHcFind(HCQ.id);
     if (r.img) HCQ.img = r.img; if (r.sid) HCQ.sid = r.sid;
     if (r.bad) { hcPaint('<span style="color:#b3261e">Wrong CAPTCHA — type the new picture.</span>'); return; }
+    if (r.notFound) { hcPaint('<span style="color:#a35b00">' + he(r.msg || 'Not found.') + '</span>'); return; }
+    if (r.html) return hcDone(r.cnr, r.html);
     var rows = r.rows || [];
     if (!rows.length) { hcPaint('<span style="color:#a35b00">' + he(r.msg || 'Nothing found with that type, number and year.') + ' Check the case type, or try Search Courts by party name.</span>'); return; }
     if (rows.length === 1) { HCQ.rows = rows; return trHcPick(0); }
@@ -572,8 +679,30 @@ window.trHcPic = function () {
   helperPost({ action: 'hcpic', sid: HCQ.sid }).then(function (r) { if (r.expired) return trHcFind(HCQ.id); HCQ.img = r.img; hcPaint(''); })
     .catch(function () { trHcFind(HCQ.id); });
 };
+/* the case page is in hand: save the CNR, read the page, apply it like an eCourts fetch, download the orders */
+function hcDone(cnr, html) {
+  var c = find(HCQ.id); if (!c) return;
+  var d = hcParse(String(html || ''), c);
+  if (cnr) c.cnr = cnr;
+  if (!d.found) { touch(c); saveAll(); hcPaint('<span style="color:#a35b00">CNR ' + he(cnr || '') + ' saved, but the case page could not be read: ' + he(hStrip(html).slice(0, 160) || 'empty answer') + '</span>'); return; }
+  var res = ECO.api.apply(c.id, d);
+  if (typeof logAct === 'function') logAct('High Court fetched for ' + ctit(c) + (cnr ? ' (CNR ' + cnr + ')' : ''));
+  try { refresh(); } catch (e) {}
+  ECO.api.queueCase(c.id, 'H:' + HCQ.sid, -1);
+  HCQ.img = ''; HCQ.rows = [];
+  hcPaint('<div style="color:#127a4b;font-weight:600;margin-bottom:4px">&#10003; Fetched from the High Court' + (cnr ? ' &middot; CNR ' + he(cnr) : '') + '</div>' + res.html +
+    '<div class="mini" style="margin-top:6px">Orders download in the background into Drive (see Orders &amp; order sheets on the case).</div>');
+}
 window.trHcPick = function (i) {
   var r = (HCQ.rows || [])[i], c = find(HCQ.id); if (!r || !c) return;
+  if (HCQ.via === 'helper') {
+    hcPaint('Fetching the case…');
+    helperPost({ action: 'hchist', sid: HCQ.sid, cnr: r.cnr, case_no: r.case_no, court_code: r.court_code }).then(function (x) {
+      if (x.expired) return trHcFind(HCQ.id);
+      hcDone(r.cnr, x.html);
+    }).catch(function (e) { hcPaint('<span style="color:#b3261e">' + he(e.message) + '</span>'); });
+    return;
+  }
   c.cnr = r.cnr; touch(c); saveAll(); trScClose();
   if (typeof logAct === 'function') logAct('High Court CNR ' + r.cnr + ' found for ' + ctit(c));
   try { refresh(); } catch (e) {}
@@ -676,6 +805,11 @@ window.trDcPick = function (i) {
 var _bld = window.bldRow;
 window.bldRow = bldRow = function (c) {
   var h = _bld.apply(this, arguments), k = kind(c);
+  if (!k && isHC(c) && !/supreme/i.test(c.court || '')) {
+    var hb1 = '<button class="btn bg" onclick="event.stopPropagation();trHcFind(\'' + c.id + '\')" title="One CAPTCHA: find the case on the High Court site by its number (or CNR), save the CNR and fetch next date, history and orders">&#9878; Fetch from High Court</button>';
+    var at1 = '<button class="btn bo" onclick="event.stopPropagation();prtC(';
+    return h.indexOf(at1) >= 0 ? h.replace(at1, hb1 + at1) : h;
+  }
   if (!k && !(typeof ecoOk === 'function' && ecoOk(c)) && !/supreme/i.test(c.court || '')) {
     var hb = isHC(c)
       ? '<button class="btn bg" onclick="event.stopPropagation();trHcFind(\'' + c.id + '\')" title="Find this case on the High Court site by its number (one CAPTCHA) and save its CNR">&#9878; Find on High Court</button>'

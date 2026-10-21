@@ -347,6 +347,10 @@ window.ordToX = function (what) {
     '<div style="margin-top:12px;font-size:11.5px;color:#666">Excerpt Desk then asks which of your matters to put them in &mdash; or makes a new matter named after this case.</div></div>' +
     '<div style="padding:10px 16px 14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn bo" id="oxNo">Cancel</button><button class="btn bg" id="oxGo" style="font-size:12px;padding:7px 14px">&#10148; Send</button></div></div>';
   document.body.appendChild(box);
+  /* is Charpe Helper (v4+) running? then no extra window is opened on Send */
+  fetch('http://127.0.0.1:8770/', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: '{"action":"ping"}' })
+    .then(function (r) { return r.json(); }).then(function (j) { window.__xHelper = !!(j.ok && (j.helper || 0) >= 4); })
+    .catch(function () { window.__xHelper = false; });
   box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
   box.querySelector('#oxNo').onclick = function () { box.remove(); };
   box.querySelector('#oxGo').onclick = function () {
@@ -358,7 +362,7 @@ window.ordToX = function (what) {
   };
 };
 function sendX(c, useO, fO, useS, fS) {
-  var win = window.open('about:blank', 'excerptdesk');   /* opened inside the click so it is not blocked */
+  var win = window.__xHelper ? null : window.open('about:blank', 'excerptdesk');   /* opened inside the click so it is not blocked */
   var tickedO = P.tab === 'o' ? picked('o', false) : [], tickedS = P.tab === 's' ? picked('s', false) : [];
   var allO = picked('o', true), allS = picked('s', true);
   var files = [], failed = 0, p = Promise.resolve();
@@ -379,17 +383,56 @@ function sendX(c, useO, fO, useS, fS) {
         : { name: 'Order sheets ' + fd(sl[0].d).replace(/\//g, '-') + ' to ' + fd(sl[sl.length - 1].d).replace(/\//g, '-') + '.pdf', blob: b });
     });
   }
+  var viaHelper = false;
   p.then(function () {
     if (!files.length) throw new Error('None of the PDFs could be opened.');
     var item = { id: 'x' + Date.now().toString(36), at: new Date().toISOString(), title: ctit(c), cn: c.cn || '', court: c.court || '', cnr: c.cnr || '', client: c.cl || '', files: files };
-    return inbox().then(function (db) {
-      return new Promise(function (res, rej) { var t = db.transaction('items', 'readwrite'); t.objectStore('items').put(item); t.oncomplete = function () { res(item); }; t.onerror = function () { rej(t.error); }; });
+    /* first choice: through Charpe Helper on this PC, so your own Excerpt Desk app picks them up
+       (whatever Chrome profile it runs in) and offers YOUR list of matters */
+    return toHelper(item).then(function (ok) {
+      if (ok) { viaHelper = true; return item; }
+      return toIdb(item);
     });
   }).then(function (item) {
+    if (viaHelper) {
+      if (win && !win.closed) try { win.close(); } catch (x) {}
+      xNotice(item, failed);
+      return;
+    }
     var url = location.origin + '/excerpt-desk/?inbox=' + item.id;
     if (win && !win.closed) win.location.href = url; else window.open(url, 'excerptdesk');
     toast(item.files.length + ' PDF' + (item.files.length === 1 ? '' : 's') + ' handed to Excerpt Desk — choose the matter there.' + (failed ? ' ' + failed + ' order(s) could not be opened (not downloaded yet, or offline) and were left out.' : ''), failed ? 'err' : undefined);
   }).catch(function (e) { if (win) try { win.close(); } catch (x) {} toast(e.message || String(e), 'err'); });
+}
+function b64of(blob) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(',')[1]); }; r.onerror = function () { rej(r.error); }; r.readAsDataURL(blob); }); }
+function toHelper(item) {
+  var H = 'http://127.0.0.1:8770/';
+  var post = function (b) { return fetch(H, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); };
+  return post({ action: 'ping' }).then(function (j) {
+    if (!j.ok || (j.helper || 0) < 4) return false;
+    return Promise.all(item.files.map(function (f) { return b64of(f.blob).then(function (b) { return { name: f.name, slot: f.slot || '', b64: b }; }); }))
+      .then(function (fl) { var it = {}; Object.keys(item).forEach(function (k) { it[k] = item[k]; }); it.files = fl; return post({ action: 'xput', item: it }); })
+      .then(function (r) { return !!(r && r.ok); });
+  }).catch(function () { return false; });
+}
+function toIdb(item) {
+  return Promise.resolve().then(function () {
+    return inbox().then(function (db) {
+      return new Promise(function (res, rej) { var t = db.transaction('items', 'readwrite'); t.objectStore('items').put(item); t.oncomplete = function () { res(item); }; t.onerror = function () { rej(t.error); }; });
+    });
+  });
+}
+function xNotice(item, failed) {
+  var old = document.getElementById('ordxok'); if (old) old.remove();
+  var box = document.createElement('div'); box.id = 'ordxok';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(10,18,32,.55);z-index:100000;display:flex;align-items:flex-start;justify-content:center;padding:60px 12px;font-family:inherit';
+  box.innerHTML = '<div style="background:#fff;color:#1a2744;border-radius:10px;max-width:480px;width:100%;box-shadow:0 14px 40px rgba(0,0,0,.35)">' +
+    '<div style="background:#1a2744;color:#e8c96a;padding:11px 16px;border-radius:10px 10px 0 0;font-weight:700">&#10003; Sent to Excerpt Desk</div>' +
+    '<div style="padding:14px 16px;font-size:13px;line-height:1.5"><b>' + item.files.length + ' PDF' + (item.files.length === 1 ? '' : 's') + '</b> for ' + he(item.title) + ' are waiting.<br><br>' +
+    '<b>Now open your Excerpt Desk</b> (its icon on the taskbar). It shows <i>From Charpe Suite</i> with your list of matters &mdash; pick the case, or make a new matter.' +
+    (failed ? '<br><br><span style="color:#a35b00">' + failed + ' order(s) could not be opened (not downloaded yet, or offline) and were left out.</span>' : '') + '</div>' +
+    '<div style="padding:0 16px 14px;text-align:right"><button class="btn bg" style="font-size:12px;padding:7px 16px" onclick="document.getElementById(\'ordxok\').remove()">OK</button></div></div>';
+  document.body.appendChild(box);
 }
 
 /* ---------------- the button on every case ---------------- */
