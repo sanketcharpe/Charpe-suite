@@ -183,8 +183,7 @@ function paint() {
       '<button class="btn bbl" onclick="ordAll(\'o\',\'one\')">&#8595; All &mdash; one PDF (date order)</button>' +
       '<button class="btn bn" onclick="ordAll(\'o\',\'print\')">&#128424; Print all (one file)</button>' +
       '<span style="flex-basis:100%;height:0"></span>' +
-      '<button class="btn bor" onclick="ordToX(\'o\')">&#10148; Orders to Excerpt Desk</button>' +
-      '<button class="btn bor" onclick="ordToX(\'both\')">&#10148; Orders + order sheets to Excerpt Desk</button>' +
+      '<button class="btn bor" onclick="ordToX(\'both\')">&#10148; Send to Excerpt Desk</button>' +
       '<label class="btn bo" style="cursor:pointer">+ Add an order PDF by hand<input type="file" accept="application/pdf" multiple hidden onchange="ordUpload(this)"></label>';
   } else {
     var S2 = sheets(c);
@@ -205,8 +204,7 @@ function paint() {
       '<button class="btn bn" onclick="ordAll(\'s\',\'print\')">&#128424; Print all (full A4 pages)</button>' +
       '<button class="btn bo" onclick="CharpeStickers.settings()">Sticker sheet settings</button>' +
       '<span style="flex-basis:100%;height:0"></span>' +
-      '<button class="btn bor" onclick="ordToX(\'s\')">&#10148; Order sheets to Excerpt Desk</button>' +
-      '<button class="btn bor" onclick="ordToX(\'both\')">&#10148; Orders + order sheets to Excerpt Desk</button>';
+      '<button class="btn bor" onclick="ordToX(\'both\')">&#10148; Send to Excerpt Desk</button>';
   }
   body.innerHTML = h;
 }
@@ -326,21 +324,61 @@ function inbox() {
     r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); };
   });
 }
+/* Send to Excerpt Desk: first a small choice — orders and/or order sheets, each either as ONE
+   consolidated PDF (a fixed name, so the next send replaces it there with the latest) or as
+   separate / ticked PDFs added alongside. */
 window.ordToX = function (what) {
   var c = find(P.id); if (!c) return;
-  var useO = what === 'o' || what === 'both', useS = what === 's' || what === 'both';
-  var tickedO = P.tab === 'o' ? picked('o', false) : [], tickedS = P.tab === 's' ? picked('s', false) : [];
-  var oList = useO ? (tickedO.length ? tickedO : picked('o', true)) : [];
-  var sList = useS ? (tickedS.length ? tickedS : picked('s', true)) : [];
-  if (!oList.length && !sList.length) { toast('Nothing to send yet.', 'err'); return; }
+  var nO = picked('o', true).length, nS = picked('s', true).length;
+  var tO = P.tab === 'o' ? picked('o', false).length : 0, tS = P.tab === 's' ? picked('s', false).length : 0;
+  var old = document.getElementById('ordx'); if (old) old.remove();
+  var box = document.createElement('div'); box.id = 'ordx';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(10,18,32,.55);z-index:100000;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto;font-family:inherit';
+  var opt = function (name, val, on, txt) { return '<label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 0 24px;font-size:12.5px;cursor:pointer"><input type="radio" name="' + name + '" value="' + val + '"' + (on ? ' checked' : '') + ' style="margin-top:3px">' + txt + '</label>'; };
+  box.innerHTML = '<div style="background:#fff;color:#1a2744;border-radius:10px;max-width:560px;width:100%;box-shadow:0 14px 40px rgba(0,0,0,.35)">' +
+    '<div style="background:#1a2744;color:#e8c96a;padding:11px 16px;border-radius:10px 10px 0 0;font-weight:700">&#10148; Send to Excerpt Desk</div>' +
+    '<div style="padding:12px 16px;font-size:12.5px"><div style="color:#555;margin-bottom:10px">' + he(ctit(c)) + (c.cn ? ' &middot; ' + he(c.cn) : '') + '</div>' +
+    '<label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:13px"><input type="checkbox" id="oxO"' + ((what === 'o' || what === 'both') && nO ? ' checked' : '') + (nO ? '' : ' disabled') + '> Orders (' + nO + ' available)</label>' +
+    opt('oxOf', 'one', true, '<span><b>One consolidated PDF</b> of all orders, in date order &mdash; replaces the earlier consolidated copy in Excerpt Desk, so it is always the latest</span>') +
+    opt('oxOf', 'sep', false, '<span>Separate PDFs, one per order (' + (tO ? 'the ' + tO + ' ticked' : 'all') + ') &mdash; added as new PDFs</span>') +
+    '<label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:13px;margin-top:14px"><input type="checkbox" id="oxS"' + ((what === 's' || what === 'both') && nS ? ' checked' : '') + (nS ? '' : ' disabled') + '> Order sheets (' + nS + ' dates)</label>' +
+    opt('oxSf', 'one', true, '<span><b>One consolidated PDF</b> of all order sheets &mdash; replaces the earlier consolidated copy in Excerpt Desk</span>') +
+    opt('oxSf', 'sep', false, '<span>' + (tS ? 'Only the ' + tS + ' ticked dates' : 'All dates') + ', as a new PDF added alongside</span>') +
+    '<div style="margin-top:12px;font-size:11.5px;color:#666">Excerpt Desk then asks which of your matters to put them in &mdash; or makes a new matter named after this case.</div></div>' +
+    '<div style="padding:10px 16px 14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn bo" id="oxNo">Cancel</button><button class="btn bg" id="oxGo" style="font-size:12px;padding:7px 14px">&#10148; Send</button></div></div>';
+  document.body.appendChild(box);
+  box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
+  box.querySelector('#oxNo').onclick = function () { box.remove(); };
+  box.querySelector('#oxGo').onclick = function () {
+    var useO = box.querySelector('#oxO').checked, useS = box.querySelector('#oxS').checked;
+    var fO = (box.querySelector('input[name=oxOf]:checked') || {}).value, fS = (box.querySelector('input[name=oxSf]:checked') || {}).value;
+    if (!useO && !useS) { toast('Tick Orders or Order sheets.', 'err'); return; }
+    box.remove();
+    sendX(c, useO, fO, useS, fS);
+  };
+};
+function sendX(c, useO, fO, useS, fS) {
   var win = window.open('about:blank', 'excerptdesk');   /* opened inside the click so it is not blocked */
-  toast('Preparing ' + (oList.length ? oList.length + ' order' + (oList.length === 1 ? '' : 's') : '') + (oList.length && sList.length ? ' and ' : '') + (sList.length ? 'the order sheets' : '') + ' for Excerpt Desk…');
-  var files = [], failed = 0;
-  var p = Promise.resolve();
-  oList.forEach(function (o) {
-    p = p.then(function () { return A().orderBlob(c, o.key); }).then(function (b) { files.push({ name: ((o.d || 'undated') + ' ' + o.t + (o.no ? ' No ' + o.no : '')).replace(/[\\\/:*?"<>|]+/g, '-') + '.pdf', blob: b }); }).catch(function () { failed++; });
-  });
-  if (sList.length) p = p.then(function () { return sheetsPdf(c, sList); }).then(function (b) { files.push({ name: 'Order sheets ' + fd(sList[0].d).replace(/\//g, '-') + ' to ' + fd(sList[sList.length - 1].d).replace(/\//g, '-') + '.pdf', blob: b }); });
+  var tickedO = P.tab === 'o' ? picked('o', false) : [], tickedS = P.tab === 's' ? picked('s', false) : [];
+  var allO = picked('o', true), allS = picked('s', true);
+  var files = [], failed = 0, p = Promise.resolve();
+  toast('Preparing the PDFs for Excerpt Desk…');
+  if (useO && fO === 'one') {
+    p = p.then(function () { return mergeOrders(c, allO.map(function (o) { return o.key; })); })
+      .then(function (r) { failed += r.miss.length; files.push({ name: 'Orders - consolidated.pdf', slot: 'orders', blob: r.blob }); })
+      .catch(function () { failed += allO.length; });
+  } else if (useO) {
+    (tickedO.length ? tickedO : allO).forEach(function (o) {
+      p = p.then(function () { return A().orderBlob(c, o.key); }).then(function (b) { files.push({ name: ((o.d || 'undated') + ' ' + o.t + (o.no ? ' No ' + o.no : '')).replace(/[\\\/:*?"<>|]+/g, '-') + '.pdf', blob: b }); }).catch(function () { failed++; });
+    });
+  }
+  if (useS) {
+    var sl = fS === 'one' ? allS : (tickedS.length ? tickedS : allS);
+    if (sl.length) p = p.then(function () { return sheetsPdf(c, sl); }).then(function (b) {
+      files.push(fS === 'one' ? { name: 'Order sheets - consolidated.pdf', slot: 'sheets', blob: b }
+        : { name: 'Order sheets ' + fd(sl[0].d).replace(/\//g, '-') + ' to ' + fd(sl[sl.length - 1].d).replace(/\//g, '-') + '.pdf', blob: b });
+    });
+  }
   p.then(function () {
     if (!files.length) throw new Error('None of the PDFs could be opened.');
     var item = { id: 'x' + Date.now().toString(36), at: new Date().toISOString(), title: ctit(c), cn: c.cn || '', court: c.court || '', cnr: c.cnr || '', client: c.cl || '', files: files };
@@ -352,7 +390,7 @@ window.ordToX = function (what) {
     if (win && !win.closed) win.location.href = url; else window.open(url, 'excerptdesk');
     toast(item.files.length + ' PDF' + (item.files.length === 1 ? '' : 's') + ' handed to Excerpt Desk — choose the matter there.' + (failed ? ' ' + failed + ' order(s) could not be opened (not downloaded yet, or offline) and were left out.' : ''), failed ? 'err' : undefined);
   }).catch(function (e) { if (win) try { win.close(); } catch (x) {} toast(e.message || String(e), 'err'); });
-};
+}
 
 /* ---------------- the button on every case ---------------- */
 var _bld = window.bldRow;
