@@ -517,9 +517,16 @@ function hcGuess(types, abbr) {
 window.trHcFind = function (id) {
   var c = find(id); if (!c) return;
   var q = hcNo(c.cn || '') || { abbr: '', no: '', year: '' };
-  HCQ = { id: id, bench: hcBench(c), abbr: q.abbr, no: q.no, year: q.year, sid: '', img: '', types: [], type: '' };
+  HCQ = { id: id, bench: hcBench(c), abbr: q.abbr, no: q.no, year: q.year, sid: '', img: '', types: [], type: '', via: '' };
+  window.HCQ = HCQ;
   hcPaint('Opening the High Court search (' + HCQ.bench + ' bench)…');
-  api().post({ action: 'sopen', via: 'hc', bench: HCQ.bench }).then(function (r) {
+  /* through Charpe Helper on this PC when it is running (Google's servers are often turned away
+     by the High Court site); otherwise through the backend as before */
+  helperCheck().then(function (ok) {
+    HCQ.via = ok && (TR.helperV || 1) >= 2 ? 'helper' : 'backend';
+    if (HCQ.via === 'helper') hcPaint('Opening the High Court search through Charpe Helper (' + HCQ.bench + ' bench)…');
+    return HCQ.via === 'helper' ? helperPost({ action: 'hcopen', bench: HCQ.bench }) : api().post({ action: 'sopen', via: 'hc', bench: HCQ.bench });
+  }).then(function (r) {
     HCQ.sid = r.sid; HCQ.img = r.img; HCQ.types = r.types || []; HCQ.type = hcGuess(HCQ.types, HCQ.abbr);
     hcPaint(r.note ? '<span style="color:#a35b00">' + he(r.note) + '</span>' : '');
   }).catch(function (e) { hcPaint('<span style="color:#b3261e">' + he(e.message) + '</span> <button class="btn bg" style="font-size:11px;padding:2px 10px" onclick="trHcFind(HCQ.id)">&#8635; Try again</button>'); });
@@ -534,7 +541,7 @@ function hcPaint(msg, rows) {
     '<input id="hcqN" class="sinp" style="max-width:110px" placeholder="Number" value="' + he(HCQ.no) + '"><input id="hcqY" class="sinp" style="max-width:80px" placeholder="Year" value="' + he(HCQ.year) + '"></div>' +
     (HCQ.img ? '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><img src="' + HCQ.img + '" style="height:48px;border:1px solid #ccc;border-radius:4px">' +
       '<input id="hcqC" class="sinp" style="max-width:130px;font:15px monospace" placeholder="CAPTCHA" autocomplete="off" onkeydown="if(event.key===\'Enter\')trHcGo()">' +
-      '<button class="btn bg" onclick="trHcGo()">Search</button><a href="#" class="mini" onclick="trHcFind(HCQ.id);return false">new picture</a></div>' : '') +
+      '<button class="btn bg" onclick="trHcGo()">Search</button><a href="#" class="mini" onclick="trHcPic();return false">new picture</a></div>' : '') +
     '<div id="hcqM" class="mini" style="min-height:16px">' + (msg || '') + '</div>' +
     (rows && rows.length ? rows.map(function (r, i) { return '<div style="border-top:1px solid #eee;padding:5px 0"><b>' + he(r.no || '') + '</b> <span class="mini">' + he(r.cnr) + '</span><br><span class="mini">' + he(r.pet || '') + (r.res ? ' vs. ' + he(r.res) : '') + '</span> <button class="btn bg" style="font-size:10px;padding:2px 8px" onclick="trHcPick(' + i + ')">This is my case</button></div>'; }).join('') : '') +
     '<div style="text-align:right;margin-top:8px"><button class="btn bo" onclick="trScClose()">Close</button></div>');
@@ -549,7 +556,8 @@ window.trHcGo = function () {
   if (!HCQ.no || HCQ.year.length !== 4) { hcPaint('<span style="color:#b3261e">Give the number and a four-digit year.</span>'); return; }
   if (!cap.trim()) { hcPaint('<span style="color:#b3261e">Type the CAPTCHA.</span>'); return; }
   hcPaint('Searching…');
-  api().post({ action: 'ssearch', sid: HCQ.sid, via: 'hc', bench: HCQ.bench, mode: 'cno', captcha: cap.trim(), type: HCQ.type, no: HCQ.no, year: HCQ.year, status: 'Both', q: '' }).then(function (r) {
+  var body = { sid: HCQ.sid, via: 'hc', bench: HCQ.bench, mode: 'cno', captcha: cap.trim(), type: HCQ.type, no: HCQ.no, year: HCQ.year, status: 'Both', q: '' };
+  (HCQ.via === 'helper' ? helperPost(Object.assign({ action: 'hcsearch' }, body)) : api().post(Object.assign({ action: 'ssearch' }, body))).then(function (r) {
     if (r.expired) return trHcFind(HCQ.id);
     if (r.img) HCQ.img = r.img; if (r.sid) HCQ.sid = r.sid;
     if (r.bad) { hcPaint('<span style="color:#b3261e">Wrong CAPTCHA — type the new picture.</span>'); return; }
@@ -558,6 +566,11 @@ window.trHcGo = function () {
     if (rows.length === 1) { HCQ.rows = rows; return trHcPick(0); }
     hcPaint('More than one case — choose yours:', rows);
   }).catch(function (e) { hcPaint('<span style="color:#b3261e">' + he(e.message) + '</span>'); });
+};
+window.trHcPic = function () {
+  if (HCQ.via !== 'helper') return trHcFind(HCQ.id);
+  helperPost({ action: 'hcpic', sid: HCQ.sid }).then(function (r) { if (r.expired) return trHcFind(HCQ.id); HCQ.img = r.img; hcPaint(''); })
+    .catch(function () { trHcFind(HCQ.id); });
 };
 window.trHcPick = function (i) {
   var r = (HCQ.rows || [])[i], c = find(HCQ.id); if (!r || !c) return;
@@ -596,6 +609,7 @@ window.trDcFind = function (id) {
   var c = find(id); if (!c) return;
   var q = hcNo(c.cn || '') || { no: '', year: '' };
   DCQ = { id: id, district: dcDistrict(c), no: q.no, year: q.year, sid: '', img: '', est: [], estv: '', types: [], type: '' };
+  window.DCQ = DCQ;
   dcPaint('Opening eCourts (' + DCQ.district + ' district)…');
   api().post({ action: 'sopen', via: 'dc', state: 'Maharashtra', district: DCQ.district }).then(function (r) {
     DCQ.sid = r.sid; DCQ.img = r.img; DCQ.est = (r.lists && r.lists.est) || []; DCQ.estv = estGuess(c, DCQ.est);

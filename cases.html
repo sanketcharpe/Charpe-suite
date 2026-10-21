@@ -32,7 +32,35 @@ nav button.on{background:#b8932a;color:#1a2744;border-color:#e8c96a;box-shadow:0
 .ubadge{background:#b8932a;color:#1a2744;border-radius:15px;padding:2px 8px;font-size:10px;font-weight:600}
 .lout{background:transparent;border:1px solid #e88;color:#faa;padding:2px 7px;border-radius:15px;cursor:pointer;font-size:10px}
 .lout:hover{background:#c0392b;color:#fff}
-#wrap{max-width:1400px;margin:0 auto;padding:10px}
+#wrap{max-width:1700px;margin:0 auto;padding:10px}
+/* dashboard: today's cases ~3/4 on the left, tasks ~1/4 on the right */
+.dgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(280px,1fr);gap:10px;align-items:start}
+.dside{position:sticky;top:8px}
+@media(max-width:1000px){.dgrid{grid-template-columns:1fr}.dside{position:static}}
+.dtl{max-height:calc(100vh - 140px);overflow:auto}
+.dtk{border:1px solid #d4c9a8;border-radius:7px;padding:8px 9px;margin-bottom:7px;background:#fff}
+.dtk.st-other{border-color:#e6a23c;background:#fffaf0}
+.dtk.late{border-color:#e88;background:#fffafa}
+.dtk .d{font-size:12px;font-weight:600;color:#1a2744;margin-bottom:4px}
+.dtk .m{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:10px}
+.tsb{display:flex;gap:4px;margin-bottom:5px}
+.tsb button{flex:1;border:1px solid #c9bd98;background:#fff;border-radius:6px;padding:5px 4px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#1a2744}
+.tsb button:hover{background:#f6f1e2}
+.tsb button.on-done{background:#1e8449;border-color:#1e8449;color:#fff}
+.tsb button.on-pending{background:#1a2744;border-color:#1a2744;color:#fff}
+.tsb button.on-other{background:#e67e22;border-color:#e67e22;color:#fff}
+.tsr{width:100%;border:1px solid #d4c9a8;border-radius:5px;padding:5px 7px;font-size:11px;font-family:inherit;box-sizing:border-box}
+.tsr:focus,.qpi:focus{outline:none;border-color:#b8932a;background:#fffdf4}
+/* dashboard: quick posting under each case */
+tr.qprow td{background:#faf7ee!important;border-top:none!important;padding:6px 8px!important}
+.qp{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:#1a2744;font-family:Inter,Arial,sans-serif}
+.qpi{border:1px solid #c9bd98;border-radius:5px;padding:5px 7px;font-size:12px;font-family:inherit;background:#fff}
+.qpd{width:105px;font-family:monospace}
+.qpday{font-size:10px;color:#666;min-width:62px}
+.qpimp{flex:1;min-width:220px;border-color:#e6a23c;background:#fffaf0}
+.qpimp.has{font-weight:600;color:#8a4b00}
+.lchk{display:flex;align-items:center;justify-content:flex-start;text-align:left;gap:8px;font-size:12px;color:#444;margin:5px 0;cursor:pointer}
+.lchk input{width:auto!important;margin:0;flex:none}
 .page{display:none}.page.on{display:block}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:900px){.g2{grid-template-columns:1fr}}
@@ -203,9 +231,13 @@ table.board td.act .btn:last-child{margin-bottom:0}
   <p>Legal Case Management System</p>
   <h3>Sign In</h3>
   <div class="lerr" id="lerr">Invalid username or password.</div>
-  <div class="fg"><label>Username</label><input id="luser" placeholder="username" onkeydown="if(event.key==='Enter')login()"></div>
-  <div class="fg"><label>Password</label><input id="lpass" type="password" placeholder="password" onkeydown="if(event.key==='Enter')login()"></div>
-  <button onclick="login()" style="width:100%;padding:9px;font-size:13px;background:#b8932a;color:#1a2744;border:none;border-radius:5px;font-weight:700;cursor:pointer;margin-top:3px">Login</button>
+  <form id="lform" autocomplete="on" onsubmit="event.preventDefault();login();return false">
+  <div class="fg"><label>Username</label><input id="luser" name="username" autocomplete="username" placeholder="username"></div>
+  <div class="fg"><label>Password</label><input id="lpass" name="password" type="password" autocomplete="current-password" placeholder="password"></div>
+  <label class="lchk"><input type="checkbox" id="lrem"> Remember my password on this computer</label>
+  <label class="lchk"><input type="checkbox" id="lkeep" checked> Keep me signed in (no login on every refresh)</label>
+  <button type="submit" style="width:100%;padding:9px;font-size:13px;background:#b8932a;color:#1a2744;border:none;border-radius:5px;font-weight:700;cursor:pointer;margin-top:6px">Login</button>
+  </form>
   <div id="lhint" style="margin-top:8px;font-size:11px;color:#888"></div>
 </div>
 </div>
@@ -251,21 +283,26 @@ table.board td.act .btn:last-child{margin-bottom:0}
     <span style="font-weight:600;color:#c0392b">&#9888; <span id="missn">0</span> case(s) are unupdated &mdash; no future date on record</span>
     <button class="btn br" onclick="go('unupd')">Review now</button>
   </div>
+  <div class="dgrid">
+  <div class="dmain">
   <div class="card">
     <div class="ch"><span class="g">Today's board &mdash; <span id="tbdate"></span></span>
       <div style="display:flex;gap:4px;flex-wrap:wrap" id="todacts"></div>
     </div>
     <div class="cb" id="todlist"></div>
   </div>
-  <div class="g2">
+  <div class="card">
+    <div class="ch">Messages</div>
+    <div class="cb" id="dashms"></div>
+  </div>
+  </div>
+  <div class="dside">
     <div class="card">
-      <div class="ch">Pending tasks <span id="tbdg" style="background:#c0392b;color:#fff;border-radius:8px;padding:1px 6px;font-size:9px;margin-left:4px;display:none"></span></div>
-      <div class="cb" id="dashtsk"></div>
+      <div class="ch"><span>Tasks to be done <span id="tbdg" style="background:#c0392b;color:#fff;border-radius:8px;padding:1px 6px;font-size:9px;margin-left:4px;display:none"></span></span>
+        <span style="display:flex;gap:4px"><button class="btn bg" onclick="openTask('')">+ Task</button><button class="btn bo" onclick="go('tasks')">All</button></span></div>
+      <div class="cb dtl" id="dashtsk"></div>
     </div>
-    <div class="card">
-      <div class="ch">Messages</div>
-      <div class="cb" id="dashms"></div>
-    </div>
+  </div>
   </div>
 </div>
 
@@ -847,13 +884,15 @@ function normCase0(c){
     addedBy:c.addedBy||'',
     mod:c.mod||'',
     del:c.del||'',
-    delBy:c.delBy||''
+    delBy:c.delBy||'',
+    imp:c.imp||''
   };
 }
 function normTask(t){
   t=t||{};
   return{id:t.id||uid(),desc:t.desc||'',prio:t.prio||'n',due:t.due||'',done:!!t.done,
-    cid:t.cid||'',added:t.added||'',addedBy:t.addedBy||'',mod:t.mod||'',del:t.del||'',delBy:t.delBy||''};
+    cid:t.cid||'',added:t.added||'',addedBy:t.addedBy||'',mod:t.mod||'',del:t.del||'',delBy:t.delBy||'',
+    st:t.st||(t.done?'done':'pending'),rm:t.rm||''};
 }
 
 /* ---------- storage ---------- */
@@ -906,22 +945,51 @@ function login(){
     if(f.ph){ok=(f.ph===h);}
     else if(f.password!==undefined){ok=(f.password===p);if(ok){f.ph=h;delete f.password;saveU();}}
     if(!ok)return loginFail();
+    try{
+      if(document.getElementById('lrem').checked)localStorage.setItem('cpm_rem',JSON.stringify({u:f.username,p:btoa(unescape(encodeURIComponent(p)))}));
+      else localStorage.removeItem('cpm_rem');
+      if(document.getElementById('lkeep').checked)localStorage.setItem('cpm_keep',JSON.stringify({u:f.username,h:f.ph}));
+      else localStorage.removeItem('cpm_keep');
+    }catch(e){}
+    enterAs(f);
+  });
+}
+function enterAs(f,auto){
     cu=f;
     document.getElementById('lerr').style.display='none';
     document.getElementById('lscr').style.display='none';
     document.getElementById('mainapp').style.display='block';
     document.getElementById('ubdg').textContent=(f.name||f.username)+(f.role==='admin'?'':' · user');
     document.getElementById('lpass').value='';
-    logAct('Signed in');
+    if(!auto)logAct('Signed in');
     initApp();
-  });
 }
 function loginFail(){document.getElementById('lerr').style.display='block';}
+/* "Keep me signed in": the next visit opens straight in, as long as that
+   user's password has not been changed since (the stored hash must match) */
+function fillRem(){
+  try{
+    var r=JSON.parse(localStorage.getItem('cpm_rem')||'null');
+    if(r&&r.u){document.getElementById('luser').value=r.u;try{document.getElementById('lpass').value=decodeURIComponent(escape(atob(r.p||'')));}catch(e){}document.getElementById('lrem').checked=true;}
+  }catch(e){}
+}
+function autoLogin(){
+  try{
+    fillRem();
+    var k=JSON.parse(localStorage.getItem('cpm_keep')||'null');
+    if(!k||!k.u)return false;
+    var f=U.find(function(x){return (x.username||'').toLowerCase()===String(k.u).toLowerCase();});
+    if(!f||!f.ph||f.ph!==k.h){localStorage.removeItem('cpm_keep');return false;}
+    enterAs(f,true);return true;
+  }catch(e){return false;}
+}
 function logout(){
+  try{localStorage.removeItem('cpm_keep');}catch(e){}
   saveAll();cu=null;
   document.getElementById('mainapp').style.display='none';
   document.getElementById('lscr').style.display='flex';
   document.getElementById('luser').value='';document.getElementById('lpass').value='';
+  fillRem();
   if(stmr){clearInterval(stmr);stmr=null;}
 }
 function initApp(){
@@ -1169,7 +1237,8 @@ function boardTable(iso,pfx){
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+
         '<br><input class="jinp'+(j?' set':'')+'" value="'+he(j)+'" placeholder="Judge — type to add" '+
         'style="color:'+g.c+'" onclick="event.stopPropagation()" onchange="setJudge(\''+c.id+'\',\''+iso+'\',this.value)"></td>'+
-      '<td class="par"'+sty+'>'+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+'</td>'+
+      '<td class="par"'+sty+'>'+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+
+        (c.imp&&pfx!=='dsh'?'<div style="font-size:11px;color:#8a4b00;font-style:normal;text-decoration:none;font-weight:600">&#9733; '+he(c.imp)+'</div>':'')+'</td>'+
       '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
       '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini" style="color:'+g.c+';opacity:.8">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
       '<td'+sty+'>'+he(c.cl||'—')+'</td>'+
@@ -1179,7 +1248,14 @@ function boardTable(iso,pfx){
         '<button class="btn bo" onclick="event.stopPropagation();jumpCase(\''+c.id+'\')" title="Open the full case">Open</button>'+
         (can('del')?'<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')" title="Delete this case — one click, revivable from the Deleted tab">&#x2715; Delete</button>':'')+
       '</td>'+
-      '</tr>';
+      '</tr>'+
+      (pfx==='dsh'&&can('edit')?'<tr class="qprow"><td colspan="'+ncols+'"><div class="qp">'+
+        '<b>Next date</b><input class="qpi qpd" id="qpd_'+c.id+'" placeholder="dd/mm/yyyy" maxlength="10" oninput="qpDay(\''+c.id+'\')" onkeydown="if(event.key===\'Enter\')qpSave(\''+c.id+'\',\''+iso+'\')">'+
+        '<span class="qpday" id="qpw_'+c.id+'"></span>'+
+        '<input class="qpi" id="qpn_'+c.id+'" style="min-width:180px;flex:1" placeholder="Stage / note for that date" onkeydown="if(event.key===\'Enter\')qpSave(\''+c.id+'\',\''+iso+'\')">'+
+        '<button class="btn bg" onclick="qpSave(\''+c.id+'\',\''+iso+'\')">Save date</button>'+
+        '<input class="qpi qpimp'+(c.imp?' has':'')+'" id="qpi_'+c.id+'" value="'+he(c.imp||'')+'" placeholder="&#9733; Important to remember about this case" onchange="qpImp(\''+c.id+'\',this)">'+
+      '</div></td></tr>':'');
   });
   h+='</tbody></table></div>'+legendHTML();
   return h;
@@ -1446,6 +1522,44 @@ function saveUpd(){
   refresh();if(S.jbKey)push();
 }
 
+/* ---------- dashboard quick posting ---------- */
+function qpParse(v){
+  var m=String(v||'').trim().match(/^(\d{1,2})[\/.\- ](\d{1,2})[\/.\- ](\d{2}|\d{4})$/);if(!m)return '';
+  var y=+m[3];if(y<100)y+=2000;var d=new Date(y,+m[2]-1,+m[1]);
+  if(d.getFullYear()!==y||d.getMonth()!==+m[2]-1||d.getDate()!==+m[1])return '';
+  return y+'-'+zz(+m[2])+'-'+zz(+m[1]);
+}
+function qpDay(id){
+  var el=document.getElementById('qpd_'+id),w=document.getElementById('qpw_'+id);if(!el||!w)return;
+  var v=el.value.replace(/[^\d]/g,'');
+  if(/^\d{3,8}$/.test(v)&&el.value.indexOf('/')<0&&v.length===8)el.value=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);
+  var iso=qpParse(el.value);
+  w.textContent=iso?WD[new Date(+iso.slice(0,4),+iso.slice(5,7)-1,+iso.slice(8)).getDay()]:(el.value.length>=8?'not a date':'');
+  w.style.color=iso?'#127a4b':'#b3261e';
+}
+function qpSave(id,iso){
+  if(!guard('edit'))return;
+  var c=find(id);if(!c)return;
+  var nd=qpParse((document.getElementById('qpd_'+id)||{}).value),ns=((document.getElementById('qpn_'+id)||{}).value||'').trim();
+  if(!nd){toast('Type the next date as dd/mm/yyyy, e.g. 15/12/2026.','err');var f=document.getElementById('qpd_'+id);if(f)f.focus();return;}
+  var pd=c.nd&&c.nd<=td()?c.nd:iso;
+  if(nd<=pd&&!confirm('The next date '+fd(nd)+' is not after '+fd(pd)+'. Save anyway?'))return;
+  c.hist=c.hist||[];
+  c.hist.push({dt:c.nd||td(),pd:c.pd,ps:c.ps,nd:c.nd,ns:c.ns,note:(c.notes&&c.notes.length)?c.notes[c.notes.length-1].text:'',by:cu?cu.name:''});
+  c.pd=pd;c.ps=c.ns;c.nd=nd;c.ns=ns;
+  if(ns)c.notes.push({text:ns,date:td(),by:cu?cu.name:''});
+  touch(c);saveAll();
+  logAct('Posted '+fd(nd)+' for '+ctit(c));
+  toast('Next date posted: '+fd(nd)+' ('+WD[new Date(+nd.slice(0,4),+nd.slice(5,7)-1,+nd.slice(8)).getDay()]+')');
+  refresh();if(S.jbKey)push();
+}
+function qpImp(id,el){
+  if(!guard('edit'))return;
+  var c=find(id);if(!c)return;
+  c.imp=String(el.value||'').trim();el.classList.toggle('has',!!c.imp);
+  touch(c);saveAll();toast(c.imp?'Saved: important note for this case.':'Important note cleared.');
+}
+
 /* ---------- adjournment ---------- */
 function adjOne(id){var c=find(id);if(!c)return;openAdj(c.nd||td(),[id]);}
 function adjSel(iso,pfx){
@@ -1681,7 +1795,7 @@ function saveTask(){
 }
 function markDone(id){
   var t=LT().find(function(x){return x.id===id;});if(!t)return;
-  t.done=!t.done;touch(t);saveAll();renderTasks();renderDashT();updBadges();
+  t.done=!t.done;t.st=t.done?'done':'pending';touch(t);saveAll();renderTasks();renderDashT();updBadges();
 }
 function delTask(id){
   if(!guard('del','You are not allowed to delete records.'))return;
@@ -1730,6 +1844,32 @@ function renderTasks(){
   });
   el.innerHTML=s.length?s.map(bldT).join(''):'<div style="color:#888;font-size:11px">No tasks match.</div>';
 }
+/* Dashboard task list: every task not yet complete, each with
+   Complete / Pending / Other and a small remark box. */
+function bldDT(t){
+  var late=t.due&&t.due<td()&&!t.done,c=t.cid?find(t.cid):null,st=t.done?'done':(t.st||'pending');
+  var b=function(k,lbl){return '<button class="'+(st===k?'on-'+k:'')+'" onclick="setTSt(\''+t.id+'\',\''+k+'\')">'+lbl+'</button>';};
+  return '<div class="dtk st-'+st+(late?' late':'')+'">'+
+    '<div class="d">'+he(t.desc)+'</div>'+
+    '<div class="m"><span class="prbdg '+(PC[t.prio]||'prn')+'">'+(PL[t.prio]||t.prio)+'</span>'+
+      (t.due?'<span style="background:'+(late?'#fdecea':'#e8f0ff')+';color:'+(late?'#c0392b':'#2040a0')+';border-radius:8px;padding:1px 6px">'+(late?'Overdue ':'Due ')+fd(t.due)+'</span>':'')+
+      (c?'<span class="caselink" style="cursor:pointer" onclick="jumpCase(\''+c.id+'\')">'+he(ctit(c)).slice(0,30)+'</span>':'')+'</div>'+
+    '<div class="tsb">'+b('done','&#10003; Complete')+b('pending','&#8987; Pending')+b('other','&#8230; Other')+'</div>'+
+    '<input class="tsr" placeholder="Remark&hellip;" value="'+he(t.rm||'')+'" onchange="setTRm(\''+t.id+'\',this.value)">'+
+  '</div>';
+}
+function setTSt(id,k){
+  if(!guard('edit'))return;
+  var t=LT().find(function(x){return x.id===id;});if(!t)return;
+  var was={done:t.done,st:t.st};
+  t.st=k;t.done=(k==='done');touch(t);saveAll();
+  if(k==='done')toast('Task marked complete.','',function(){t.done=was.done;t.st=was.st;touch(t);saveAll();renderDashT();renderTasks();updBadges();});
+  renderDashT();renderTasks();updBadges();
+}
+function setTRm(id,v){
+  var t=LT().find(function(x){return x.id===id;});if(!t)return;
+  t.rm=String(v||'').trim();touch(t);saveAll();toast('Remark saved.');
+}
 function renderDashT(){
   var p=LT().filter(function(t){return !t.done;});
   var bg=document.getElementById('tbdg');
@@ -1740,9 +1880,8 @@ function renderDashT(){
     var pa=(o[a.prio]===undefined?2:o[a.prio]),pb=(o[b.prio]===undefined?2:o[b.prio]);
     if(pa!==pb)return pa-pb;
     return (a.due||'9999').localeCompare(b.due||'9999');
-  }).slice(0,5);
-  el.innerHTML=s.length?s.map(bldT).join('')+(p.length>5?'<div style="font-size:10px;color:#888;padding:3px 0">+'+(p.length-5)+' more</div>':'')
-    :'<div style="color:#888;font-size:11px">No pending tasks.</div>';
+  });
+  el.innerHTML=s.length?s.map(bldDT).join(''):'<div style="color:#888;font-size:11px">No pending tasks. <a href="#" onclick="openTask(\'\');return false">Add one</a>.</div>';
 }
 function jumpCase(id){
   go('cases');
@@ -2983,7 +3122,7 @@ document.querySelectorAll('.ov').forEach(function(o){
   o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});
 });
 window.addEventListener('beforeunload',function(){if(cu)saveAll();});
-window.onload=function(){loadAll();document.getElementById('luser').focus();};
+window.onload=function(){loadAll();if(!autoLogin())document.getElementById('luser').focus();};
 </script>
 <script>
 /* ==================================================================
