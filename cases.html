@@ -234,8 +234,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
   <form id="lform" autocomplete="on" onsubmit="event.preventDefault();login();return false">
   <div class="fg"><label>Username</label><input id="luser" name="username" autocomplete="username" placeholder="username"></div>
   <div class="fg"><label>Password</label><input id="lpass" name="password" type="password" autocomplete="current-password" placeholder="password"></div>
-  <label class="lchk"><input type="checkbox" id="lrem"> Remember my password on this computer</label>
-  <label class="lchk"><input type="checkbox" id="lkeep" checked> Keep me signed in (no login on every refresh)</label>
+  <label class="lchk"><input type="checkbox" id="lkeep" checked> <span><b>Save login on this computer</b> &mdash; stay signed in on refresh, and the name and password are filled in after you log out</span></label>
   <button type="submit" style="width:100%;padding:9px;font-size:13px;background:#b8932a;color:#1a2744;border:none;border-radius:5px;font-weight:700;cursor:pointer;margin-top:6px">Login</button>
   </form>
   <div id="lhint" style="margin-top:8px;font-size:11px;color:#888"></div>
@@ -943,13 +942,13 @@ function login(){
   hashPw(f.username,p).then(function(h){
     var ok=false;
     if(f.ph){ok=(f.ph===h);}
-    else if(f.password!==undefined){ok=(f.password===p);if(ok){f.ph=h;delete f.password;saveU();}}
+    else if(f.password!==undefined){ok=(f.password===p);if(ok){f.ph=h;delete f.password;touch(f);saveU();}}
     if(!ok)return loginFail();
     try{
-      if(document.getElementById('lrem').checked)localStorage.setItem('cpm_rem',JSON.stringify({u:f.username,p:btoa(unescape(encodeURIComponent(p)))}));
-      else localStorage.removeItem('cpm_rem');
-      if(document.getElementById('lkeep').checked)localStorage.setItem('cpm_keep',JSON.stringify({u:f.username,h:f.ph}));
-      else localStorage.removeItem('cpm_keep');
+      if(document.getElementById('lkeep').checked){
+        localStorage.setItem('cpm_rem',JSON.stringify({u:f.username,p:btoa(unescape(encodeURIComponent(p)))}));
+        localStorage.setItem('cpm_keep',JSON.stringify({u:f.username,h:h}));
+      }else{localStorage.removeItem('cpm_rem');localStorage.removeItem('cpm_keep');}
     }catch(e){}
     enterAs(f);
   });
@@ -970,16 +969,19 @@ function loginFail(){document.getElementById('lerr').style.display='block';}
 function fillRem(){
   try{
     var r=JSON.parse(localStorage.getItem('cpm_rem')||'null');
-    if(r&&r.u){document.getElementById('luser').value=r.u;try{document.getElementById('lpass').value=decodeURIComponent(escape(atob(r.p||'')));}catch(e){}document.getElementById('lrem').checked=true;}
+    if(r&&r.u){document.getElementById('luser').value=r.u;try{document.getElementById('lpass').value=decodeURIComponent(escape(atob(r.p||'')));}catch(e){}document.getElementById('lkeep').checked=true;}
   }catch(e){}
 }
-function autoLogin(){
+function autoLogin(again){
   try{
     fillRem();
     var k=JSON.parse(localStorage.getItem('cpm_keep')||'null');
     if(!k||!k.u)return false;
     var f=U.find(function(x){return (x.username||'').toLowerCase()===String(k.u).toLowerCase();});
-    if(!f||!f.ph||f.ph!==k.h){localStorage.removeItem('cpm_keep');return false;}
+    /* users may still be arriving from Drive sync: look again shortly */
+    if(!f){if(!again)setTimeout(function(){if(!cu){try{U=JSON.parse(localStorage.getItem('cpm_u')||'[]');}catch(e){}autoLogin(true);}},3000);return !again?true:false;}
+    /* only a changed password ends the saved login */
+    if(f.ph&&k.h&&f.ph!==k.h){localStorage.removeItem('cpm_keep');return false;}
     enterAs(f,true);return true;
   }catch(e){return false;}
 }
