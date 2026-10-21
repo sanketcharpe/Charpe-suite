@@ -522,7 +522,7 @@ window.trHcFind = function (id) {
   api().post({ action: 'sopen', via: 'hc', bench: HCQ.bench }).then(function (r) {
     HCQ.sid = r.sid; HCQ.img = r.img; HCQ.types = r.types || []; HCQ.type = hcGuess(HCQ.types, HCQ.abbr);
     hcPaint(r.note ? '<span style="color:#a35b00">' + he(r.note) + '</span>' : '');
-  }).catch(function (e) { hcPaint('<span style="color:#b3261e">' + he(e.message) + '</span>'); });
+  }).catch(function (e) { hcPaint('<span style="color:#b3261e">' + he(e.message) + '</span> <button class="btn bg" style="font-size:11px;padding:2px 10px" onclick="trHcFind(HCQ.id)">&#8635; Try again</button>'); });
 };
 function hcPaint(msg, rows) {
   var c = find(HCQ.id);
@@ -601,7 +601,7 @@ window.trDcFind = function (id) {
     DCQ.sid = r.sid; DCQ.img = r.img; DCQ.est = (r.lists && r.lists.est) || []; DCQ.estv = estGuess(c, DCQ.est);
     dcPaint(r.note ? '<span style="color:#a35b00">' + he(r.note) + '</span>' : '');
     if (DCQ.estv) trDcTypes();
-  }).catch(function (e) { dcPaint('<span style="color:#b3261e">' + he(e.message) + '</span>'); });
+  }).catch(function (e) { dcPaint('<span style="color:#b3261e">' + he(e.message) + '</span> <button class="btn bg" style="font-size:11px;padding:2px 10px" onclick="trDcFind(DCQ.id)">&#8635; Try again</button>'); });
 };
 window.trDcTypes = function () {
   var e = document.getElementById('dcqE'); if (e) DCQ.estv = e.value;

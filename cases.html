@@ -19,13 +19,15 @@ body{font-family:Segoe UI,Arial,sans-serif;background:#f4f1ea;color:#1a2744;font
 .fg input,.fg select,.fg textarea{width:100%;border:1px solid #ccc;border-radius:5px;padding:7px;font-size:12px;color:#1a2744;background:#fff;font-family:inherit}
 .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#b8932a}
 .fg textarea{resize:vertical;min-height:55px}
-header{background:#1a2744;color:#fff;padding:0 10px;min-height:50px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
+header{background:#1a2744;color:#fff;padding:7px 14px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .firm b{font-size:12px;color:#e8c96a;display:block}
 .firm small{font-size:9px;color:#aab}
-nav{display:flex;gap:3px;flex-wrap:wrap}
-nav button{background:transparent;border:1px solid rgba(184,147,42,.4);color:#ddd;padding:4px 8px;border-radius:15px;cursor:pointer;font-size:10px;position:relative}
-nav button:hover,nav button.on{background:#b8932a;color:#1a2744;border-color:#b8932a;font-weight:600}
-.navbdg{background:#c0392b;color:#fff;border-radius:8px;padding:0 4px;font-size:8px;font-weight:700;margin-left:3px;display:none}
+nav{display:flex;gap:6px;flex-wrap:wrap;order:3;flex-basis:100%;padding:7px 0 9px;margin-top:2px;border-top:1px solid rgba(255,255,255,.09)}
+nav button{background:#2b3d68;border:1px solid #42568c;color:#fff;padding:7px 15px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;position:relative;box-shadow:0 2px 0 #0d1630;transition:background .12s,transform .05s}
+nav button:hover{background:#3a5089;border-color:#5a70a8}
+nav button:active{transform:translateY(1px);box-shadow:0 1px 0 #0d1630}
+nav button.on{background:#b8932a;color:#1a2744;border-color:#e8c96a;box-shadow:0 2px 0 #7a5f14}
+.navbdg{background:#c0392b;color:#fff;border-radius:8px;padding:0 5px;font-size:9px;font-weight:700;margin-left:5px;display:none}
 .hright{display:flex;align-items:center;gap:5px}
 .ubadge{background:#b8932a;color:#1a2744;border-radius:15px;padding:2px 8px;font-size:10px;font-weight:600}
 .lout{background:transparent;border:1px solid #e88;color:#faa;padding:2px 7px;border-radius:15px;cursor:pointer;font-size:10px}
@@ -38,7 +40,18 @@ nav button:hover,nav button.on{background:#b8932a;color:#1a2744;border-color:#b8
 .ch{background:#1a2744;color:#fff;padding:8px 12px;font-weight:600;font-size:11px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
 .ch .g{color:#e8c96a}
 .cb{padding:10px 12px}
-.btn{border:none;border-radius:5px;padding:4px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn{border:none;border-radius:6px;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.btn:active{transform:translateY(1px)}
+/* court filter on Calendar and Planner */
+.cfbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.cfbtn{border:1px solid #c9bd98;background:#fff;color:#1a2744;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 1px 0 #c9bd98;display:inline-flex;align-items:center;gap:6px}
+.cfbtn:hover{background:#f6f1e2}
+.cfbtn.on{background:#1a2744;color:#fff;border-color:#1a2744;box-shadow:0 1px 0 #000}
+.cfbtn i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.cfbtn b{background:rgba(0,0,0,.08);border-radius:8px;padding:0 6px;font-size:10px}
+.cfbtn.on b{background:rgba(255,255,255,.18)}
+.calg{font-size:8px;font-weight:700;color:#fff;border-radius:5px;padding:1px 4px;display:inline-block;margin:0 2px 2px 0}
+.undn{margin-top:10px;background:#fff8e6;border:1px solid #f0d48a;border-radius:6px;padding:8px 10px;font-size:11px;color:#5a4a1a;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .bn{background:#1a2744;color:#fff}.bn:hover{background:#2a3f7a}
 .bg{background:#b8932a;color:#1a2744}.bg:hover{background:#e8c96a}
 .bo{background:#fff;color:#1a2744;border:1px solid #1a2744}.bo:hover{background:#1a2744;color:#fff}
@@ -102,7 +115,7 @@ nav button:hover,nav button.on{background:#b8932a;color:#1a2744;border-color:#b8
 .plcell.sel{background:#1a2744;border-color:#1a2744}
 .plnum{font-size:11px;font-weight:700;margin-bottom:1px}
 .plcell.sel .plnum{color:#e8c96a}
-.plchip{background:#b8932a;color:#1a2744;font-size:7px;font-weight:600;border-radius:2px;padding:1px 2px;margin-bottom:1px;display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.plchip{background:#b8932a;color:#fff;font-size:8px;font-weight:600;border-radius:3px;padding:1px 3px;margin-bottom:1px;display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .plpchip{background:#e8f4fd;color:#1a5080;font-size:7px;border-radius:2px;padding:1px 2px;margin-bottom:1px;display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border:1px solid #90c0e8}
 .titem{border:1px solid #d4c9a8;border-radius:5px;padding:7px 9px;margin-bottom:5px;background:#fff;display:flex;align-items:flex-start;gap:7px}
 .titem.done{opacity:.5}
@@ -324,11 +337,13 @@ table.board td.act .btn:last-child{margin-bottom:0}
         </div>
         <button class="btn bn" onclick="cnav(1)">Next &#8250;</button>
       </div>
+      <div class="cfbar" id="cfcal"></div>
       <div class="calgrid" id="cgrid"></div>
       <div style="margin-top:7px;font-size:9px;color:#666">
         <span class="calbdg">3</span> hearings currently listed on that date &nbsp;&nbsp;
-        <span class="calbdg past">2</span> matters heard on that date earlier (from history)
+        <span class="calbdg past">2</span> matters heard on that date earlier (from history) &nbsp;&nbsp; coloured tags: HC = High Court, DC = District, CAT / MAT = tribunals, IC / LC = Industrial / Labour
       </div>
+      <div id="undcal"></div>
     </div>
   </div>
   <div id="cal-daylist"></div>
@@ -350,7 +365,9 @@ table.board td.act .btn:last-child{margin-bottom:0}
         <b style="font-size:13px;color:#1a2744" id="ptitle"></b>
         <button class="btn bn" onclick="pnav(1)">&#8250;</button>
       </div>
+      <div class="cfbar" id="cfpln"></div>
       <div class="plgrid" id="pgrid"></div>
+      <div id="undpln"></div>
     </div>
   </div>
   <div id="plan-daylist"></div>
@@ -1116,7 +1133,7 @@ function boardActs(iso,pfx){
    boards can live on the page at once. Rows are grouped and
    coloured by court in the fixed order set out in GRPS. */
 function boardTable(iso,pfx){
-  var rows=boardOn(iso);
+  var rows=(pfx==='cal'||pfx==='pln')?boardF(iso):boardOn(iso);
   if(!rows.length)return '<div style="color:#888;font-size:11px;padding:6px 0">No matters were listed on '+fd(iso)+'.</div>';
   var b=bf(),ncols=can('edit')?10:9;
   var h='<div class="bwrap"><table class="board" style="font-family:'+he(b.f)+',serif;font-size:'+b.s+'px"><thead><tr>'+
@@ -1184,7 +1201,7 @@ function setJudge(id,iso,v){
 
 function buildDayPanel(iso,containerId,pfx){
   var el=document.getElementById(containerId);if(!el)return;
-  var rows=boardOn(iso),tt=tOn(iso);
+  var rows=(pfx==='cal'||pfx==='pln')?boardF(iso):boardOn(iso),tt=tOn(iso);
   var h='<div class="daylist-panel">'+
     '<div class="daylist-head">'+
       '<b style="font-size:12px">&#128197; Board for '+fdl(iso)+' &mdash; '+rows.length+' matter'+(rows.length===1?'':'s')+'</b>'+
@@ -1484,6 +1501,40 @@ function saveCont(){
 }
 
 /* ===========================================================
+   COURT FILTER for Calendar and Planner — every court is shown
+   unless one is picked; cases without a coming date are counted
+   below the month so none is out of sight.
+   =========================================================== */
+var CF='',CFS=[{k:'',t:'All courts',g:null,c:'#1a2744'},{k:'hc',t:'High Court & SC',g:['sc','hc'],c:'#b00000'},{k:'dist',t:'District courts',g:['dist'],c:'#000000'},
+  {k:'trib',t:'Tribunals (CAT, MAT, School, MRT)',g:['cat','mat','sch','mrt'],c:'#13692f'},{k:'li',t:'Industrial & Labour',g:['ind','lab'],c:'#0b2a6f'},{k:'oth',t:'Other courts',g:['oth'],c:'#4a4a4a'}];
+var GABBR={sc:'SC',hc:'HC',dist:'DC',cat:'CAT',mat:'MAT',sch:'ST',mrt:'MRT',oth:'OT',ind:'IC',lab:'LC'};
+function cfOk(g){if(!CF)return true;var f=CFS.filter(function(x){return x.k===CF;})[0];return !f||!f.g||f.g.indexOf(g)>=0;}
+function boardF(iso){return boardOn(iso).filter(function(x){return cfOk(x.g);});}
+function cfBar(id,y,mo){
+  var el=document.getElementById(id);if(!el)return;
+  var pre=y+'-'+zz(mo+1)+'-',seen={};
+  LC().forEach(function(c){if(timeline(c).some(function(t){return t.d.indexOf(pre)===0;}))seen[c.id]=courtGroup(c);});
+  el.innerHTML=CFS.map(function(f){
+    var n=Object.keys(seen).filter(function(id){return !f.g||f.g.indexOf(seen[id])>=0;}).length;
+    return '<button class="cfbtn'+(CF===f.k?' on':'')+'" onclick="setCF(\''+f.k+'\')"><i style="background:'+f.c+'"></i>'+f.t+' <b>'+n+'</b></button>';
+  }).join('');
+}
+function setCF(k){CF=k;if(document.getElementById('pcal').classList.contains('on'))renderCal();if(document.getElementById('pplan').classList.contains('on'))renderPlan();}
+function undNote(id){
+  var el=document.getElementById(id);if(!el)return;
+  var t=td(),un=LC().filter(function(c){return isOpen(c)&&(!c.nd||c.nd<t)&&cfOk(courtGroup(c));});
+  if(!un.length){el.innerHTML='';return;}
+  var by={};un.forEach(function(c){var g=courtGroup(c);by[g]=(by[g]||0)+1;});
+  el.innerHTML='<div class="undn"><b>'+un.length+' open matter'+(un.length===1?' has':'s have')+' no coming date</b> and so cannot sit on any day above: '+
+    GRPS.filter(function(g){return by[g.k];}).map(function(g){return '<span class="calg" style="background:'+g.c+'">'+GABBR[g.k]+' '+by[g.k]+'</span>';}).join('')+
+    ' <button class="btn bg" onclick="go(\'unupd\')">Open Unupdated &amp; post dates</button></div>';
+}
+function gTags(b){
+  var by={};b.forEach(function(x){by[x.g]=(by[x.g]||0)+1;});
+  return GRPS.filter(function(g){return by[g.k];}).map(function(g){return '<span class="calg" style="background:'+g.c+'">'+GABBR[g.k]+' '+by[g.k]+'</span>';}).join('');
+}
+
+/* ===========================================================
    CALENDAR
    =========================================================== */
 function initCal(){
@@ -1502,16 +1553,18 @@ function renderCal(){
   for(var i=0;i<f;i++)h+='<div class="cald oth"></div>';
   for(var d=1;d<=dm;d++){
     var iso=calY+'-'+zz(calMo+1)+'-'+zz(d);
-    var b=boardOn(iso);
+    var b=boardF(iso);
     var cur=b.filter(function(x){return x.cur;}).length,pastN=b.length-cur;
     var cl='cald'+(iso===t?' tod':'')+(iso===selcd?' sel':'');
     h+='<div class="'+cl+'" onclick="selCalDay(\''+iso+'\')">'+
       '<div class="caldn">'+d+'</div>'+
       (cur?'<span class="calbdg">'+cur+'</span> ':'')+
       (pastN?'<span class="calbdg past">'+pastN+'</span>':'')+
+      (b.length?'<div style="margin-top:2px">'+gTags(b)+'</div>':'')+
       '</div>';
   }
   g.innerHTML=h;
+  cfBar('cfcal',calY,calMo);undNote('undcal');
   buildDayPanel(selcd||t,'cal-daylist','cal');
 }
 function selCalDay(iso){
@@ -1537,17 +1590,19 @@ function renderPlan(){
   for(var i=0;i<f;i++)h+='<div class="plcell" style="opacity:.15;min-height:45px"></div>';
   for(var d=1;d<=dm;d++){
     var iso=plY+'-'+zz(plMo+1)+'-'+zz(d);
-    var b=boardOn(iso);
+    var b=boardF(iso);
     var cur=b.filter(function(x){return x.cur;}),pastN=b.filter(function(x){return !x.cur;});
     var cl='plcell'+(iso===t?' tod':'')+(iso===selpd?' sel':'');
+    var shown=cur.slice(0,4),shownP=pastN.slice(0,Math.max(0,4-shown.length));
     h+='<div class="'+cl+'" onclick="selPlanDay(\''+iso+'\')">'+
       '<div class="plnum">'+d+'</div>'+
-      cur.slice(0,2).map(function(x){return'<span class="plchip">'+he(ctit(x.c)).slice(0,16)+'</span>';}).join('')+
-      pastN.slice(0,1).map(function(x){return'<span class="plpchip">'+he(ctit(x.c)).slice(0,14)+'</span>';}).join('')+
-      (b.length>3?'<span style="font-size:7px;color:#888">+'+(b.length-3)+' more</span>':'')+
+      shown.map(function(x){var gm=GMETA[x.g]||GMETA.oth;return'<span class="plchip" style="background:'+gm.c+'" title="'+he(gm.t)+'">'+GABBR[x.g]+' &middot; '+he(ctit(x.c).slice(0,22))+'</span>';}).join('')+
+      shownP.map(function(x){return'<span class="plpchip">'+GABBR[x.g]+' &middot; '+he(ctit(x.c).slice(0,20))+'</span>';}).join('')+
+      (b.length>shown.length+shownP.length?'<span style="font-size:8px;color:#888">+'+(b.length-shown.length-shownP.length)+' more</span>':'')+
       '</div>';
   }
   g.innerHTML=h;
+  cfBar('cfpln',plY,plMo);undNote('undpln');
   buildDayPanel(selpd||t,'plan-daylist','pln');
 }
 function selPlanDay(iso){

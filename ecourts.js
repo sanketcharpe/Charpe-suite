@@ -245,6 +245,8 @@ function loadCaptchas(ids) {
     });
     paintRows();
     var f = document.querySelector('#ecorows input'); if (f) f.focus();
+    /* a row that got no picture: ask once more by itself after a short pause */
+    setTimeout(function () { ECO.rows.forEach(function (r, i) { if (r.st === 'bad' && !r.img && !r.auto) { r.auto = 1; ecoNewImg(i); } }); }, 2500);
   }).catch(function (e) {
     ECO.rows.forEach(function (r) { r.st = 'bad'; r.msg = e.message; });
     paintRows();
@@ -256,10 +258,12 @@ function rowHTML(r, i) {
   var img = r.img ? '<img src="' + r.img + '" title="Click for a new picture" onclick="ecoNewImg(' + i + ')">' :
     '<span style="font-size:11px;color:#888">' + (r.st === 'load' ? 'loading…' : '') + '</span>';
   var inp = r.st === 'done' ? '<span style="font-size:20px;color:#127a4b">&#10003;</span>' :
+    (r.st === 'bad' && !r.img) ? '' :
     '<input id="ecoin' + i + '" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" ' +
     'value="' + he(r.cap || '') + '" oninput="ECO.rows[' + i + '].cap=this.value" onkeydown="ecoKey(event,' + i + ')"' +
     (r.st === 'busy' || r.st === 'load' ? ' disabled' : '') + '>';
   var btn = r.st === 'done' ? '<button class="btn bo" onclick="ecoAgain(' + i + ')" style="font-size:10px">Again</button>' :
+    (r.st === 'bad' && !r.img) ? '<button class="btn bg" onclick="ecoNewImg(' + i + ')" title="Ask eCourts for a CAPTCHA again">&#8635; Try again</button>' :
     '<button class="btn bg" onclick="ecoFetchOne(' + i + ')"' + (r.st === 'busy' || r.st === 'load' ? ' disabled' : '') + '>Fetch</button>';
   var col = r.st === 'done' ? '#127a4b' : (r.st === 'bad' || r.st === 'retype') ? '#b3261e' : '#555';
   return '<div class="er ' + cls + '" id="ecor' + i + '">' +
