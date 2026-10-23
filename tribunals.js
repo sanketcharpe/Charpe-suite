@@ -727,9 +727,12 @@ function estGuess(c, list) {
 function typeGuess(types, cn) {
   var q = hcNo(cn || ''); if (!q || !q.abbr) return '';
   var a = q.abbr.replace(/^(REGULAR|SPECIAL)?/, ''), best = '', score = 0;
+  var pre = (String(cn || '').match(/^\s*([A-Za-z][A-Za-z.()\s-]*?)\s*(?:No\.?\s*)?\/?\s*\d/) || ['', ''])[1].toUpperCase().replace(/\s+/g, ' ').replace(/\s*\/\s*$/, '').trim();
   types.forEach(function (x) {
     var t = String(x.t || '').toUpperCase(), lead = t.replace(/[^A-Z]/g, ''), first = (t.match(/^[A-Z.()\s\/]+?(?=\s*[-(]|\s{2}|$)/) || [''])[0].replace(/[^A-Z]/g, '');
     var sc = first === q.abbr ? 4 : first === a ? 3 : lead.indexOf(q.abbr) === 0 ? 2 : lead.indexOf(q.abbr) >= 0 ? 1 : 0;
+    /* written exactly as in the case number ("Complaint ULP", not "Complaint U.L.P") wins a tie */
+    if (sc && t.replace(/\s*-\s*.*$/, '').replace(/\s+/g, ' ').trim() === pre) sc += 0.5;
     if (sc > score) { score = sc; best = x.v; }
   });
   return best;
