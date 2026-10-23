@@ -656,7 +656,7 @@ window.HCQ = HCQ;
 window.trHcGo = function () {
   HCQ.type = document.getElementById('hcqT').value; HCQ.no = document.getElementById('hcqN').value.replace(/\D/g, ''); HCQ.year = document.getElementById('hcqY').value.replace(/\D/g, '');
   var cap = (document.getElementById('hcqC') || {}).value || '';
-  var byCnr = HCQ.via === 'helper' && HCQ.cnr;
+  var byCnr = HCQ.via === 'helper' && HCQ.cnr; HCQ.byCnr = !!byCnr;
   if (!byCnr && !HCQ.type) { hcPaint('<span style="color:#b3261e">Choose the case type.</span>'); return; }
   if (!byCnr && (!HCQ.no || HCQ.year.length !== 4)) { hcPaint('<span style="color:#b3261e">Give the number and a four-digit year.</span>'); return; }
   if (!cap.trim()) { hcPaint('<span style="color:#b3261e">Type the CAPTCHA.</span>'); return; }
@@ -688,10 +688,19 @@ function hcDone(cnr, html) {
   var res = ECO.api.apply(c.id, d);
   if (typeof logAct === 'function') logAct('High Court fetched for ' + ctit(c) + (cnr ? ' (CNR ' + cnr + ')' : ''));
   try { refresh(); } catch (e) {}
-  ECO.api.queueCase(c.id, 'H:' + HCQ.sid, -1);
   HCQ.img = ''; HCQ.rows = [];
-  hcPaint('<div style="color:#127a4b;font-weight:600;margin-bottom:4px">&#10003; Fetched from the High Court' + (cnr ? ' &middot; CNR ' + he(cnr) : '') + '</div>' + res.html +
-    '<div class="mini" style="margin-top:6px">Orders download in the background into Drive (see Orders &amp; order sheets on the case).</div>');
+  /* the High Court site gives out order PDFs only after a search by CNR: if the case was found by its
+     number, one more CAPTCHA (by CNR) brings the orders */
+  if (HCQ.byCnr) {
+    ECO.api.queueCase(c.id, 'H:' + HCQ.sid, -1);
+    hcPaint('<div style="color:#127a4b;font-weight:600;margin-bottom:4px">&#10003; Fetched from the High Court' + (cnr ? ' &middot; CNR ' + he(cnr) : '') + '</div>' + res.html +
+      '<div class="mini" style="margin-top:6px">Orders download in the background into Drive (see Orders &amp; order sheets on the case).</div>');
+    return;
+  }
+  var nOrd = (d.orders || []).length;
+  hcPaint('<div style="color:#127a4b;font-weight:600;margin-bottom:4px">&#10003; Found and fetched &middot; CNR ' + he(cnr || '') + ' saved</div>' + res.html +
+    (nOrd ? '<div style="margin-top:8px;background:#fff8e6;border:1px solid #f0d48a;border-radius:6px;padding:7px 9px;font-size:12px">The High Court gives out the ' + nOrd + ' order PDF' + (nOrd === 1 ? '' : 's') +
+      ' only after a search by CNR. <button class="btn bg" onclick="trScClose();ecoOpenBatch([\'' + c.id + '\'])">Type one more CAPTCHA to get the orders</button></div>' : ''));
 }
 window.trHcPick = function (i) {
   var r = (HCQ.rows || [])[i], c = find(HCQ.id); if (!r || !c) return;

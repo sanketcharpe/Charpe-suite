@@ -1,6 +1,6 @@
 /* Charpe Suite service worker v3 — network first, so every computer and phone
    always gets the latest version when online; the saved copy is used offline. */
-const CACHE = 'charpe-suite-v14';
+const CACHE = 'charpe-suite-v16';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {

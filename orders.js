@@ -52,31 +52,78 @@ function sheets(c) {
 }
 window.ordCounts = function (c) { return { o: orders(c).length, s: sheets(c).length }; };
 
-/* ---------------- making PDFs ---------------- */
-function wrap(font, text, size, width) {
+/* ---------------- making PDFs ----------------
+   Order sheets are often in Marathi. The PDF's built-in fonts only know English letters, so
+   two fonts are embedded (kept with the tool, not fetched from elsewhere): Noto Sans Devanagari
+   for Marathi/Hindi and Hind for English. Each line is drawn in stretches of one script, so
+   joined letters (क्ष, त्र, श्री, र्ज…) and the Marathi digits come out right.            */
+var FONTS = { lat: 'fonts/Hind-Regular.ttf', latB: 'fonts/Hind-SemiBold.ttf', dev: 'fonts/NotoSansDevanagari-Regular.ttf', devB: 'fonts/NotoSansDevanagari-SemiBold.ttf' };
+var fkP = null, fontBytes = {};
+function loadScript(src) {
+  return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = function () { rej(new Error('Could not load ' + src)); }; document.head.appendChild(s); });
+}
+function fontkitLib() {
+  if (window.fontkit) return Promise.resolve(window.fontkit);
+  if (fkP) return fkP;
+  fkP = (window.regeneratorRuntime ? Promise.resolve() : loadScript('vendor/regenerator-runtime.js'))
+    .then(function () { return loadScript('vendor/fontkit.umd.min.js'); })
+    .then(function () { if (!window.fontkit) throw new Error('fontkit missing'); return window.fontkit; })
+    .catch(function (e) { fkP = null; throw new Error('The Marathi font could not load (' + e.message + '). Check the internet connection once.'); });
+  return fkP;
+}
+function fontFile(k) {
+  if (fontBytes[k]) return Promise.resolve(fontBytes[k]);
+  return fetch(FONTS[k]).then(function (r) { if (!r.ok) throw new Error('Font ' + FONTS[k] + ' not found'); return r.arrayBuffer(); })
+    .then(function (b) { fontBytes[k] = b; return b; });
+}
+/* the four fonts embedded in one PDF document: {R: {lat, dev}, B: {lat, dev}} */
+function docFonts(doc) {
+  return fontkitLib().then(function (fk) {
+    doc.registerFontkit(fk);
+    return Promise.all(['lat', 'dev', 'latB', 'devB'].map(fontFile));
+  }).then(function (b) {
+    return Promise.all(b.map(function (x) { return doc.embedFont(x, { subset: true }); }));
+  }).then(function (f) { return { R: { lat: f[0], dev: f[1] }, B: { lat: f[2], dev: f[3] } }; });
+}
+function isDev(ch) { return /[ऀ-ॿ‌‍꣠-ꣿ᳐-᳿]/.test(ch); }
+function runs(t) {
+  var out = [], cur = '', dev = null;
+  Array.from(String(t || '')).forEach(function (ch) {
+    var sp = /\s/.test(ch), d = isDev(ch);
+    if (dev === null || sp || d === dev) { cur += ch; if (!sp && dev === null) dev = d; }
+    else { out.push([cur, dev]); cur = ch; dev = d; }
+  });
+  if (cur) out.push([cur, !!dev]);
+  return out;
+}
+function tw(F, text, size) { return runs(text).reduce(function (w, r) { return w + (r[1] ? F.dev : F.lat).widthOfTextAtSize(r[0], size); }, 0); }
+function tdraw(pg, F, text, x, y, size, color) {
+  runs(text).forEach(function (r) { var f = r[1] ? F.dev : F.lat; var o = { x: x, y: y, size: size, font: f }; if (color) o.color = color; pg.drawText(r[0], o); x += f.widthOfTextAtSize(r[0], size); });
+}
+function wrap(F, text, size, width) {
   var lines = [];
   String(text || '').split(/\n/).forEach(function (para) {
     var words = para.split(/\s+/), line = '';
     words.forEach(function (w) {
       var t = line ? line + ' ' + w : w;
-      if (font.widthOfTextAtSize(t, size) > width && line) { lines.push(line); line = w; } else line = t;
+      if (tw(F, t, size) > width && line) { lines.push(line); line = w; } else line = t;
     });
     lines.push(line);
   });
   return lines;
 }
-function safe(s) { return String(s || '').replace(/[^\x20-\x7E -ÿ]/g, ' '); }
+function safe(s) { return String(s || '').replace(/[\u0000-\u001F]/g, ' '); }
 /* order sheets as A4 pages of text — one block per date, flowing on */
 function sheetsPdf(c, list) {
   return lib().then(function (L) {
     return L.PDFDocument.create().then(function (doc) {
-      return Promise.all([doc.embedFont(L.StandardFonts.TimesRoman), doc.embedFont(L.StandardFonts.TimesRomanBold)]).then(function (f) {
-        var R = f[0], B = f[1], W = 595.28, H = 841.89, M = 56, pg = null, y = 0;
+      return docFonts(doc).then(function (F) {
+        var R = F.R, B = F.B, W = 595.28, H = 841.89, M = 56, pg = null, y = 0;
         function page() { pg = doc.addPage([W, H]); y = H - M; }
-        function line(t, font, size, gap) { if (y - size < M) page(); pg.drawText(safe(t), { x: M, y: y - size, size: size, font: font }); y -= size + (gap || 3); }
+        function line(t, font, size, gap) { if (y - size * 1.25 < M) page(); tdraw(pg, font, safe(t), M, y - size, size); y -= size * 1.25 + (gap || 3); }
         page();
-        line(ctit(c), B, 13, 2);
-        line((c.court || '') + (c.cn ? '  ·  ' + c.cn : '') + (c.cnr ? '  ·  CNR ' + c.cnr : ''), R, 10.5, 12);
+        wrap(B, ctit(c), 13, W - 2 * M).forEach(function (l) { line(l, B, 13, 2); });
+        wrap(R, (c.court || '') + (c.cn ? '  ·  ' + c.cn : '') + (c.cnr ? '  ·  CNR ' + c.cnr : ''), 10.5, W - 2 * M).forEach(function (l, i, a) { line(l, R, 10.5, i === a.length - 1 ? 12 : 2); });
         list.forEach(function (s) {
           if (y - 60 < M) page();
           line('Date: ' + fd(s.d) + (s.j ? '     ' + s.j : ''), B, 11.5, 4);
