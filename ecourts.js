@@ -594,7 +594,7 @@ function apply(cid, d) {
   (d.orders || []).forEach(function (o) {
     var x = e.ord[o.key];
     if (!x) { e.ord[o.key] = { no: o.no, d: o.d, t: o.title, a: o.a }; nnew++; }
-    else { x.a = o.a; x.d = x.d || o.d; x.no = x.no || o.no; }
+    else { x.a = o.a; x.d = x.d || o.d; x.no = x.no || o.no; if (!x.fid) delete x.none; }   /* not got yet: try it again this time */
   });
   var total = Object.keys(e.ord).length;
 
