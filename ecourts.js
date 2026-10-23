@@ -38,19 +38,210 @@ function fkey(c) {
 window.ecoFkey = fkey;
 window.ecoOk = ecoOk;
 
-function post(body) {
+function gpost(body) {
   var c = cfg();
   if (!c.url || !c.tok) return Promise.reject(new Error('Set up the eCourts backend first: Settings → Official eCourts.'));
   if (!navigator.onLine) return Promise.reject(new Error('No internet connection right now.'));
   body.token = c.tok;
-  return fetch(c.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' })
-    .then(function (r) { return r.text(); })
+  var ctl = window.AbortController ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 90000) : 0;
+  return fetch(c.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow', signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(tm); return r.text(); }, function (e) {
+      clearTimeout(tm);
+      throw new Error(e && e.name === 'AbortError' ? 'The Google backend did not answer within 90 seconds (the court site is probably refusing Google just now). Start Charpe Helper on this PC and allow it — see Sync Centre → Check connections.' : 'The Google backend could not be reached (' + (e.message || e) + ').');
+    })
     .then(function (t) {
       var j; try { j = JSON.parse(t); } catch (e) { throw new Error('The eCourts backend did not answer properly. Check its address in Settings.'); }
       if (!j.ok) throw new Error(j.error || 'The eCourts backend reported a problem');
       return j;
     });
 }
+/* every call goes through the helper first when it can, else to the Google backend */
+function post(body) {
+  return viaHelper(body).then(function (r) { return r || gpost(body); }, function (e) {
+    if (/Failed to fetch|NetworkError|aborted|AbortError/i.test(e.message || '')) { HLP.ok = null; if (body.action === 'start') return gpost(body); }
+    throw e;
+  });
+}
+
+/* ==================================================================
+   ROUTE: through Charpe Helper on this PC first (Oct 2026)
+   Google's servers are often turned away by the court sites, so the
+   CAPTCHA, the case page and the order PDFs come through the helper
+   (your own connection) whenever it is running; Google then only keeps
+   the PDFs in Drive. If the helper is not running, the Google backend
+   is used as before — and it now gives up after 90 seconds with a
+   clear message instead of waiting for ever.
+   ================================================================== */
+var HLP = { ok: null, at: 0, v: 0 }, HELPER_URL = 'http://127.0.0.1:8770/';
+function hpost(b, ms) {
+  var ctl = window.AbortController ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort(); }, ms || 120000) : 0;
+  return fetch(HELPER_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(b), signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(t); return r.json(); })
+    .then(function (j) { if (!j.ok) throw new Error(j.error || 'Charpe Helper reported a problem'); return j; });
+}
+function helperOk() {
+  if (HLP.ok !== null && Date.now() - HLP.at < 60000) return Promise.resolve(HLP.ok);
+  return hpost({ action: 'ping' }, 2500).then(function (j) { HLP.v = j.helper || 0; HLP.ok = HLP.v >= 5; HLP.at = Date.now(); return HLP.ok; })
+    .catch(function () { HLP.ok = false; HLP.at = Date.now(); return false; });
+}
+window.ecoHelperOk = helperOk;
+function viaHelper(body) {
+  var a = body.action, sid = String(body.sid || '');
+  if (a === 'start') {
+    return helperOk().then(function (ok) {
+      if (!ok) return null;
+      return hpost({ action: 'dcstart', cnrs: body.cnrs }).then(function (r) {
+        (r.rows || []).forEach(function (x) { if (x.sid) x.sid = 'P:' + x.sid; });
+        return r;
+      });
+    });
+  }
+  if (sid.indexOf('P:') !== 0) return Promise.resolve(null);
+  var hs = sid.slice(2);
+  if (a === 'captcha') return hpost({ action: 'dccaptcha', sid: hs, cnr: body.cnr }).then(function (r) { if (r.sid) r.sid = 'P:' + r.sid; return r; });
+  if (a === 'biz') return hpost({ action: 'dcbiz', sid: hs, a: body.a });
+  if (a === 'search') {
+    return hpost({ action: 'dcsearch', sid: hs, cnr: body.cnr, captcha: body.captcha }).then(function (r) {
+      if (!r.html) return r;
+      var c = null; ECO.rows.forEach(function (x) { if (x.sid === sid) c = find(x.cid); });
+      var d = r.kind === 'hc' && window.trHcParse ? trHcParse(r.html, c) : dcParse(r.html);
+      if (!d.found) return { ok: true, notFound: true, msg: hStrip0(r.html).slice(0, 200) || 'eCourts returned no details for this CNR.' };
+      return { ok: true, data: d };
+    });
+  }
+  if (a === 'order') {
+    return hpost({ action: 'dcorder', sid: hs, a: body.a }).then(function (r) {
+      if (r.expired || r.missing || !r.b64) return r;
+      var name = String((body.d || 'undated') + ' ' + (body.title || 'Order') + (body.no ? ' No ' + body.no : '')).replace(/[\\\/:*?"<>|#%]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) + '.pdf';
+      return gpost({ action: 'upload', cnr: body.cnr, label: body.label, name: name, b64: r.b64 })
+        .then(function (x) { return { ok: true, fid: x.fid, name: x.name, folder: x.folder, b64: r.b64 }; });
+    });
+  }
+  return Promise.resolve(null);
+}
+
+/* ---- the district case page, read here in the browser (same rules as the backend's parseCase) ---- */
+function md5(str) {
+  function rh(n) { var s = '', j; for (j = 0; j <= 3; j++) s += ((n >> (j * 8 + 4)) & 15).toString(16) + ((n >> (j * 8)) & 15).toString(16); return s; }
+  function ad(x, y) { var l = (x & 0xFFFF) + (y & 0xFFFF), m = (x >> 16) + (y >> 16) + (l >> 16); return (m << 16) | (l & 0xFFFF); }
+  function rl(n, c) { return (n << c) | (n >>> (32 - c)); }
+  function cm(q, a, b, x, s, t) { return ad(rl(ad(ad(a, q), ad(x, t)), s), b); }
+  function ff(a, b, c, d, x, s, t) { return cm((b & c) | ((~b) & d), a, b, x, s, t); }
+  function gg(a, b, c, d, x, s, t) { return cm((b & d) | (c & (~d)), a, b, x, s, t); }
+  function hh(a, b, c, d, x, s, t) { return cm(b ^ c ^ d, a, b, x, s, t); }
+  function ii(a, b, c, d, x, s, t) { return cm(c ^ (b | (~d)), a, b, x, s, t); }
+  str = unescape(encodeURIComponent(str));
+  var nb = ((str.length + 8) >> 6) + 1, x = new Array(nb * 16), i;
+  for (i = 0; i < nb * 16; i++) x[i] = 0;
+  for (i = 0; i < str.length; i++) x[i >> 2] |= str.charCodeAt(i) << ((i % 4) * 8);
+  x[i >> 2] |= 0x80 << ((i % 4) * 8); x[nb * 16 - 2] = str.length * 8;
+  var a = 1732584193, b = -271733879, c = -1732584194, d = 271733878;
+  for (i = 0; i < x.length; i += 16) {
+    var oa = a, ob = b, oc = c, od = d;
+    a = ff(a, b, c, d, x[i], 7, -680876936); d = ff(d, a, b, c, x[i + 1], 12, -389564586); c = ff(c, d, a, b, x[i + 2], 17, 606105819); b = ff(b, c, d, a, x[i + 3], 22, -1044525330);
+    a = ff(a, b, c, d, x[i + 4], 7, -176418897); d = ff(d, a, b, c, x[i + 5], 12, 1200080426); c = ff(c, d, a, b, x[i + 6], 17, -1473231341); b = ff(b, c, d, a, x[i + 7], 22, -45705983);
+    a = ff(a, b, c, d, x[i + 8], 7, 1770035416); d = ff(d, a, b, c, x[i + 9], 12, -1958414417); c = ff(c, d, a, b, x[i + 10], 17, -42063); b = ff(b, c, d, a, x[i + 11], 22, -1990404162);
+    a = ff(a, b, c, d, x[i + 12], 7, 1804603682); d = ff(d, a, b, c, x[i + 13], 12, -40341101); c = ff(c, d, a, b, x[i + 14], 17, -1502002290); b = ff(b, c, d, a, x[i + 15], 22, 1236535329);
+    a = gg(a, b, c, d, x[i + 1], 5, -165796510); d = gg(d, a, b, c, x[i + 6], 9, -1069501632); c = gg(c, d, a, b, x[i + 11], 14, 643717713); b = gg(b, c, d, a, x[i], 20, -373897302);
+    a = gg(a, b, c, d, x[i + 5], 5, -701558691); d = gg(d, a, b, c, x[i + 10], 9, 38016083); c = gg(c, d, a, b, x[i + 15], 14, -660478335); b = gg(b, c, d, a, x[i + 4], 20, -405537848);
+    a = gg(a, b, c, d, x[i + 9], 5, 568446438); d = gg(d, a, b, c, x[i + 14], 9, -1019803690); c = gg(c, d, a, b, x[i + 3], 14, -187363961); b = gg(b, c, d, a, x[i + 8], 20, 1163531501);
+    a = gg(a, b, c, d, x[i + 13], 5, -1444681467); d = gg(d, a, b, c, x[i + 2], 9, -51403784); c = gg(c, d, a, b, x[i + 7], 14, 1735328473); b = gg(b, c, d, a, x[i + 12], 20, -1926607734);
+    a = hh(a, b, c, d, x[i + 5], 4, -378558); d = hh(d, a, b, c, x[i + 8], 11, -2022574463); c = hh(c, d, a, b, x[i + 11], 16, 1839030562); b = hh(b, c, d, a, x[i + 14], 23, -35309556);
+    a = hh(a, b, c, d, x[i + 1], 4, -1530992060); d = hh(d, a, b, c, x[i + 4], 11, 1272893353); c = hh(c, d, a, b, x[i + 7], 16, -155497632); b = hh(b, c, d, a, x[i + 10], 23, -1094730640);
+    a = hh(a, b, c, d, x[i + 13], 4, 681279174); d = hh(d, a, b, c, x[i], 11, -358537222); c = hh(c, d, a, b, x[i + 3], 16, -722521979); b = hh(b, c, d, a, x[i + 6], 23, 76029189);
+    a = hh(a, b, c, d, x[i + 9], 4, -640364487); d = hh(d, a, b, c, x[i + 12], 11, -421815835); c = hh(c, d, a, b, x[i + 15], 16, 530742520); b = hh(b, c, d, a, x[i + 2], 23, -995338651);
+    a = ii(a, b, c, d, x[i], 6, -198630844); d = ii(d, a, b, c, x[i + 7], 10, 1126891415); c = ii(c, d, a, b, x[i + 14], 15, -1416354905); b = ii(b, c, d, a, x[i + 5], 21, -57434055);
+    a = ii(a, b, c, d, x[i + 12], 6, 1700485571); d = ii(d, a, b, c, x[i + 3], 10, -1894986606); c = ii(c, d, a, b, x[i + 10], 15, -1051523); b = ii(b, c, d, a, x[i + 1], 21, -2054922799);
+    a = ii(a, b, c, d, x[i + 8], 6, 1873313359); d = ii(d, a, b, c, x[i + 15], 10, -30611744); c = ii(c, d, a, b, x[i + 6], 15, -1560198380); b = ii(b, c, d, a, x[i + 13], 21, 1309151649);
+    a = ii(a, b, c, d, x[i + 4], 6, -145523070); d = ii(d, a, b, c, x[i + 11], 10, -1120210379); c = ii(c, d, a, b, x[i + 2], 15, 718787259); b = ii(b, c, d, a, x[i + 9], 21, -343485551);
+    a = ad(a, oa); b = ad(b, ob); c = ad(c, oc); d = ad(d, od);
+  }
+  return rh(a) + rh(b) + rh(c) + rh(d);
+}
+var DMON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+function dpad(n) { n = String(n); return n.length < 2 ? '0' + n : n; }
+function dIso(s) {
+  s = String(s || ''); var m = s.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/);
+  if (m) return m[3] + '-' + dpad(m[2]) + '-' + dpad(m[1]);
+  m = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,})\.?,?\s+(\d{4})/);
+  if (m) { var mi = DMON.indexOf(m[2].slice(0, 3).toLowerCase()); if (mi >= 0) return m[3] + '-' + dpad(mi + 1) + '-' + dpad(m[1]); }
+  m = s.match(/(\d{4})-(\d{2})-(\d{2})/); return m ? m[0] : '';
+}
+function dUnent(h) { return String(h || '').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#0?39;|&apos;/gi, "'").replace(/&#(\d+);/g, function (_, n) { return String.fromCharCode(+n); }); }
+function hStrip0(h) {
+  return dUnent(String(h || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|tr|li|h\d)>/gi, '\n').replace(/<[^>]+>/g, ' '))
+    .replace(/[ \t\r\f\v]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{2,}/g, '\n').trim();
+}
+function dNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z]/g, ''); }
+function dTables(html) {
+  var list = [], re = /<table([^>]*)>([\s\S]*?)<\/table>/gi, m;
+  while ((m = re.exec(html))) {
+    var cls = ((m[1].match(/class\s*=\s*["']([^"']*)/i) || [])[1] || '') + ' ' + ((m[1].match(/id\s*=\s*["']([^"']*)/i) || [])[1] || '');
+    var rows = [], rr = /<tr[^>]*>([\s\S]*?)<\/tr>/gi, r;
+    while ((r = rr.exec(m[2]))) {
+      var cells = [], cr = /<t([dh])([^>]*)>([\s\S]*?)<\/t[dh]>/gi, c;
+      while ((c = cr.exec(r[1]))) cells.push({ raw: dUnent(c[2] + ' ' + c[3]), t: hStrip0(c[3]) });
+      if (cells.length) rows.push(cells);
+    }
+    var before = html.slice(Math.max(0, m.index - 500), m.index), hd = '', hm, hre = /<(h[1-6]|strong|b|label|span)[^>]*>([\s\S]*?)<\/\1>/gi;
+    while ((hm = hre.exec(before))) { var tx = hStrip0(hm[2]); if (tx) hd = tx; }
+    list.push({ cls: cls.toLowerCase(), rows: rows, heading: hd });
+  }
+  return list;
+}
+function dArgs(raw, fn) {
+  var m = String(raw || '').match(new RegExp(fn + '\\s*\\(([^)]*)\\)', 'i')); if (!m) return null;
+  var args = [], re = /'([^']*)'|"([^"]*)"|([^,\s][^,]*)/g, a;
+  while ((a = re.exec(m[1]))) args.push((a[1] !== undefined ? a[1] : a[2] !== undefined ? a[2] : a[3]).trim());
+  return args;
+}
+function dIdx(row, words) { for (var i = 0; i < row.length; i++) { var t = dNorm(row[i].t); for (var w = 0; w < words.length; w++) if (t.indexOf(words[w]) >= 0) return i; } return -1; }
+function dcParse(html) {
+  var d = { found: false, hist: [], orders: [] }, kv = {};
+  dTables(html).forEach(function (tb) {
+    var first = tb.rows[0] || [], ht = dNorm(first.map(function (c) { return c.t; }).join('|'));
+    if (/history_table/.test(tb.cls) || (ht.indexOf('businessondate') >= 0 && ht.indexOf('hearingdate') >= 0)) {
+      var iJ = dIdx(first, ['judge']), iB = dIdx(first, ['businessondate']), iH = dIdx(first, ['hearingdate']), iP = dIdx(first, ['purpose']);
+      if (iB < 0) { iJ = 0; iB = 1; iH = 2; iP = 3; }
+      tb.rows.slice(1).forEach(function (r) {
+        if (r.length < 3) return;
+        var bd = dIso(r[iB] && r[iB].t), hd = iH >= 0 ? dIso(r[iH] && r[iH].t) : '';
+        if (!bd && !hd) return;
+        d.hist.push({ bd: bd, d: hd, j: iJ >= 0 && r[iJ] ? r[iJ].t : '', p: iP >= 0 && r[iP] ? r[iP].t : '', a: dArgs(r[iB] && r[iB].raw, 'viewBusiness') });
+      });
+      d.found = true; return;
+    }
+    if (/order_table/.test(tb.cls) || ht.indexOf('orderdate') >= 0) {
+      var iN = dIdx(first, ['ordernumber', 'orderno']), iD = dIdx(first, ['orderdate']), iT = dIdx(first, ['orderdetail', 'details']);
+      var title = /final/i.test(tb.heading) ? 'Final Order' : 'Order';
+      tb.rows.forEach(function (r) {
+        var raw = r.map(function (c) { return c.raw; }).join(' '), a = dArgs(raw, 'displayPdf');
+        if (!a || a.length < 4) return;
+        var od = iD >= 0 && r[iD] ? dIso(r[iD].t) : dIso(r.map(function (c) { return c.t; }).join(' '));
+        var det = iT >= 0 && r[iT] ? r[iT].t : '';
+        d.orders.push({ key: md5((a[2] || '') + '|' + (a[3] || '')).slice(0, 14), no: iN >= 0 && r[iN] ? r[iN].t : '', d: od,
+          title: /judg/i.test(det) ? 'Judgment' : (/final/i.test(det) ? 'Final Order' : title), a: a });
+      });
+      d.found = true; return;
+    }
+    tb.rows.forEach(function (r) { for (var i = 0; i + 1 < r.length; i += 2) { var k = dNorm(r[i].t); if (k && kv[k] === undefined) kv[k] = r[i + 1].t; } });
+    if (tb.cls.indexOf('petitioner') >= 0) d.pet = hStrip0(tb.rows.map(function (r) { return r.map(function (c) { return c.t; }).join(' '); }).join('\n'));
+    if (tb.cls.indexOf('respondent') >= 0) d.res = hStrip0(tb.rows.map(function (r) { return r.map(function (c) { return c.t; }).join(' '); }).join('\n'));
+  });
+  if (!d.pet) { var pm = html.match(/class=["'][^"']*Petitioner_Advocate_table[^"']*["'][^>]*>([\s\S]*?)<\/(?:table|span|div)>/i); if (pm) d.pet = hStrip0(pm[1]); }
+  if (!d.res) { var rm = html.match(/class=["'][^"']*Respondent_Advocate_table[^"']*["'][^>]*>([\s\S]*?)<\/(?:table|span|div)>/i); if (rm) d.res = hStrip0(rm[1]); }
+  function g() { for (var i = 0; i < arguments.length; i++) { var v = kv[arguments[i]]; if (v) return v; } return ''; }
+  d.ctype = g('casetype'); d.filing = g('filingnumber'); d.reg = g('registrationnumber'); d.cnr = g('cnrnumber');
+  d.first = dIso(g('firsthearingdate')); d.next = dIso(g('nexthearingdate', 'nextdate')); d.decision = dIso(g('decisiondate', 'dateofdecision'));
+  d.stage = g('casestage', 'stageofcase'); d.status = g('casestatus', 'status'); d.disposal = g('natureofdisposal'); d.judge = g('courtnumberandjudge', 'courtnoandjudge');
+  d.disposed = !!(d.decision || d.disposal || /dispos/i.test(d.status + ' ' + d.stage));
+  if (d.ctype || d.reg || d.cnr || d.next || d.stage || d.status) d.found = true;
+  if (d.next) d.hist.forEach(function (h) { if (h.d === d.next && h.p) d.purpose = h.p; });
+  if (!d.purpose && d.hist.length) { var last = d.hist[d.hist.length - 1]; if (last.d === d.next) d.purpose = last.p; }
+  d.pet = (d.pet || '').slice(0, 600); d.res = (d.res || '').slice(0, 600);
+  return d;
+}
+window.ecoDcParse = dcParse;
 
 /* ---------------- browser storage for PDFs ---------------- */
 function db() {
@@ -244,6 +435,13 @@ function loadCaptchas(ids) {
       if (x.err) { r.st = 'bad'; r.msg = x.err; } else { r.st = 'ready'; r.msg = ''; }
     });
     paintRows();
+    if (HLP.ok === false) {
+      var rw = document.getElementById('ecorows'), nt = document.createElement('div');
+      nt.className = 'note'; nt.style.cssText = 'background:#fff8e6;border:1px solid #f0d48a;border-radius:5px;padding:7px 9px;margin-bottom:6px';
+      nt.innerHTML = '&#9888; <b>Charpe Helper on this PC could not be reached</b>, so these go through Google, which the court sites often refuse. ' +
+        'Check that the helper is running and that Chrome allows <b>Local network access</b> for this site (the icon left of the address, or Settings &rarr; Privacy &rarr; Site settings &rarr; sanketcharpe.github.io).';
+      if (rw && rw.parentNode) rw.parentNode.insertBefore(nt, rw);
+    }
     var f = document.querySelector('#ecorows input'); if (f) f.focus();
     /* a row that got no picture: ask once more by itself after a short pause */
     setTimeout(function () { ECO.rows.forEach(function (r, i) { if (r.st === 'bad' && !r.img && !r.auto) { r.auto = 1; ecoNewImg(i); } }); }, 2500);
