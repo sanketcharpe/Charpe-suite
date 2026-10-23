@@ -740,9 +740,13 @@ window.trDcFind = function (id) {
   DCQ = { id: id, district: dcDistrict(c), no: q.no, year: q.year, sid: '', img: '', est: [], estv: '', types: [], type: '' };
   window.DCQ = DCQ;
   dcPaint('Opening eCourts (' + DCQ.district + ' district)…');
-  api().post({ action: 'sopen', via: 'dc', state: 'Maharashtra', district: DCQ.district }).then(function (r) {
+  /* through Charpe Helper on this PC when it is running; otherwise the Google backend */
+  helperCheck().then(function (ok) {
+    DCQ.via = ok && (TR.helperV || 1) >= 6 ? 'helper' : 'backend';
+    return DCQ.via === 'helper' ? helperPost({ action: 'dcopen', district: DCQ.district }) : api().post({ action: 'sopen', via: 'dc', state: 'Maharashtra', district: DCQ.district });
+  }).then(function (r) {
     DCQ.sid = r.sid; DCQ.img = r.img; DCQ.est = (r.lists && r.lists.est) || []; DCQ.estv = estGuess(c, DCQ.est);
-    dcPaint(r.note ? '<span style="color:#a35b00">' + he(r.note) + '</span>' : '');
+    dcPaint((r.note ? '<span style="color:#a35b00">' + he(r.note) + '</span> ' : '') + (DCQ.via === 'backend' ? '<span style="color:#a35b00">Charpe Helper could not be reached, so this goes through Google (slower; the court site may refuse it). <a href="#" onclick="charpeHelperTest();return false">Test the connection</a></span>' : ''));
     if (DCQ.estv) trDcTypes();
   }).catch(function (e) { dcPaint('<span style="color:#b3261e">' + he(e.message) + '</span> <button class="btn bg" style="font-size:11px;padding:2px 10px" onclick="trDcFind(DCQ.id)">&#8635; Try again</button>'); });
 };
@@ -750,7 +754,7 @@ window.trDcTypes = function () {
   var e = document.getElementById('dcqE'); if (e) DCQ.estv = e.value;
   if (!DCQ.estv) return;
   dcPaint('Loading the case types of that court…');
-  api().post({ action: 'stypes', sid: DCQ.sid, est: DCQ.estv }).then(function (r) {
+  (DCQ.via === 'helper' ? helperPost({ action: 'dctypes', sid: DCQ.sid, est: DCQ.estv }) : api().post({ action: 'stypes', sid: DCQ.sid, est: DCQ.estv })).then(function (r) {
     if (r.expired) return trDcFind(DCQ.id);
     DCQ.types = r.types || []; DCQ.type = typeGuess(DCQ.types, (find(DCQ.id) || {}).cn); dcPaint('');
   }).catch(function (x) { dcPaint('<span style="color:#b3261e">' + he(x.message) + '</span>'); });
@@ -782,7 +786,8 @@ window.trDcGo = function () {
   if (!DCQ.no || DCQ.year.length !== 4) { dcPaint('<span style="color:#b3261e">Give the number and a four-digit year.</span>'); return; }
   if (!cap.trim()) { dcPaint('<span style="color:#b3261e">Type the CAPTCHA.</span>'); return; }
   dcPaint('Searching…');
-  api().post({ action: 'ssearch', sid: DCQ.sid, via: 'dc', mode: 'cno', captcha: cap.trim(), est: DCQ.estv, type: DCQ.type, no: DCQ.no, year: DCQ.year, status: 'Both', q: '' }).then(function (r) {
+  var dq = { sid: DCQ.sid, via: 'dc', mode: 'cno', captcha: cap.trim(), est: DCQ.estv, type: DCQ.type, no: DCQ.no, year: DCQ.year, status: 'Both', q: '' };
+  (DCQ.via === 'helper' ? helperPost(Object.assign({ action: 'dcfind' }, dq)) : api().post(Object.assign({ action: 'ssearch' }, dq))).then(function (r) {
     if (r.expired) return trDcFind(DCQ.id);
     if (r.img) DCQ.img = r.img; if (r.sid) DCQ.sid = r.sid;
     if (r.bad) { dcPaint('<span style="color:#b3261e">Wrong CAPTCHA — type the new picture.</span>'); return; }
