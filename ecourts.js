@@ -85,6 +85,29 @@ function helperOk() {
     .catch(function () { HLP.ok = false; HLP.at = Date.now(); return false; });
 }
 window.ecoHelperOk = helperOk;
+/* "Test the connection": says plainly whether this page can reach Charpe Helper, and if not, what to do */
+window.charpeHelperTest = function () {
+  toast('Testing the connection to Charpe Helper…');
+  var t0 = Date.now();
+  hpost({ action: 'ping' }, 6000).then(function (j) {
+    HLP.ok = (j.helper || 0) >= 5; HLP.v = j.helper || 0; HLP.at = Date.now();
+    alertBox(HLP.ok ? '&#10003; Charpe Helper is reachable (version ' + j.helper + ', ' + (Date.now() - t0) + ' ms). Court fetching goes through your PC.'
+      : 'Charpe Helper answered but is an old version (' + j.helper + '). Run the newest "Install Charpe Helper.bat".');
+  }).catch(function (e) {
+    HLP.ok = false; HLP.at = Date.now();
+    alertBox('&#9888; This page cannot reach Charpe Helper (' + he(e.message || String(e)) + ').<br><br>' +
+      '1. Check the helper is running: open <b>http://127.0.0.1:8770/</b> in Chrome — it should say "Charpe helper is running".<br>' +
+      '2. If it is running, Chrome is blocking this site from it. In Chrome paste <b>chrome://settings/content/siteDetails?site=https%3A%2F%2Fsanketcharpe.github.io</b> and set <b>Local network access</b> (also "Apps on device" / "Local network" if shown) to <b>Allow</b>, then close and reopen Charpe Suite.');
+  });
+};
+function alertBox(html) {
+  var o = document.getElementById('chtest'); if (o) o.remove();
+  var d = document.createElement('div'); d.id = 'chtest';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(10,18,32,.5);z-index:100001;display:flex;align-items:flex-start;justify-content:center;padding:70px 12px';
+  d.innerHTML = '<div style="background:#fff;color:#1a2744;border-radius:10px;max-width:560px;width:100%;padding:16px 18px;font-size:13px;line-height:1.55;box-shadow:0 14px 40px rgba(0,0,0,.35)">' + html +
+    '<div style="text-align:right;margin-top:12px"><button class="btn bg" onclick="document.getElementById(\'chtest\').remove()">OK</button></div></div>';
+  document.body.appendChild(d);
+}
 function viaHelper(body) {
   var a = body.action, sid = String(body.sid || '');
   if (a === 'start') {
@@ -439,7 +462,7 @@ function loadCaptchas(ids) {
       var rw = document.getElementById('ecorows'), nt = document.createElement('div');
       nt.className = 'note'; nt.style.cssText = 'background:#fff8e6;border:1px solid #f0d48a;border-radius:5px;padding:7px 9px;margin-bottom:6px';
       nt.innerHTML = '&#9888; <b>Charpe Helper on this PC could not be reached</b>, so these go through Google, which the court sites often refuse. ' +
-        'Check that the helper is running and that Chrome allows <b>Local network access</b> for this site (the icon left of the address, or Settings &rarr; Privacy &rarr; Site settings &rarr; sanketcharpe.github.io).';
+        '<a href="#" onclick="charpeHelperTest();return false"><b>Test the connection</b></a> to see why and what to do.';
       if (rw && rw.parentNode) rw.parentNode.insertBefore(nt, rw);
     }
     var f = document.querySelector('#ecorows input'); if (f) f.focus();
