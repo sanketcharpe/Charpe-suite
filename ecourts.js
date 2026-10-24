@@ -20,6 +20,7 @@
 (function () {
 'use strict';
 
+var ECO_MAX = 60;   /* cases on one CAPTCHA screen (pictures stay valid about 20 minutes) */
 var ECO = { rows: [], lanes: {}, active: 0, maxLanes: 3, dir: null, db: null, savePending: null, busyAll: false };
 window.ECO = ECO;
 
@@ -400,6 +401,10 @@ window.ecoOpenBatch = function (ids) {
     '<div class="note">Ticked below: open cases whose next date is <b>' + (+(c.days || 0) ? 'within ' + c.days + ' day(s) or earlier' : 'today or earlier') +
     '</b>, cases with no next date, and cases where the court had not updated last time. ' +
     'District courts come from services.ecourts.gov.in; Bombay High Court matters (CNR beginning HCBM) from hcservices.ecourts.gov.in. Add any other case with the search box.</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;padding:8px;background:#f3f6fb;border:1px solid #dbe3f0;border-radius:6px">' +
+      '<b style="font-size:12px">All cases of one court:</b><select id="ecoct" onchange="ecoCourt(this.value)" style="flex:1;min-width:220px;padding:6px;font-size:12px">' + courtOpts() + '</select>' +
+      '<label style="font-size:11px;display:flex;gap:4px;align-items:center"><input type="checkbox" id="ecoctdue" onchange="ecoCourt(document.getElementById(\'ecoct\').value)"> only those due</label></div>' +
+    '<div id="ecoctnote"></div>' +
     '<input class="sinp" id="ecoq" placeholder="Search to add another case…" oninput="ecoPickList()" style="width:100%;margin-bottom:6px">' +
     '<div id="ecopl"></div>',
     '<button class="btn bg" onclick="ecoLoad()">Show CAPTCHAs for the ticked cases</button>' +
@@ -421,6 +426,31 @@ window.ecoPickList = function () {
   var n = Object.keys(ECO.pick).filter(function (k) { return ECO.pick[k]; }).length;
   var ce = document.getElementById('ecocount'); if (ce) ce.textContent = n + ' case' + (n === 1 ? '' : 's') + ' ticked';
 };
+/* the courts that have open cases, for "All cases of one court" */
+function courtKey(c) { return String(c.court || '').replace(/\s+/g, ' ').trim() || '(court not given)'; }
+function courtOpts() {
+  var m = {}; LC().forEach(function (c) { if (!isOpen(c)) return; var k = courtKey(c); m[k] = m[k] || { n: 0, no: 0 }; if (ecoOk(c)) m[k].n++; else m[k].no++; });
+  var ks = Object.keys(m).sort(function (a, b) { return m[b].n - m[a].n || a.localeCompare(b); });
+  return '<option value="">— pick a court to list all its open cases —</option>' + ks.map(function (k) {
+    return '<option value="' + he(k) + '"' + (m[k].n ? '' : ' disabled') + '>' + he(k) + ' — ' + m[k].n + ' case' + (m[k].n === 1 ? '' : 's') + (m[k].no ? ' (+' + m[k].no + ' without CNR)' : '') + '</option>';
+  }).join('');
+}
+window.ecoCourt = function (k) {
+  var note = document.getElementById('ecoctnote'); if (!k) { if (note) note.innerHTML = ''; return; }
+  var due = (document.getElementById('ecoctdue') || {}).checked, dueSet = {}; dueCases().forEach(function (x) { dueSet[x.id] = 1; });
+  var of = LC().filter(function (c) { return isOpen(c) && courtKey(c) === k; });
+  var ok = of.filter(function (c) { return ecoOk(c) && (!due || dueSet[c.id]); }), no = of.filter(function (c) { return !ecoOk(c); });
+  ok.sort(function (a, b) { return String(a.nd || '9').localeCompare(String(b.nd || '9')) || ctit(a).localeCompare(ctit(b)); });
+  ECO.pick = {}; ok.forEach(function (c) { ECO.pick[c.id] = 1; });
+  ECO.allCases = LC().filter(function (x) { return ecoOk(x) && isOpen(x); });
+  ECO.courtNoCnr = no;
+  var q = document.getElementById('ecoq'); if (q) q.value = '';
+  if (note) note.innerHTML = '<div class="note" style="margin:0 0 6px"><b>' + ok.length + '</b> case' + (ok.length === 1 ? '' : 's') + ' of <b>' + he(k) + '</b> ticked' +
+    (ok.length > ECO_MAX ? ' — the first ' + ECO_MAX + ' are shown at a time.' : '.') +
+    (no.length ? ' ' + no.length + ' other case' + (no.length === 1 ? ' has' : 's have') + ' no CNR: ' + no.slice(0, 8).map(function (c) { return he(label(c)); }).join('; ') + (no.length > 8 ? '…' : '') +
+      ' — on that case press <b>&#9878; Find on eCourts</b> (or <b>Fetch from High Court</b>) once; it then gets its CNR and joins this list.' : '') + '</div>';
+  ecoPickList();
+};
 window.ecoTick = function (id, on) { if (on) ECO.pick[id] = 1; else delete ECO.pick[id]; ecoPickList(); };
 window.ecoAll = function (on) {
   ECO.pick = {};
@@ -430,7 +460,7 @@ window.ecoAll = function (on) {
 window.ecoLoad = function () {
   var ids = Object.keys(ECO.pick).filter(function (k) { return ECO.pick[k]; });
   if (!ids.length) { toast('Tick at least one case.', 'err'); return; }
-  if (ids.length > 30) { toast('Showing the first 30. Run again for the rest.'); ids = ids.slice(0, 30); }
+  if (ids.length > ECO_MAX) { toast('Showing the first ' + ECO_MAX + '. Run again for the rest.'); ids = ids.slice(0, ECO_MAX); }
   loadCaptchas(ids);
 };
 
@@ -441,37 +471,47 @@ function loadCaptchas(ids) {
   ECO.rows = ids.map(function (id) { var c = find(id); return { cid: id, cnr: cleanCnr(c && c.cnr), st: 'load', msg: 'Opening eCourts…' }; });
   shell('&#9878; eCourts &mdash; type each CAPTCHA',
     '<div class="note">Type the characters you see for each case, pressing <b>Enter</b> to jump to the next one. ' +
-    'Then press <b>Fetch all</b>, or <b>Fetch</b> on any single row. Click a picture for a new one if it is hard to read. ' +
+    'Type them all one after another, then press <b>&#9654; Go</b> (or Ctrl+Enter) — or <b>Fetch</b> on any single row. Click a picture for a new one if it is hard to read. ' +
     'Each picture stays valid for about 20 minutes.</div>' +
     (ECO.skipped && ECO.skipped.length ? '<div class="note" style="background:#fff8e6;border:1px solid #f0d48a;border-radius:5px;padding:7px 9px">' +
       ECO.skipped.length + ' matter' + (ECO.skipped.length === 1 ? '' : 's') + ' on this board ' + (ECO.skipped.length === 1 ? 'has' : 'have') + ' no CNR and cannot be fetched: ' +
       ECO.skipped.map(function (c) { return '<b>' + he(label(c)) + '</b>'; }).join('; ') + '. Add the CNR in Edit, or find the case in Search Courts.</div>' : '') +
     '<div id="ecorows"></div>',
-    '<button class="btn bg" id="ecoAllBtn" onclick="ecoFetchAll()">&#8635; Fetch all</button>' +
+    '<button class="btn bg" id="ecoAllBtn" onclick="ecoFetchAll()" title="Fetch every row whose CAPTCHA you have typed, one after another">&#9654; Go &mdash; fetch all typed</button>' +
     '<button class="btn bo" onclick="ecoOpenBatch()">&#8249; Change cases</button>' +
     '<span id="ecoprog" style="font-size:11px;color:#555;margin-left:auto"></span>');
   paintRows();
-  post({ action: 'start', cnrs: ECO.rows.map(function (r) { return r.cnr; }) }).then(function (res) {
-    (res.rows || []).forEach(function (x, i) {
-      var r = ECO.rows[i]; if (!r) return;
-      r.sid = x.sid; r.img = x.img;
-      if (x.err) { r.st = 'bad'; r.msg = x.err; } else { r.st = 'ready'; r.msg = ''; }
-    });
-    paintRows();
-    if (HLP.ok === false) {
-      var rw = document.getElementById('ecorows'), nt = document.createElement('div');
-      nt.className = 'note'; nt.style.cssText = 'background:#fff8e6;border:1px solid #f0d48a;border-radius:5px;padding:7px 9px;margin-bottom:6px';
-      nt.innerHTML = '&#9888; <b>Charpe Helper on this PC could not be reached</b>, so these go through Google, which the court sites often refuse. ' +
-        '<a href="#" onclick="charpeHelperTest();return false"><b>Test the connection</b></a> to see why and what to do.';
-      if (rw && rw.parentNode) rw.parentNode.insertBefore(nt, rw);
-    }
-    var f = document.querySelector('#ecorows input'); if (f) f.focus();
-    /* a row that got no picture: ask once more by itself after a short pause */
-    setTimeout(function () { ECO.rows.forEach(function (r, i) { if (r.st === 'bad' && !r.img && !r.auto) { r.auto = 1; ecoNewImg(i); } }); }, 2500);
-  }).catch(function (e) {
-    ECO.rows.forEach(function (r) { r.st = 'bad'; r.msg = e.message; });
-    paintRows();
-  });
+  /* ask for the pictures a few at a time, so the first rows are ready to type while the rest load */
+  var my = ECO.loadTok = (ECO.loadTok || 0) + 1, CH = 6, at = 0, first = true;
+  function next() {
+    if (my !== ECO.loadTok || at >= ECO.rows.length) return Promise.resolve();
+    var from = at, chunk = ECO.rows.slice(at, at + CH); at += CH;
+    return post({ action: 'start', cnrs: chunk.map(function (r) { return r.cnr; }) }).then(function (res) {
+      if (my !== ECO.loadTok) return;
+      (res.rows || []).forEach(function (x, j) {
+        var r = ECO.rows[from + j]; if (!r) return;
+        r.sid = x.sid; r.img = x.img;
+        if (x.err) { r.st = 'bad'; r.msg = x.err; } else { r.st = 'ready'; r.msg = ''; }
+        paintRow(from + j);
+      });
+      if (first) {
+        first = false;
+        if (HLP.ok === false) {
+          var rw = document.getElementById('ecorows'), nt = document.createElement('div');
+          nt.className = 'note'; nt.style.cssText = 'background:#fff8e6;border:1px solid #f0d48a;border-radius:5px;padding:7px 9px;margin-bottom:6px';
+          nt.innerHTML = '&#9888; <b>Charpe Helper on this PC could not be reached</b>, so these go through Google, which the court sites often refuse. ' +
+            '<a href="#" onclick="charpeHelperTest();return false"><b>Test the connection</b></a> to see why and what to do.';
+          if (rw && rw.parentNode) rw.parentNode.insertBefore(nt, rw);
+        }
+        var a = document.activeElement; if (!a || a.tagName !== 'INPUT') { var f = document.querySelector('#ecorows input:not([disabled])'); if (f) f.focus(); }
+      }
+      /* a row that got no picture: ask once more by itself after a short pause */
+      setTimeout(function () { for (var j = from; j < from + chunk.length; j++) { var r = ECO.rows[j]; if (r && r.st === 'bad' && !r.img && !r.auto) { r.auto = 1; ecoNewImg(j); } } }, 2500);
+    }).catch(function (e) {
+      chunk.forEach(function (r, j) { r.st = 'bad'; r.msg = he(e.message); paintRow(from + j); });
+    }).then(next);
+  }
+  next();
 }
 function rowHTML(r, i) {
   var c = find(r.cid) || {};
@@ -481,7 +521,7 @@ function rowHTML(r, i) {
   var inp = r.st === 'done' ? '<span style="font-size:20px;color:#127a4b">&#10003;</span>' :
     (r.st === 'bad' && !r.img) ? '' :
     '<input id="ecoin' + i + '" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" ' +
-    'value="' + he(r.cap || '') + '" oninput="ECO.rows[' + i + '].cap=this.value" onkeydown="ecoKey(event,' + i + ')"' +
+    'value="' + he(r.cap || '') + '" oninput="ECO.rows[' + i + '].cap=this.value;ecoProg()" onkeydown="ecoKey(event,' + i + ')"' +
     (r.st === 'busy' || r.st === 'load' ? ' disabled' : '') + '>';
   var btn = r.st === 'done' ? '<button class="btn bo" onclick="ecoAgain(' + i + ')" style="font-size:10px">Again</button>' :
     (r.st === 'bad' && !r.img) ? '<button class="btn bg" onclick="ecoNewImg(' + i + ')" title="Ask eCourts for a CAPTCHA again">&#8635; Try again</button>' :
@@ -506,11 +546,15 @@ function paintRow(i) {
   if (focused) { var f = document.getElementById('ecoin' + i); if (f) f.focus(); }
   progress();
 }
+window.ecoProg = function () { progress(); };
 function progress() {
   var el = document.getElementById('ecoprog'); if (!el) return;
   var d = ECO.rows.filter(function (r) { return r.st === 'done'; }).length;
   var q = 0; Object.keys(ECO.lanes).forEach(function (k) { q += ECO.lanes[k].items.length; });
-  el.innerHTML = d + ' of ' + ECO.rows.length + ' fetched' + (q || ECO.active ? ' &middot; downloading orders (' + q + ' left)' : '');
+  var typed = ECO.rows.filter(function (r) { return r.st !== 'done' && (r.cap || '').trim(); }).length,
+      loading = ECO.rows.filter(function (r) { return r.st === 'load'; }).length;
+  el.innerHTML = d + ' of ' + ECO.rows.length + ' fetched' + (typed ? ' &middot; <b>' + typed + ' typed, ready to Go</b>' : '') + (loading ? ' &middot; ' + loading + ' pictures loading' : '') +
+    (q || ECO.active ? ' &middot; downloading orders (' + q + ' left)' : '');
 }
 window.ecoKey = function (e, i) {
   if (e.key !== 'Enter') return;

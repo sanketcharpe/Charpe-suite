@@ -65,15 +65,19 @@ function loadScript(src) {
 function fontkitLib() {
   if (window.fontkit) return Promise.resolve(window.fontkit);
   if (fkP) return fkP;
-  fkP = (window.regeneratorRuntime ? Promise.resolve() : loadScript('vendor/regenerator-runtime.js'))
-    .then(function () { return loadScript('vendor/fontkit.umd.min.js'); })
+  /* the files may sit in vendor/ or at the top of the site, depending on how they were uploaded */
+  var both = function (n) { return loadScript(n).catch(function () { return loadScript('vendor/' + n); }); };
+  fkP = (window.regeneratorRuntime ? Promise.resolve() : both('regenerator-runtime.js'))
+    .then(function () { return window.fontkit ? null : both('fontkit.umd.min.js'); })
     .then(function () { if (!window.fontkit) throw new Error('fontkit missing'); return window.fontkit; })
     .catch(function (e) { fkP = null; throw new Error('The Marathi font could not load (' + e.message + '). Check the internet connection once.'); });
   return fkP;
 }
 function fontFile(k) {
   if (fontBytes[k]) return Promise.resolve(fontBytes[k]);
-  return fetch(FONTS[k]).then(function (r) { if (!r.ok) throw new Error('Font ' + FONTS[k] + ' not found'); return r.arrayBuffer(); })
+  var name = FONTS[k].replace(/^fonts\//, '');
+  return fetch(name).then(function (r) { if (r.ok) return r; return fetch(FONTS[k]); })
+    .then(function (r) { if (!r.ok) throw new Error('Font ' + name + ' not found'); return r.arrayBuffer(); })
     .then(function (b) { fontBytes[k] = b; return b; });
 }
 /* the four fonts embedded in one PDF document: {R: {lat, dev}, B: {lat, dev}} */
