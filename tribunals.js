@@ -729,8 +729,17 @@ var EST_GUESS = [[/labou?r/i, /labou?r/i], [/industrial/i, /industrial/i], [/sen
 var DISTRICTS = ['Nagpur', 'Wardha', 'Amravati', 'Yavatmal', 'Chandrapur', 'Bhandara', 'Gondia', 'Gadchiroli', 'Akola', 'Washim', 'Buldhana', 'Mumbai', 'Pune', 'Aurangabad'];
 function dcDistrict(c) { var t = String(c.court || ''); for (var i = 0; i < DISTRICTS.length; i++) if (new RegExp(DISTRICTS[i], 'i').test(t)) return DISTRICTS[i]; return 'Nagpur'; }
 function estGuess(c, list) {
-  var t = String(c.court || '');
-  for (var i = 0; i < EST_GUESS.length; i++) if (EST_GUESS[i][0].test(t)) { var m = list.filter(function (x) { return EST_GUESS[i][1].test(x.t); })[0]; if (m) return m.v; }
+  var t = String(c.court || ''), generic = /^(court|courts|civil|criminal|judge|junior|senior|division|district|sessions?|session|small|causes|motor|vechicle|vehicle|railway|industrial|labour|family|school|tribunal|chief|judicial|magistrate|joint|and|the|first|class|cooperative|appellate|state)$/i;
+  /* the place in the case's court name: a town that appears in the court list (Katol, Umrer, Kamptee…), else the district */
+  var places = {}; list.forEach(function (x) { String(x.t).split(/[^A-Za-z]+/).forEach(function (w) { if (w.length > 3 && !generic.test(w)) places[w.toLowerCase()] = 1; }); });
+  var hit = Object.keys(places).filter(function (w) { return new RegExp('\\b' + w + '\\b', 'i').test(t); }).sort(function (a, b) { return /nagpur/.test(a) - /nagpur/.test(b); })[0];
+  var city = new RegExp(hit || dcDistrict(c), 'i');
+  /* courts in the case's own city first ("Jt. Civil Judge Sr. Dn., Nagpur" → Nagpur, not Katol) */
+  var mine = list.filter(function (x) { return city.test(x.t); }), rest = list.filter(function (x) { return !city.test(x.t); });
+  for (var i = 0; i < EST_GUESS.length; i++) if (EST_GUESS[i][0].test(t)) {
+    var m = mine.filter(function (x) { return EST_GUESS[i][1].test(x.t); })[0] || rest.filter(function (x) { return EST_GUESS[i][1].test(x.t); })[0];
+    if (m) return m.v;
+  }
   return '';
 }
 function typeGuess(types, cn) {
@@ -757,7 +766,10 @@ window.trDcFind = function (id) {
     DCQ.via = ok && (TR.helperV || 1) >= 6 ? 'helper' : 'backend';
     return DCQ.via === 'helper' ? helperPost({ action: 'dcopen', district: DCQ.district }) : api().post({ action: 'sopen', via: 'dc', state: 'Maharashtra', district: DCQ.district });
   }).then(function (r) {
-    DCQ.sid = r.sid; DCQ.img = r.img; DCQ.est = (r.lists && r.lists.est) || []; DCQ.estv = estGuess(c, DCQ.est);
+    DCQ.sid = r.sid; DCQ.img = r.img; DCQ.est = (r.lists && r.lists.est) || [];
+    var cityRe = new RegExp(DCQ.district, 'i');
+    DCQ.est = DCQ.est.filter(function (x) { return cityRe.test(x.t); }).concat(DCQ.est.filter(function (x) { return !cityRe.test(x.t); }));
+    DCQ.estv = estGuess(c, DCQ.est);
     dcPaint((r.note ? '<span style="color:#a35b00">' + he(r.note) + '</span> ' : '') + (DCQ.via === 'backend' ? '<span style="color:#a35b00">Charpe Helper could not be reached, so this goes through Google (slower; the court site may refuse it). <a href="#" onclick="charpeHelperTest();return false">Test the connection</a></span>' : ''));
     if (DCQ.estv) trDcTypes();
   }).catch(function (e) { dcPaint('<span style="color:#b3261e">' + he(e.message) + '</span> <button class="btn bg" style="font-size:11px;padding:2px 10px" onclick="trDcFind(DCQ.id)">&#8635; Try again</button>'); });

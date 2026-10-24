@@ -106,8 +106,8 @@ window.scTick = function (on) { PICK = {}; if (on) behind().filter(hasCnr).forEa
 window.scLoad = function () {
   var ids = behind().filter(function (c) { return hasCnr(c) && PICK[c.id]; }).map(function (c) { return c.id; });
   if (!ids.length) { toast('Tick at least one case.', 'err'); return; }
-  if (ids.length > 30) toast('Showing the first 30. Come back for the rest.');
-  ecoOpenBatch(ids.slice(0, 30));
+  if (ids.length > 60) toast('Showing the first 60. Come back for the rest.');
+  ecoOpenBatch(ids.slice(0, 60));
 };
 
 /* ---------------- one-time full sync ---------------- */
