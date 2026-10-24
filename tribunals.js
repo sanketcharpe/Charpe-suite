@@ -35,15 +35,19 @@ var TR = { busy: {}, log: [], mat: null, matAt: '', review: [], mine: [] };
 var HELPER = 'http://127.0.0.1:8770/', VIA_HELPER = { sci: 1, scopen: 1, scsearch: 1, mat: 1, matdays: 1, matpdf: 1, pdf: 1 };
 TR.helper = null;                 /* null = not checked yet, true/false after a check */
 function helperPost(body) {
-  var ctl = window.AbortController ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort(); }, body.action === 'ping' ? 2500 : 180000) : 0;
+  var ctl = window.AbortController ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort(); }, body.action === 'ping' ? (body.ms || 4000) : 180000) : 0;
   return fetch(HELPER, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
     .then(function (r) { clearTimeout(t); return r.json(); })
     .then(function (j) { if (!j.ok) throw new Error(j.error || 'The PC helper reported a problem'); return j; });
 }
 function helperCheck() {
-  return helperPost({ action: 'ping' }).then(function (j) { TR.helper = true; TR.helperV = j.helper; return true; })
+  var ping = function (ms) { return helperPost({ action: 'ping', ms: ms }).then(function (j) { TR.helper = true; TR.helperV = j.helper; try { localStorage.setItem('cs_helper_pc', '1'); } catch (e) {} return true; }); };
+  /* ask twice before deciding the helper is not there (a busy PC can be slow once) */
+  return ping(4000).catch(function () { return new Promise(function (r) { setTimeout(r, 1200); }).then(function () { return ping(7000); }); })
     .catch(function () { TR.helper = false; return false; });
 }
+function helperPC() { try { return localStorage.getItem('cs_helper_pc') === '1'; } catch (e) { return false; } }
+var NOHELP_T = 'Charpe Helper on this PC is not answering, so nothing was sent anywhere. Open 127.0.0.1:8770 in Chrome to check it is running (or restart the PC), then try again.';
 window.trHelperCheck = function () { return helperCheck().then(function (ok) { toast(ok ? 'Charpe Helper is running on this PC.' : 'Charpe Helper is not running on this PC.', ok ? '' : 'err'); if (document.getElementById('scTri')) scTri(); }); };
 var HELP_MSG = 'Start Charpe Helper on this PC (it fetches the Supreme Court and MAT sites from your own connection) — see Sync Centre → Supreme Court · CAT · MAT.';
 function tpost(body) {
@@ -54,6 +58,7 @@ function tpost(body) {
       if (/Failed to fetch|NetworkError|aborted/i.test(e.message || '')) { TR.helper = false; throw new Error('Charpe Helper stopped answering. ' + HELP_MSG); }
       throw e;
     });
+    if (helperPC()) throw new Error(NOHELP_T);
     return api().post(body).catch(function (e) { throw new Error((e.message || e) + ' — ' + HELP_MSG); });
   });
 }
@@ -624,10 +629,12 @@ window.trHcFind = function (id) {
   hcPaint('Opening the High Court search (' + HCQ.bench + ' bench)…');
   /* through Charpe Helper on this PC when it is running (Google's servers are often turned away
      by the High Court site); otherwise through the backend as before */
+  /* the High Court is fetched ONLY through Charpe Helper on this PC — never through Google's servers */
   helperCheck().then(function (ok) {
-    HCQ.via = ok && (TR.helperV || 1) >= 3 ? 'helper' : 'backend';
-    if (HCQ.via === 'helper') hcPaint('Opening the High Court search through Charpe Helper (' + HCQ.bench + ' bench)…');
-    return HCQ.via === 'helper' ? helperPost({ action: 'hcopen', bench: HCQ.bench }) : api().post({ action: 'sopen', via: 'hc', bench: HCQ.bench });
+    if (!ok || (TR.helperV || 1) < 3) { HCQ.via = 'none'; throw new Error(helperPC() ? NOHELP_T : 'High Court cases are fetched only through Charpe Helper on the office PC. Open Charpe Suite on that PC (or install the helper here).'); }
+    HCQ.via = 'helper';
+    hcPaint('Opening the High Court search through Charpe Helper (' + HCQ.bench + ' bench)…');
+    return helperPost({ action: 'hcopen', bench: HCQ.bench });
   }).then(function (r) {
     HCQ.sid = r.sid; HCQ.img = r.img; HCQ.types = r.types || []; HCQ.type = hcGuess(HCQ.types, HCQ.abbr);
     hcPaint(r.note ? '<span style="color:#a35b00">' + he(r.note) + '</span>' : '');
@@ -764,6 +771,7 @@ window.trDcFind = function (id) {
   /* through Charpe Helper on this PC when it is running; otherwise the Google backend */
   helperCheck().then(function (ok) {
     DCQ.via = ok && (TR.helperV || 1) >= 6 ? 'helper' : 'backend';
+    if (DCQ.via === 'backend' && helperPC()) throw new Error(NOHELP_T);
     return DCQ.via === 'helper' ? helperPost({ action: 'dcopen', district: DCQ.district }) : api().post({ action: 'sopen', via: 'dc', state: 'Maharashtra', district: DCQ.district });
   }).then(function (r) {
     DCQ.sid = r.sid; DCQ.img = r.img; DCQ.est = (r.lists && r.lists.est) || [];

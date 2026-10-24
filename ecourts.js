@@ -57,9 +57,32 @@ function gpost(body) {
     });
 }
 /* every call goes through the helper first when it can, else to the Google backend */
+/* Court fetching goes ONLY through Charpe Helper on a PC where it is installed (Oct 2026):
+   no more silent switching to Google's servers half-way. High Court cases are never sent to Google.
+   On a device without the helper (iPad / phone) district courts still go through Google. */
+function helperPC() { try { return localStorage.getItem('cs_helper_pc') === '1'; } catch (e) { return false; } }
+function isHcCnr(c) { return /^HC[A-Z]{2}\d/.test(String(c || '').toUpperCase()); }
+window.ecoHelperPC = helperPC; window.ecoIsHcCnr = isHcCnr;
+var NOHELP = 'Charpe Helper on this PC is not answering, so nothing was sent anywhere. Open <b>127.0.0.1:8770</b> in Chrome to check it is running (or restart the PC), then press <b>Try again</b>. <a href="#" onclick="charpeHelperTest();return false">Test the connection</a>';
+var NOHELP_TXT = 'Charpe Helper on this PC is not answering, so nothing was sent anywhere. Open 127.0.0.1:8770 in Chrome to check it is running (or restart the PC), then try again.';
+var NOHELP_HC = 'High Court cases are fetched only through Charpe Helper on the office PC. Open this on that PC, or start the helper here.';
 function post(body) {
-  return viaHelper(body).then(function (r) { return r || gpost(body); }, function (e) {
-    if (/Failed to fetch|NetworkError|aborted|AbortError/i.test(e.message || '')) { HLP.ok = null; if (body.action === 'start') return gpost(body); }
+  var a = body.action;
+  return viaHelper(body).then(function (r) {
+    if (r) return r;
+    if (a === 'start') {
+      var cn = body.cnrs || [];
+      if (helperPC()) return { ok: true, rows: cn.map(function (c) { return { cnr: c, err: NOHELP }; }) };
+      var dc = cn.filter(function (c) { return !isHcCnr(c); });
+      var send = dc.length ? gpost({ action: 'start', cnrs: dc }) : Promise.resolve({ rows: [] });
+      return send.then(function (g) {
+        var i = 0; return { ok: true, rows: cn.map(function (c) { return isHcCnr(c) ? { cnr: c, err: NOHELP_HC } : ((g.rows || [])[i++] || { cnr: c, err: 'No answer' }); }) };
+      });
+    }
+    if (isHcCnr(body.cnr) || helperPC()) throw new Error(isHcCnr(body.cnr) && !helperPC() ? NOHELP_HC : NOHELP_TXT);
+    return gpost(body);
+  }, function (e) {
+    if (/Failed to fetch|NetworkError|aborted|AbortError/i.test(e.message || '')) { HLP.ok = null; throw new Error(NOHELP_TXT); }
     throw e;
   });
 }
@@ -81,8 +104,11 @@ function hpost(b, ms) {
     .then(function (j) { if (!j.ok) throw new Error(j.error || 'Charpe Helper reported a problem'); return j; });
 }
 function helperOk() {
-  if (HLP.ok !== null && Date.now() - HLP.at < 60000) return Promise.resolve(HLP.ok);
-  return hpost({ action: 'ping' }, 2500).then(function (j) { HLP.v = j.helper || 0; HLP.ok = HLP.v >= 5; HLP.at = Date.now(); return HLP.ok; })
+  if (HLP.ok === true && Date.now() - HLP.at < 60000) return Promise.resolve(true);
+  if (HLP.ok === false && Date.now() - HLP.at < 8000) return Promise.resolve(false);
+  var ping = function (ms) { return hpost({ action: 'ping' }, ms).then(function (j) { HLP.v = j.helper || 0; HLP.ok = HLP.v >= 5; HLP.at = Date.now(); if (HLP.ok) { try { localStorage.setItem('cs_helper_pc', '1'); } catch (e) {} } return HLP.ok; }); };
+  /* a busy PC can be slow to answer once: ask twice before deciding it is not there */
+  return ping(4000).catch(function () { return new Promise(function (r) { setTimeout(r, 1200); }).then(function () { return ping(7000); }); })
     .catch(function () { HLP.ok = false; HLP.at = Date.now(); return false; });
 }
 window.ecoHelperOk = helperOk;
@@ -91,7 +117,7 @@ window.charpeHelperTest = function () {
   toast('Testing the connection to Charpe Helper…');
   var t0 = Date.now();
   hpost({ action: 'ping' }, 6000).then(function (j) {
-    HLP.ok = (j.helper || 0) >= 5; HLP.v = j.helper || 0; HLP.at = Date.now();
+    HLP.ok = (j.helper || 0) >= 5; HLP.v = j.helper || 0; HLP.at = Date.now(); if (HLP.ok) { try { localStorage.setItem('cs_helper_pc', '1'); } catch (e) {} }
     alertBox(HLP.ok ? '&#10003; Charpe Helper is reachable (version ' + j.helper + ', ' + (Date.now() - t0) + ' ms). Court fetching goes through your PC.'
       : 'Charpe Helper answered but is an old version (' + j.helper + '). Run the newest "Install Charpe Helper.bat".');
   }).catch(function (e) {
@@ -569,7 +595,10 @@ window.ecoKey = function (e, i) {
 window.ecoNewImg = function (i) {
   var r = ECO.rows[i]; if (!r || r.st === 'busy') return;
   r.st = 'load'; r.msg = 'New picture…'; paintRow(i);
-  post({ action: 'captcha', sid: r.sid, cnr: r.cnr }).then(function (x) {
+  /* no helper session yet (the helper was not answering before): start afresh through the helper */
+  var fresh = !r.sid || (String(r.sid).indexOf('P:') !== 0 && (helperPC() || isHcCnr(r.cnr)));
+  (fresh ? post({ action: 'start', cnrs: [r.cnr] }).then(function (x) { return (x.rows || [])[0] || { err: 'No answer' }; })
+         : post({ action: 'captcha', sid: r.sid, cnr: r.cnr })).then(function (x) {
     r.sid = x.sid; r.img = x.img; r.cap = ''; r.st = x.err ? 'bad' : 'ready'; r.msg = x.err || ''; paintRow(i);
     var f = document.getElementById('ecoin' + i); if (f) f.focus();
   }).catch(function (e) { r.st = 'bad'; r.msg = he(e.message); paintRow(i); });
