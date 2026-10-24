@@ -221,7 +221,7 @@ window.srPaint = function () {
   var el = document.getElementById('srBody'); if (!el) return;
   var C0 = COURTS.filter(function (x) { return x.k === SR.court; })[0];
   var h = '<div class="fgr">' +
-    '<div class="fg f2"><label>Court</label><select id="srCourt" onchange="SR.court=this.value;SR.sid=\'\';SR.rows=[];srPaint()">' + COURTS.map(function (x) { return opt(x.k, x.t, x.k === SR.court); }).join('') + '</select></div>';
+    '<div class="fg f2"><label>Court</label><select id="srCourt" onchange="SR.court=this.value;SR.sid=\'\';SR.img=\'\';SR.lists=null;SR.types=null;SR.rows=[];srPaint()">' + COURTS.map(function (x) { return opt(x.k, x.t, x.k === SR.court); }).join('') + '</select></div>';
   if (C0.via === 'web') {
     h += '</div><div class="nbox" style="font-size:11.5px;line-height:1.6">The ' + he(C0.t) + ' site cannot be searched from inside the tool yet. ' +
       '<b>1.</b> <a href="' + C0.url + '" target="_blank" rel="noopener">Open the official search page</a> and find the case. ' +
@@ -233,7 +233,7 @@ window.srPaint = function () {
     opt('adv', 'Advocate name', SR.mode === 'adv') + opt('party', 'Party name', SR.mode === 'party') + opt('cno', 'Case number', SR.mode === 'cno') + '</select></div>';
   if (C0.via === 'dc') {
     h += '<div class="fg"><label>Court / establishment</label><select id="srEst" onchange="SR.est=this.value;srPaint()">' + EST.map(function (x) { return opt(x[0], x[1], x[0] === SR.est); }).join('') + '</select></div>';
-    if (SR.lists && (SR.est === '*' || SR.mode === 'cno')) {
+    if (SR.lists && SR.lists.est && SR.lists.est.length) {
       h += '<div class="fg f2"><label>Exact establishment on eCourts</label><select id="srEst2" onchange="srTypes()">' + estOptions() + '</select></div>';
     }
   }
@@ -267,13 +267,37 @@ function readForm() {
   var e2 = document.getElementById('srEst2'); if (e2) SR.estv = e2.value;
 }
 function msg(t, col) { var m = document.getElementById('srMsg'); if (m) { m.style.color = col || '#555'; m.innerHTML = t; } }
+/* Search Courts goes through Charpe Helper on this PC (Oct 2026): the court sites turn Google's servers away,
+   which is why the CAPTCHA never appeared. Google is used only on a device without the helper, and never for the High Court. */
+function srC0() { return COURTS.filter(function (x) { return x.k === SR.court; })[0]; }
+function srVia() {
+  var hc = srC0().via === 'hc';
+  if (!window.ecoHelperOk) return Promise.resolve('google');
+  return ecoHelperOk().then(function (ok) {
+    if (ok) return 'helper';
+    var pc = window.ecoHelperPC && ecoHelperPC();
+    if (pc) throw new Error('Charpe Helper on this PC is not answering. Open 127.0.0.1:8770 in Chrome to check it is running (or restart the PC), then press Get CAPTCHA again.');
+    if (hc) throw new Error('High Court searches work only on the office PC where Charpe Helper is installed.');
+    return 'google';
+  });
+}
+function hp(b) { return window.charpeHelperPost(b); }
+function hv() { return window.charpeHelperVersion ? charpeHelperVersion() : 0; }
 window.srStart = function () {
   readForm();
-  var C0 = COURTS.filter(function (x) { return x.k === SR.court; })[0];
+  var C0 = srC0();
   msg('Opening ' + (C0.via === 'hc' ? 'the High Court site' : 'eCourts') + '…');
-  A().post({ action: 'sopen', via: C0.via, bench: C0.bench || '', state: 'Maharashtra', district: 'Nagpur' }).then(function (r) {
+  srVia().then(function (via) {
+    SR.via = via;
+    if (via === 'helper') {
+      msg('Opening ' + (C0.via === 'hc' ? 'the High Court site' : 'eCourts') + ' through Charpe Helper…');
+      return C0.via === 'hc' ? hp({ action: 'hcopen', bench: C0.bench || 'nagpur' }) : hp({ action: 'dcopen', district: 'Nagpur' });
+    }
+    return A().post({ action: 'sopen', via: C0.via, bench: C0.bench || '', state: 'Maharashtra', district: 'Nagpur' });
+  }).then(function (r) {
     SR.sid = r.sid; SR.img = r.img; SR.lists = r.lists || SR.lists; SR.types = r.types || SR.types;
     srPaint(); if (r.note) msg(he(r.note), '#a35b00');
+    if (C0.via === 'dc' && SR.mode === 'cno' && SR.lists && SR.lists.est && SR.lists.est.length) srTypes();
   }).catch(function (e) { msg(he(e.message), '#c0392b'); });
 };
 window.srGo = function () {
@@ -285,8 +309,17 @@ window.srGo = function () {
     q: SR.q || '', year: SR.y || '', no: SR.n || '', type: SR.t || '', status: SR.st || 'Pending', est: SR.estv || '', estRe: SR.est || '' };
   if (SR.mode === 'cno' && (!b.no || !b.year)) { msg('Give the case number and year.', '#c0392b'); return; }
   if (SR.mode !== 'cno' && b.q.length < 3) { msg('Type at least 3 letters.', '#c0392b'); return; }
+  if (SR.via === 'helper' && C0.via === 'dc' && !b.est && SR.lists && SR.lists.est && SR.lists.est.length) {
+    var e2 = document.getElementById('srEst2'); b.est = SR.estv = (e2 && e2.value) || SR.lists.est[0].v;
+  }
+  var call;
+  if (SR.via === 'helper') {
+    if (SR.mode !== 'cno' && hv() < 12) { msg('Searching by ' + (SR.mode === 'adv' ? 'advocate' : 'party') + ' name needs the newer Charpe Helper (version 12). Install it from the FIX 21 folder, or search by case number.', '#c0392b'); return; }
+    var hb = { sid: SR.sid, mode: SR.mode, captcha: b.captcha, q: b.q, year: b.year, no: b.no, type: b.type, status: b.status, est: b.est };
+    call = hp(Object.assign({ action: C0.via === 'hc' ? 'hcsearch' : (hv() >= 12 ? 'dcsrch' : 'dcfind') }, hb));
+  } else call = A().post(b);
   msg('Searching…'); SR.busy = true;
-  A().post(b).then(function (r) {
+  call.then(function (r) {
     SR.busy = false;
     if (r.bad || r.expired) { SR.img = r.img || ''; SR.sid = r.sid || SR.sid; if (!r.img) return srStart(); srPaint(); msg(r.expired ? 'The picture expired — type the new one.' : 'Wrong CAPTCHA — type the new picture.', '#c0392b'); return; }
     SR.rows = r.rows || []; SR.img = r.img || ''; if (r.sid) SR.sid = r.sid;
@@ -297,7 +330,7 @@ window.srGo = function () {
 window.srTypes = function () {
   readForm(); if (!SR.sid || SR.mode !== 'cno') return;
   msg('Loading case types…');
-  A().post({ action: 'stypes', sid: SR.sid, est: SR.estv || '' }).then(function (r) {
+  (SR.via === 'helper' ? hp({ action: 'dctypes', sid: SR.sid, est: SR.estv || '' }) : A().post({ action: 'stypes', sid: SR.sid, est: SR.estv || '' })).then(function (r) {
     if (r.expired) { msg('The session expired — press New CAPTCHA.', '#c0392b'); return; }
     SR.types = r.types || []; srPaint(); msg(SR.types.length + ' case types loaded.');
   }).catch(function (e) { msg(he(e.message), '#c0392b'); });
