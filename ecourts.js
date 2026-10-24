@@ -112,6 +112,8 @@ function helperOk() {
     .catch(function () { HLP.ok = false; HLP.at = Date.now(); return false; });
 }
 window.ecoHelperOk = helperOk;
+window.charpeHelperPost = hpost;
+window.charpeHelperVersion = function () { return HLP.v || 0; };
 /* "Test the connection": says plainly whether this page can reach Charpe Helper, and if not, what to do */
 window.charpeHelperTest = function () {
   toast('Testing the connection to Charpe Helper…');
