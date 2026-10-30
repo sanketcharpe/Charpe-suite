@@ -66,6 +66,7 @@ window.ecoHelperPC = helperPC; window.ecoIsHcCnr = isHcCnr;
 var NOHELP = 'Charpe Helper on this PC is not answering, so nothing was sent anywhere. Open <b>127.0.0.1:8770</b> in Chrome to check it is running (or restart the PC), then press <b>Try again</b>. <a href="#" onclick="charpeHelperTest();return false">Test the connection</a>';
 var NOHELP_TXT = 'Charpe Helper on this PC is not answering, so nothing was sent anywhere. Open 127.0.0.1:8770 in Chrome to check it is running (or restart the PC), then try again.';
 var NOHELP_HC = 'High Court cases are fetched only through Charpe Helper on the office PC. Open this on that PC, or start the helper here.';
+var COURT_ACT = { start: 1, captcha: 1, biz: 1, search: 1, order: 1, sopen: 1, stypes: 1, ssearch: 1 };
 function post(body) {
   var a = body.action;
   return viaHelper(body).then(function (r) {
@@ -79,7 +80,9 @@ function post(body) {
         var i = 0; return { ok: true, rows: cn.map(function (c) { return isHcCnr(c) ? { cnr: c, err: NOHELP_HC } : ((g.rows || [])[i++] || { cnr: c, err: 'No answer' }); }) };
       });
     }
-    if (isHcCnr(body.cnr) || helperPC()) throw new Error(isHcCnr(body.cnr) && !helperPC() ? NOHELP_HC : NOHELP_TXT);
+    /* only court-site requests are kept off Google's servers. Opening saved orders from Drive (pdf), saving
+       them (upload), CAT, and the connection test always go to the Google backend (fixed 30 Oct 2026). */
+    if (COURT_ACT[a] && (isHcCnr(body.cnr) || helperPC())) throw new Error(isHcCnr(body.cnr) && !helperPC() ? NOHELP_HC : NOHELP_TXT);
     return gpost(body);
   }, function (e) {
     if (/Failed to fetch|NetworkError|aborted|AbortError/i.test(e.message || '')) { HLP.ok = null; throw new Error(NOHELP_TXT); }
