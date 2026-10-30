@@ -64,13 +64,19 @@ function tpost(body) {
 }
 /* order PDFs from the Supreme Court / MAT: fetched by the helper, then kept in Drive through the backend */
 window.trOrderPost = function (c, o, b) {
-  var hcLane = o && o.a && o.a[0] === 'HC' && String(b.sid || '').indexOf('H:') === 0;
+  /* High Court orders: fetched with the helper session that opened the case — from Search Courts (H:) or from
+     the eCourts CAPTCHA screen (P:). Before 30 Oct 2026 the P: ones were sent the wrong way and all failed. */
+  var hcLane = o && o.a && o.a[0] === 'HC' && /^[HP]:/.test(String(b.sid || ''));
   if (!o || !o.a || (!hcLane && ((o.a[0] !== 'SCI' && o.a[0] !== 'MAT') || TR.helper !== true))) return null;
   return helperPost(hcLane ? { action: 'hcpdf', sid: String(b.sid).slice(2), url: o.a[1] } : { action: 'pdf', url: o.a[1] }).then(function (r) {
     if (r.missing || !r.b64) return { ok: true, missing: true, msg: r.msg || 'not available' };
     return api().post({ action: 'upload', cnr: b.cnr, label: b.label, name: ((b.d || 'undated') + ' ' + (b.title || 'Order') + (b.no ? ' No ' + b.no : '')).slice(0, 120), b64: r.b64 })
       .then(function (x) { x.b64 = r.b64; return x; });
-  }).catch(function () { TR.helper = false; return { ok: true, missing: true, msg: 'Charpe Helper not answering' }; });
+  }).catch(function (e) {
+    var down = /Failed to fetch|NetworkError|aborted/i.test((e && e.message) || '');
+    if (down) TR.helper = false;
+    return { ok: true, missing: true, msg: down ? 'Charpe Helper not answering' : ((e && e.message) || 'could not be fetched') };
+  });
 };
 window.TR = TR;
 var COURT = { sc: 'Supreme Court of India', cat: 'Central Administrative Tribunal, Mumbai Bench (Nagpur circuit)', mat: 'Maharashtra Administrative Tribunal, Nagpur Bench' };
