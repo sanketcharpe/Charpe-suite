@@ -3181,10 +3181,12 @@ function cs2Cycle(){
   if(!navigator.onLine){cs2Show('offline');return Promise.resolve();}
   if(CS2.busy)return Promise.resolve();
   CS2.busy=true;cs2Show('busy');
-  var sh=cs2Shadow(),changes={},pushedH={},pushed={},now0=new Date().toISOString();
+  var sh=cs2Shadow(),changes={},pushedH={},pushed={},now0=new Date().toISOString(),blocked=false;
   /* a brand-new device (nothing stored here yet) first takes everything from Drive
      and sends nothing, so its blank defaults can never overwrite the real data */
-  var fresh=!cfg.since&&!(C&&C.length);
+  /* Oct 2026 fix: an EMPTY case list on this device never sends deletions. It is treated as a fresh
+     device and takes everything from Drive again (this is what wiped all cases on 27 Oct 2026). */
+  var fresh=!(C&&C.length)||!!cfg.full;
   if(!fresh)CS2_COLS.forEach(function(d){
     var s=sh[d.col]||{},out=[],seen={};
     (d.get()||[]).forEach(function(r){
@@ -3196,9 +3198,16 @@ function cs2Cycle(){
         out.push(rec);pushedH[d.col+'|'+id]=h;
       }
     });
-    if(!d.noTomb)Object.keys(s).forEach(function(id){if(!seen[id]&&!s[id].gone)out.push({id:id,_gone:true,mod:now0});});
+    if(!d.noTomb){var tomb=[];Object.keys(s).forEach(function(id){if(!seen[id]&&!s[id].gone)tomb.push({id:id,_gone:true,mod:now0});});
+      /* safety: more than 5 cases or tasks disappearing at once is treated as a storage fault, not a deletion */
+      if(tomb.length>5&&(d.col==='cases'||d.col==='tasks')){
+        var ok=cu&&document.visibilityState==='visible'&&confirm('This computer is about to DELETE '+tomb.length+' '+d.col+' from every computer and the phone.\n\nPress OK only if you deleted them yourself on purpose.\nPress Cancel to keep them and reload them from Google Drive.');
+        if(!ok){tomb=[];blocked=true;}
+      }
+      out=out.concat(tomb);}
     if(out.length){changes[d.col]=out;pushed[d.col]=out;}
   });
+  if(blocked){cfg.full=true;cs2SetCfg(cfg);}
   var np=Object.keys(changes).length;
   var step=np?cs2Post(cfg,{action:'push',changes:changes}):Promise.resolve(null);
   return step.then(function(){
@@ -3208,12 +3217,13 @@ function cs2Cycle(){
     });
     localStorage.setItem('cs2_shadow',JSON.stringify(sh));
     if(document.querySelector('.ov.open'))return 'deferred';      /* a form is open: bring in others' changes later */
-    return cs2Post(cfg,{action:'pull',since:cfg.since||''}).then(function(res){
+    return cs2Post(cfg,{action:'pull',since:fresh?'':(cfg.since||'')}).then(function(res){
       var got=0;
       CS2_COLS.forEach(function(d){
         var inc=res.changes&&res.changes[d.col];if(!inc||!inc.length)return;
         var s=sh[d.col]=sh[d.col]||{},arr=fresh?[]:(d.get()||[]).slice(),idx={},touched=[];
         arr.forEach(function(r,i){if(r&&r.id!==undefined)idx[String(r.id)]=i;});
+        if(d.users)inc=inc.filter(function(r){return r&&(r._gone||r.username);});   /* ignore anything in users.json that is not a login */
         inc.forEach(function(r){
           var id=String(r.id),li=idx[id],local=li!==undefined?arr[li]:null;
           if(local&&!fresh){var lh=cs2H(local),s0=s[id];if((!s0||lh!==s0.h)&&pushedH[d.col+'|'+id]!==lh)return;}  /* edited here meanwhile: keep, send next round */
@@ -3228,7 +3238,9 @@ function cs2Cycle(){
       });
       localStorage.setItem('cs2_shadow',JSON.stringify(sh));
       if(got){CS2.applying=true;try{cs2SaveRaw();saveU();}finally{CS2.applying=false;}if(cu)refresh();}
-      cfg=cs2Cfg();cfg.since=res.time;cfg.lastOk=new Date().toISOString();cfg.lastErr='';
+      if(fresh){var gotU=((res.changes&&res.changes.users)||[]).some(function(r){return r&&r.username&&!r._gone;});
+        if(!gotU&&U&&U.length){delete sh.users;localStorage.setItem('cs2_shadow',JSON.stringify(sh));}}   /* Drive has no logins: send this computer's next time */
+      cfg=cs2Cfg();cfg.since=res.time;cfg.lastOk=new Date().toISOString();cfg.lastErr='';if(fresh){delete cfg.full;if(got)toast(C.length+' cases loaded from Google Drive.');}
       if(res.lastFetch)cfg.lastFetch=res.lastFetch;cs2SetCfg(cfg);
       return got;
     });
@@ -3259,10 +3271,15 @@ function renderST(){
     '<div class="fg"><label>Name of this device</label><input id="cs2dev" value="'+he(c.device||'')+'" placeholder="e.g. Master desktop, Laptop"></div></div>'+
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">'+
     '<button class="btn bg" onclick="cs2SaveCfg()">Save and sync now</button>'+
-    '<button class="btn bn" onclick="cs2Cycle()">&harr; Sync now</button></div>'+
+    '<button class="btn bn" onclick="cs2Cycle()">&harr; Sync now</button>'+
+    '<button class="btn bn" onclick="cs2Reload()" title="Fetch every case, task and setting again from Google Drive. Nothing is sent or deleted.">&#10227; Re-load everything from Drive</button></div>'+
     '<div id="cs2st" style="margin-top:9px;font-size:11px;color:#444"></div>'+
     (c.lastFetch?'<div style="margin-top:5px;font-size:10px;color:#666">Last eCourtsIndia run: '+he(c.lastFetch)+'</div>':'');
   cs2Show(CS2.state||'ok',c.lastErr||'');
+}
+function cs2Reload(){
+  if(!confirm('Load every case, task and setting again from Google Drive?\n\nNothing is sent or deleted. Use this if cases are missing on this computer.'))return;
+  var c=cs2Cfg();c.full=true;cs2SetCfg(c);toast('Re-loading from Google Drive\u2026');cs2Cycle().then(function(){renderST();});
 }
 function cs2SaveCfg(){
   var c=cs2Cfg(),u=val('cs2url').trim(),t=val('cs2tok'),d=val('cs2dev').trim();
