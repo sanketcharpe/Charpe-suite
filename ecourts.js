@@ -721,7 +721,9 @@ function queueCase(cid, sid, row) {
     .filter(function (x) { return !x[1].fid && x[1].a && !x[1].none; })
     .sort(function (a, b) { return String(a[1].d || '') < String(b[1].d || '') ? -1 : 1; })
     .forEach(function (x) { items.push({ kind: 'order', key: x[0] }); });
-  (e.hh || []).filter(function (h) { return h.a && h.biz === undefined; }).slice(-25)
+  /* every date's proceedings (Oct 2026: no longer only the latest 25); a date the site answered blank
+     is asked again, up to 3 fetches, instead of being left with only its stage */
+  (e.hh || []).filter(function (h) { return h.a && (h.biz === undefined || (h.biz === '' && (h.bt || 0) < 3)); })
     .forEach(function (h) { items.push({ kind: 'biz', d: h.d, bd: h.bd }); });
   if (!items.length) return;
   ECO.lanes[sid] = { cid: cid, sid: sid, row: row, items: items, done: 0, total: items.length, running: false };
@@ -774,7 +776,7 @@ function step(L, it) {
   return post({ action: 'biz', sid: L.sid, a: h.a }).then(function (r) {
     if (r.expired) return true;
     var c2 = find(L.cid), h2 = c2 && (c2.eco.hh || []).filter(function (x) { return x.d === it.d && x.bd === it.bd; })[0];
-    if (h2) { h2.biz = r.text || ''; touch(c2); later(); }
+    if (h2) { var tx = String(r.text || '').trim(); h2.biz = tx; if (!tx) h2.bt = (h2.bt || 0) + 1; else delete h2.bt; touch(c2); later(); }
     return false;
   }).catch(function () { return false; });
 }
