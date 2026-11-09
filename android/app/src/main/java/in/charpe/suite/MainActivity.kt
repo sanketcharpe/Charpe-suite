@@ -1,6 +1,9 @@
 package `in`.charpe.suite
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -36,6 +39,15 @@ class MainActivity : AppCompatActivity() {
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private val net = CourtNet()
     private val pool = Executors.newFixedThreadPool(6)
+
+    private var micRequest: PermissionRequest? = null
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        val r = micRequest ?: return@registerForActivityResult
+        micRequest = null
+        if (ok) r.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) else {
+            r.deny(); Toast.makeText(this, "Microphone not allowed. You can type instead, or allow it in Android Settings › Apps › Charpe Suite.", Toast.LENGTH_LONG).show()
+        }
+    }
 
     private val filePicker = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -87,6 +99,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         web.webChromeClient = object : WebChromeClient() {
+            /* the page asks for the microphone (Auto invoice, Auto letter): only our own site, only audio */
+            override fun onPermissionRequest(request: PermissionRequest) {
+                runOnUiThread {
+                    val ours = request.origin?.host == SITE_HOST
+                    val audio = request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
+                    if (!ours || !audio) { request.deny(); return@runOnUiThread }
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+                    } else { micRequest = request; micPermission.launch(Manifest.permission.RECORD_AUDIO) }
+                }
+            }
+
             override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
                 fileCallback?.onReceiveValue(null)
                 fileCallback = callback
