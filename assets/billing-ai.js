@@ -626,6 +626,76 @@ function startLetter() {
   }
 }
 
+/* ================================================================ 📥 FROM CLAUDE (the Claude app's inbox in Drive)
+   When you ask Claude in the Claude app for a bill or a letter, it leaves the draft in the
+   "Claude Inbox" folder of your Drive. It is fetched here through the eCourts backend (the same
+   address and password as Settings → Official eCourts) and opens as a draft for you to check. */
+function ecoCfg() { try { var s = JSON.parse(localStorage.getItem('cpm_s') || '{}') || {}; return s.eco || {}; } catch (e) { return {}; } }
+async function inboxPost(body) {
+  var c = ecoCfg();
+  if (!c.url || !c.tok) throw new Error('nocfg');
+  body.token = c.tok;
+  var r = await fetch(c.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' });
+  var j = JSON.parse(await r.text());
+  if (!j.ok) throw new Error(j.error || 'error');
+  return j;
+}
+var INBOX = { items: [], at: 0, off: false };
+async function inboxCheck(force) {
+  if (INBOX.off || (!force && Date.now() - INBOX.at < 60000) || !navigator.onLine) return;
+  INBOX.at = Date.now();
+  try { INBOX.items = (await inboxPost({ action: 'inbox', kind: 'billing' })).items || []; }
+  catch (e) { if (/unknown action|nocfg/i.test(e.message)) INBOX.off = /unknown action/i.test(e.message); INBOX.items = []; }
+  paintInbox();
+}
+function paintInbox() {
+  var b = $('#ai-inbox'); if (!b) return;
+  var n = INBOX.items.length;
+  b.hidden = !n; b.textContent = '📥 From Claude (' + n + ')';
+}
+function openInbox() {
+  var o = overlay('From the Claude app', '<div id="ai-ibl"></div>');
+  function paint() {
+    var l = INBOX.items;
+    $('#ai-ibl', o.box).innerHTML = l.length ? '<ul class="ai-hits">' + l.map(function (x, i) {
+      return '<li style="cursor:default"><b>' + esc(x.title || (x.kind === 'letter' ? 'Letter' : 'Bill')) + '</b><br><small>' + (x.kind === 'letter' ? 'Letter' : 'Bill') + ' · ' + esc(String(x.created || '').slice(0, 10)) + '</small>' +
+        (x.message ? '<div class="ai-said">' + esc(x.message) + '</div>' : '') +
+        '<div class="ai-row" style="justify-content:flex-start;margin-top:6px"><button class="btn sm primary" data-o="' + i + '">Open as a draft</button><button class="btn sm" data-d="' + i + '">Discard</button></div></li>';
+    }).join('') + '</ul>' : '<p style="color:#666">Nothing waiting.</p>';
+  }
+  $('#ai-ibl', o.box).onclick = async function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var x = INBOX.items[+(b.dataset.o || b.dataset.d)]; if (!x) return;
+    if (b.dataset.d != null) { if (!confirm('Discard “' + (x.title || 'this draft') + '”? It is moved to Claude Inbox › Done in your Drive.')) return; }
+    else { o.close(); if (!openInboxItem(x)) return; }
+    try { await inboxPost({ action: 'inboxdone', fid: x.fid }); } catch (err) { toast('Could not mark it as used: ' + err.message); }
+    INBOX.items = INBOX.items.filter(function (y) { return y !== x; }); paintInbox(); if (!o.closed) paint();
+  };
+  paint();
+}
+function openInboxItem(x) {
+  if (x.kind === 'letter') {
+    var v = x.invoiceNo ? (db().invoices || []).find(function (k) { return k.number === x.invoiceNo; }) : null;
+    if (!window.CBL || !window.CBL.openFromText) { toast('Reload Billing once, then open it again'); return false; }
+    return window.CBL.openFromText(v ? 'invoice' : (x.letterKind === 'invoice' ? 'invoice' : 'general'), String(x.text || ''), v, 'Letter from the Claude app — check it, then Save letter');
+  }
+  var dr = x.draft || {};
+  if (A.draftHasContent(A.currentDraft()) && !A.editingId() && !confirm('The bill on screen has not been saved. Replace it with the draft from Claude?')) return false;
+  var d = A.blankDraft();
+  if (dr.client) { var cl = (db().clients || []).find(function (k) { var a = String(k.name || '').toLowerCase(), b = String(dr.client).toLowerCase(); return a && (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0); }); if (cl) { d.clientId = cl.id; d.billTo = cl.address || cl.name; } }
+  if (dr.billTo) d.billTo = dr.billTo;
+  if (dr.reference) d.reference = dr.reference;
+  if (dr.date && /^\d{4}-\d{2}-\d{2}$/.test(dr.date)) { d.date = dr.date; d.due = dr.date; }
+  var items = (dr.items || []).map(function (it) { return { name: String(it.name || ''), hsn: '', rate: Number(it.rate) || 0, qty: Number(it.qty) || 1, note: String(it.note || ''), clerkable: it.clerkable !== false }; }).filter(function (it) { return it.name || it.rate; });
+  if (items.length) d.items = items;
+  A.setDraft(d, null); A.go('build');
+  toast('Bill from the Claude app — check it, then Save invoice (' + d.number + ')');
+  return true;
+}
+window.addEventListener('focus', function () { inboxCheck(false); });
+setTimeout(function () { inboxCheck(true); }, 4000);
+setInterval(function () { inboxCheck(false); }, 180000);
+
 /* ================================================================ wiring: the buttons on the bill and letter pages */
 function addBar() {
   css();
@@ -635,10 +705,12 @@ function addBar() {
     bar.innerHTML = '<button class="btn sm ai-go" id="ai-inv" title="Say the case, then what happened on each date">🎙 Auto invoice</button>' +
       '<button class="btn sm ai-go" id="ai-let" title="General letter or a letter with a bill, by voice">🎙 Auto letter</button>' +
       '<button class="btn sm" id="ai-ins" title="Standing instructions followed every time">📋 Instructions</button>' +
-      '<button class="btn sm" id="ai-set" title="Gemini / Claude keys and defaults">⚙ AI</button>';
+      '<button class="btn sm" id="ai-set" title="Gemini / Claude keys and defaults">⚙ AI</button>' +
+      '<button class="btn sm primary" id="ai-inbox" hidden title="Bills and letters Claude prepared for you in the Claude app">📥 From Claude</button>';
     row.parentNode.insertBefore(bar, row);
     $('#ai-inv').onclick = startInvoice; $('#ai-let').onclick = startLetter;
     $('#ai-ins').onclick = openInstructions; $('#ai-set').onclick = openSettings;
+    $('#ai-inbox').onclick = openInbox; paintInbox();
   }
   var lv = $('#m5-new-inv');
   if (lv && !$('#ai-let2')) {
@@ -656,5 +728,5 @@ setInterval(function () {
 }, 1500);
 if (A.hooks) A.hooks.push(function () { addBar(); });
 addBar();
-window.CBAI = { startInvoice: startInvoice, startLetter: startLetter, openInstructions: openInstructions, openSettings: openSettings, closeDrawer: closeDrawer, _findCases: findCases, _cnKey: cnKey, _refMatches: refMatches };
+window.CBAI = { inboxCheck: inboxCheck, openInboxItem: openInboxItem, startInvoice: startInvoice, startLetter: startLetter, openInstructions: openInstructions, openSettings: openSettings, closeDrawer: closeDrawer, _findCases: findCases, _cnKey: cnKey, _refMatches: refMatches };
 })();
