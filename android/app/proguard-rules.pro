@@ -1,0 +1,2 @@
+-keepclassmembers class in.charpe.suite.MainActivity$Bridge { public *; }
+-keepattributes JavascriptInterface
