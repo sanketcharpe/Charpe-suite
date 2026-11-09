@@ -5777,7 +5777,14 @@ function letterForInvoice(v){
   openLetter(invoiceLetter(v), "Letter started for " + v.number + " — type or paste the text");
   setTimeout(function(){ focusBody(); }, 60);
 }
-window.CBL = { fromInvoice:letterForInvoice };
+window.CBL = { fromInvoice:letterForInvoice,
+  /* Auto letter (Nov 2026): a letter written from dictation, laid out as if pasted */
+  openFromText: function(kind, text, v, msg){
+    if(!okToLeave()) return false;
+    openLetter(kind === "invoice" && v ? invoiceLetter(v) : generalLetter(), msg || "Letter prepared — check it, then Save letter");
+    setTimeout(function(){ try{ smartPaste(text); setDirty(true); }catch(e){ console.error(e); } }, 80);
+    return true;
+  } };
 function newGeneral(){
   if(!okToLeave()) return;
   openLetter(generalLetter(), "New general letter");
@@ -6307,6 +6314,7 @@ window.CBm5 = { parseLetter:parseLetter, buildFromParsed:buildFromParsed, letter
 </script>
 <script src="stickers.js"></script>
 <script src="billing-extra.js"></script>
+<script src="assets/billing-ai.js"></script>
 <script src="assets/shim.js"></script>
 </body>
 </html>

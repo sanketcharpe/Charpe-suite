@@ -51,6 +51,12 @@ function sheets(c) {
   return out.sort(function (a, b) { return a.d.localeCompare(b.d); });
 }
 window.ordCounts = function (c) { return { o: orders(c).length, s: sheets(c).length }; };
+/* Billing's Auto invoice: every downloaded order of a case as ONE PDF in date order (null when none) */
+window.ordMergedPdf = function (id) {
+  var c = find(id); if (!c) return Promise.resolve(null);
+  var keys = orders(c).filter(function (o) { return o.ok; }).map(function (o) { return o.key; });
+  return keys.length ? mergeOrders(c, keys) : Promise.resolve(null);
+};
 
 /* ---------------- making PDFs ----------------
    Order sheets are often in Marathi. The PDF's built-in fonts only know English letters, so
