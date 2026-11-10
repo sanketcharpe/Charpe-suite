@@ -1153,6 +1153,7 @@ function bldRow(c,ctxDate){
       '<div class="crow-dates">'+ndBdg+(c.pd?pdBdg:'')+'</div>'+
       '<div class="rowacts">'+
         (can('edit')?'<button class="btn bg" onclick="event.stopPropagation();openUpd(\''+c.id+'\')" title="Post the next date for this case">Post</button>':'')+
+        (window.__unupdRow&&can('edit')?'<button class="btn bo" id="md-'+c.id+'" onclick="event.stopPropagation();markDisp(\''+c.id+'\')" title="This case is over: mark it disposed (asked twice) so it leaves the Unupdated list">&#10003; Disposed</button>':'')+
         (can('del')?'<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')" title="Delete this case in one click — revivable from the Deleted tab">&#x2715; Delete</button>':'')+
       '</div>'+
     '</div>'+
@@ -1391,10 +1392,28 @@ function renderUnupd(){
   });
   if(!all.length){el.innerHTML='<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing pending &mdash; every open matter has a future date on record.</span></div>';return;}
   var sub=all.filter(function(c){return !isHC(c);}),hc=all.filter(isHC);
+  window.__unupdRow=true;
+  try{
   el.innerHTML=unupdSect('Subordinate courts, tribunals, industrial &amp; labour courts',sub,'#1a2744')+
                unupdSect('High Court',hc,'#c0392b');
+  }finally{window.__unupdRow=false;}
 }
 /* one section of the unupdated list, split into never-dated and overdue */
+/* Unupdated → ✓ Disposed: asked twice, then the case is disposed and leaves the list (revivable: Edit → Status) */
+function markDisp(id){
+  if(!guard('edit'))return;
+  var c=find(id);if(!c)return;
+  var b=document.getElementById('md-'+id);
+  if(b&&!b.dataset.sure){b.dataset.sure='1';b.className='btn br';b.innerHTML='Disposed? Click again';
+    setTimeout(function(){var x=document.getElementById('md-'+id);if(x){delete x.dataset.sure;x.className='btn bo';x.innerHTML='&#10003; Disposed';}},6000);return;}
+  if(!confirm('Mark this case as DISPOSED?\n\n'+ctit(c)+'\n'+(c.court||'')+(c.cn?' · '+c.cn:'')+'\n\nIt will leave the Unupdated list. You can change it back any time (Edit → Status).'))return;
+  var was=c.st||'active';
+  c.st='disposed';
+  (c.hist=c.hist||[]).push({dt:td(),pd:c.pd||'',ps:c.ps||'',nd:'',ns:'Disposed',note:'Marked disposed from the Unupdated list',by:cu?(cu.name||cu.username):''});
+  touch(c);saveAll();logAct('Marked disposed: '+ctit(c));
+  toast('Marked disposed: '+ctit(c),'',function(){var x=find(id);if(!x)return;x.st=was;x.hist.pop();touch(x);saveAll();refresh();});
+  refresh();if(S.jbKey)push();
+}
 function unupdSect(title,arr,col){
   if(!arr.length)return '';
   var none=arr.filter(function(c){return !c.nd;}),over=arr.filter(function(c){return c.nd;});

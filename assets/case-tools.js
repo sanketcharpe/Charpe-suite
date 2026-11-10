@@ -163,6 +163,50 @@
       '<button class="btn br" id="ctDelBtn" onclick="ctDelete()" style="margin-top:6px"' + (n ? '' : ' disabled') + '>&#x2715; Delete the ' + n + ' marked entr' + (n === 1 ? 'y' : 'ies') + '</button>';
   }
   window.ctScan = function () { lastScan = groups(); paint(); };
+  /* everything fetched for a duplicate — orders, order sheets / proceedings of each date, MAT day checks,
+     court details — is carried into the main copy; nothing already there is overwritten */
+  function mergeEco(keep, d) {
+    var de = d.eco; if (!de) return 0;
+    var ke = keep.eco = keep.eco || {}, n = 0;
+    if (de.ord) { ke.ord = ke.ord || {}; Object.keys(de.ord).forEach(function (x) { var a = ke.ord[x], b = de.ord[x]; if (!a || (!a.fid && b.fid)) { ke.ord[x] = b; n++; } }); }
+    if (de.hh && de.hh.length) {
+      ke.hh = ke.hh || [];
+      de.hh.forEach(function (h) {
+        var m = ke.hh.filter(function (y) { return (y.d || '') === (h.d || '') && (y.bd || '') === (h.bd || ''); })[0];
+        if (!m) { ke.hh.push(h); n++; } else if (!m.biz && h.biz) { m.biz = h.biz; n++; }
+      });
+      ke.hh.sort(function (a, b) { return String(a.bd || a.d) < String(b.bd || b.d) ? -1 : 1; });
+    }
+    if (de.matDay) { ke.matDay = ke.matDay || {}; Object.keys(de.matDay).forEach(function (x) { if (!ke.matDay[x] || ke.matDay[x] !== 'found' && de.matDay[x] === 'found') ke.matDay[x] = de.matDay[x]; }); }
+    ['status', 'stage', 'judge', 'first', 'reg', 'ctype', 'filing', 'pet', 'res', 'decision', 'disposal', 'next', 'src'].forEach(function (f) { if (!ke[f] && de[f]) ke[f] = de[f]; });
+    if (String(de.at || '') > String(ke.at || '')) ke.at = de.at;
+    return n;
+  }
+  /* duplicates deleted earlier, whose orders or order sheets are not yet in their main copy */
+  function orphans() {
+    var D = C.filter(function (c) { return c.del && c.eco && ((c.eco.hh || []).length || Object.keys(c.eco.ord || {}).length); }), L = live(), out = [];
+    D.forEach(function (d) {
+      var m = L.filter(function (c) {
+        if (d.cnr && c.cnr && d.cnr.toUpperCase() === c.cnr.toUpperCase()) return true;
+        var a = cnKey(d), b = cnKey(c); if (a && a === b && courtKey(c) === courtKey(d)) return true;
+        var t = typeNo(d); return t && t === typeNo(c) && (share(c, d) || courtFam(c) === courtFam(d));
+      }).sort(better)[0];
+      if (!m) return;
+      var ko = (m.eco && m.eco.ord) || {}, kh = (m.eco && m.eco.hh) || [];
+      var miss = Object.keys(d.eco.ord || {}).filter(function (x) { return !ko[x] || (!ko[x].fid && d.eco.ord[x].fid); }).length +
+        (d.eco.hh || []).filter(function (h) { return !kh.some(function (y) { return (y.d || '') === (h.d || '') && (y.bd || '') === (h.bd || ''); }); }).length;
+      if (miss) out.push({ d: d, m: m, miss: miss });
+    });
+    return out;
+  }
+  window.ctRecover = function () {
+    if (!guard('edit')) return;
+    var o = orphans(), n = 0;
+    o.forEach(function (x) { n += mergeEco(x.m, x.d); touch(x.m); });
+    saveAll(); logAct('Orders and order sheets of ' + o.length + ' deleted duplicate(s) carried into their main copies');
+    toast(n + ' order' + (n === 1 ? '' : 's') + ' / order-sheet entr' + (n === 1 ? 'y' : 'ies') + ' carried into ' + o.length + ' main cop' + (o.length === 1 ? 'y' : 'ies') + '.');
+    refresh(); renderCT(); if (S.jbKey && typeof push === 'function') push();
+  };
   window.ctKeep = function (gi, id) {
     var g = lastScan[gi]; g.keep = id; g.drop = g.cases.filter(function (c) { return c.id !== id; }).map(function (c) { return c.id; }); paint();
   };
@@ -179,9 +223,7 @@
       g.drop.forEach(function (id) {
         var d = find(id); if (!d || d.del) return;
         ['court', 'cn', 'cnr', 'jd', 'pl', 'de', 'cl', 'cp', 'cm', 'pd', 'ps', 'nd', 'ns', 'imp'].forEach(function (f) { if (!keep[f] && d[f]) keep[f] = d[f]; });
-        var ke = keep.eco || {}, de = d.eco || {};
-        if (!keep.eco || ((de.hh || []).length > (ke.hh || []).length && !keep.cnr)) { if (d.eco) keep.eco = d.eco; }
-        else if (de.ord) { ke.ord = ke.ord || {}; Object.keys(de.ord).forEach(function (x) { if (!ke.ord[x]) ke.ord[x] = de.ord[x]; }); }
+        mergeEco(keep, d);
         keep.notes = keep.notes || [];
         (d.notes || []).forEach(function (x) { if (!keep.notes.some(function (y) { return y.text === x.text; })) keep.notes.push(x); });
         keep.hist = keep.hist || [];
@@ -211,6 +253,9 @@
       ' <button class="btn bg" id="ctNumBtn" onclick="ctNumber()">' + (numbered ? 'Renumber all cases' : 'Number all cases') + '</button></div></div>' +
       '<div class="ctbox"><h4>&#9776; Duplicate case entries</h4>' +
       '<p>Finds a case entered more than once — same CNR, same court and case number, or the same case number under a differently written court name — and recommends the less updated copies for deletion. Nothing is deleted until you press the red button.</p>' +
-      '<button class="btn bg" onclick="ctScan()">&#128269; Recommend duplicates to delete</button><div id="ctDup"></div></div>';
+      '<button class="btn bg" onclick="ctScan()">&#128269; Recommend duplicates to delete</button><div id="ctDup"></div>' +
+      (function () { var o = orphans(); return o.length ? '<div class="dupg" style="margin-top:8px"><b>' + o.length + ' duplicate' + (o.length === 1 ? '' : 's') + ' deleted earlier still hold orders or order sheets</b> not in the main copy: ' +
+        o.slice(0, 8).map(function (x) { return he(x.d.cn || ctit(x.d)) + ' (' + x.miss + ')'; }).join(', ') + (o.length > 8 ? '…' : '') +
+        '<br><button class="btn bg" onclick="ctRecover()" style="margin-top:6px">Bring them into the main copies</button></div>' : ''; })() + '</div>';
   };
 })();
