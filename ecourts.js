@@ -421,18 +421,26 @@ window.ecoClose = function () {
 window.ecoOpenBatch = function (ids) {
   if (!cu) return;
   /* a batch never includes disposed cases; one case opened on its own can still be fetched (Nov 2026) */
-  if (ids && ids.length > 1) ids = ids.filter(function (id) { var x = find(id); return x && isOpen(x); });
-  if (!ids || !ids.length) { toast('Nothing to fetch — disposed cases are left out.'); return; }
+  if (ids && ids.length > 1) {
+    ids = ids.filter(function (id) { var x = find(id); return x && isOpen(x); });
+    if (!ids.length) { toast('Nothing to fetch — disposed cases are left out.'); return; }
+  }
   var c = cfg();
   if (!c.url || !c.tok) {
     if (can('set')) { go('sett'); setTimeout(function () { var b = document.getElementById('tbEcs'); if (b) b.click(); }, 50); }
     toast('First set up the eCourts backend: Settings → Official eCourts.', 'err'); return;
   }
   if (ids && ids.length) return loadCaptchas(ids);
-  var due = dueCases(), all = LC().filter(function (x) { return ecoOk(x) && isOpen(x); });
+  /* two lists (Nov 2026): "Unupdated" = subordinate courts only; "Unfetched" = High Court (SC, CAT, MAT need no CAPTCHA) */
+  var up = function (x) { return typeof isUpper === 'function' && isUpper(x); };
+  var grp = ECO.grp || 'sub', inG = function (x) { return grp === 'all' || (grp === 'hc' ? up(x) : !up(x)); };
+  var dueAll = dueCases(), due = dueAll.filter(inG), all = LC().filter(function (x) { return ecoOk(x) && isOpen(x) && inG(x); });
+  var nSub = dueAll.filter(function (x) { return !up(x); }).length, nHc = dueAll.length - nSub;
   ECO.pick = {}; due.forEach(function (x) { ECO.pick[x.id] = 1; });
+  var seg = function (g, t) { return '<button class="btn ' + (grp === g ? 'bg' : 'bo') + '" onclick="ecoOpenGroup(\'' + g + '\')">' + t + '</button>'; };
   shell('&#9878; eCourts &mdash; fetch from the official site',
-    '<div class="note">Ticked below: open cases whose next date is <b>' + (+(c.days || 0) ? 'within ' + c.days + ' day(s) or earlier' : 'today or earlier') +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + seg('sub', 'Unupdated &mdash; subordinate courts (' + nSub + ')') + seg('hc', 'Unfetched &mdash; High Court (' + nHc + ')') + seg('all', 'Both') + '</div>' +
+    '<div class="note">Ticked below' + (grp === 'sub' ? ' (subordinate courts only)' : grp === 'hc' ? ' (High Court only)' : '') + ': open cases whose next date is <b>' + (+(c.days || 0) ? 'within ' + c.days + ' day(s) or earlier' : 'today or earlier') +
     '</b>, cases with no next date, and cases where the court had not updated last time. ' +
     'District courts come from services.ecourts.gov.in; Bombay High Court matters (CNR beginning HCBM) from hcservices.ecourts.gov.in. Add any other case with the search box.</div>' +
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;padding:8px;background:#f3f6fb;border:1px solid #dbe3f0;border-radius:6px">' +
@@ -447,6 +455,7 @@ window.ecoOpenBatch = function (ids) {
   ECO.allCases = all; ECO.dueIds = due.map(function (x) { return x.id; });
   ecoPickList();
 };
+window.ecoOpenGroup = function (g) { ECO.grp = g; ecoOpenBatch(); };
 window.ecoPickList = function () {
   var q = ((document.getElementById('ecoq') || {}).value || '').toLowerCase().trim();
   var list = q ? ECO.allCases.filter(function (c) { return (ctit(c) + ' ' + (c.cn || '') + ' ' + (c.court || '') + ' ' + c.cnr).toLowerCase().indexOf(q) >= 0; }).slice(0, 60)
@@ -463,7 +472,8 @@ window.ecoPickList = function () {
 /* the courts that have open cases, for "All cases of one court" */
 function courtKey(c) { return String(c.court || '').replace(/\s+/g, ' ').trim() || '(court not given)'; }
 function courtOpts() {
-  var m = {}; LC().forEach(function (c) { if (!isOpen(c)) return; var k = courtKey(c); m[k] = m[k] || { n: 0, no: 0 }; if (ecoOk(c)) m[k].n++; else m[k].no++; });
+  var up = function (x) { return typeof isUpper === 'function' && isUpper(x); }, grp = ECO.grp || 'sub';
+  var m = {}; LC().forEach(function (c) { if (!isOpen(c)) return; if (grp !== 'all' && (grp === 'hc') !== up(c)) return; var k = courtKey(c); m[k] = m[k] || { n: 0, no: 0 }; if (ecoOk(c)) m[k].n++; else m[k].no++; });
   var ks = Object.keys(m).sort(function (a, b) { return m[b].n - m[a].n || a.localeCompare(b); });
   return '<option value="">— pick a court to list all its open cases —</option>' + ks.map(function (k) {
     return '<option value="' + he(k) + '"' + (m[k].n ? '' : ' disabled') + '>' + he(k) + ' — ' + m[k].n + ' case' + (m[k].n === 1 ? '' : 's') + (m[k].no ? ' (+' + m[k].no + ' without CNR)' : '') + '</option>';
@@ -476,7 +486,8 @@ window.ecoCourt = function (k) {
   var ok = of.filter(function (c) { return ecoOk(c) && (!due || dueSet[c.id]); }), no = of.filter(function (c) { return !ecoOk(c); });
   ok.sort(function (a, b) { return String(a.nd || '9').localeCompare(String(b.nd || '9')) || ctit(a).localeCompare(ctit(b)); });
   ECO.pick = {}; ok.forEach(function (c) { ECO.pick[c.id] = 1; });
-  ECO.allCases = LC().filter(function (x) { return ecoOk(x) && isOpen(x); });
+  var up = function (x) { return typeof isUpper === 'function' && isUpper(x); }, grp = ECO.grp || 'sub';
+  ECO.allCases = LC().filter(function (x) { return ecoOk(x) && isOpen(x) && (grp === 'all' || (grp === 'hc' ? up(x) : !up(x)) || courtKey(x) === k); });
   ECO.courtNoCnr = no;
   var q = document.getElementById('ecoq'); if (q) q.value = '';
   if (note) note.innerHTML = '<div class="note" style="margin:0 0 6px"><b>' + ok.length + '</b> case' + (ok.length === 1 ? '' : 's') + ' of <b>' + he(k) + '</b> ticked' +

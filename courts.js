@@ -73,7 +73,13 @@ function why(c) {
   if (noBiz) r.push(noBiz + ' order sheet' + (noBiz === 1 ? '' : 's') + ' still to download');
   return r;
 }
-function behind() { return LC().filter(function (c) { return isOpen(c) && why(c).length; }); }
+/* the Sync Centre shows one list at a time (Nov 2026): subordinate courts ("Unupdated"), or the High Court,
+   Supreme Court, CAT and MAT ("Unfetched"), or both */
+var SCG = 'sub';
+function upper(c) { return typeof isUpper === 'function' && isUpper(c); }
+function inGrp(c) { return SCG === 'all' || (SCG === 'hc' ? upper(c) : !upper(c)); }
+function behind() { return LC().filter(function (c) { return isOpen(c) && why(c).length && inGrp(c); }); }
+window.scGrp = function (g) { SCG = g; PICK = {}; scBehind(); };
 
 var PICK = {};
 window.scBehind = function () {
@@ -83,7 +89,10 @@ window.scBehind = function () {
   var q = ((document.getElementById('scq') || {}).value || '').toLowerCase();
   var vis = withC.filter(function (c) { return !q || (ctit(c) + ' ' + c.court + ' ' + c.cn + ' ' + cnr(c)).toLowerCase().indexOf(q) >= 0; });
   var n = withC.filter(function (c) { return PICK[c.id]; }).length;
-  el.innerHTML = '<p style="font-size:11px;color:#555;margin-bottom:8px">Open cases that are not up to date: next date passed or missing, the court not updated last time, ' +
+  var allB = LC().filter(function (c) { return isOpen(c) && why(c).length; }), nS = allB.filter(function (c) { return !upper(c); }).length;
+  var seg = function (g, t) { return '<button class="btn ' + (SCG === g ? 'bg' : 'bo') + '" onclick="scGrp(\'' + g + '\')">' + t + '</button>'; };
+  el.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + seg('sub', 'Unupdated &mdash; subordinate courts (' + nS + ')') + seg('hc', 'Unfetched &mdash; High Court, SC, CAT, MAT (' + (allB.length - nS) + ')') + seg('all', 'Both') + '</div>' +
+    '<p style="font-size:11px;color:#555;margin-bottom:8px">Open cases that are not up to date: next date passed or missing, the court not updated last time, ' +
     'or orders / order sheets still to download. Tick the ones to fetch and press <b>Show CAPTCHAs</b> &mdash; up to 60 at a time (type each CAPTCHA and press Enter to jump to the next; the pictures stay valid about 20 minutes).</p>' +
     '<div class="srow"><input class="sinp" id="scq" placeholder="Search within these cases…" value="' + he(q) + '" oninput="scBehind()">' +
     '<button class="btn bg" onclick="scLoad()">&#9878; Show CAPTCHAs for ' + Math.min(n, 60) + ' ticked</button>' +
