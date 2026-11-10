@@ -862,7 +862,8 @@ window.trDcTypes = function () {
 };
 function dcPaint(msg, rows) {
   var c = find(DCQ.id), o = function (v, t, s) { return '<option value="' + he(v) + '"' + (s ? ' selected' : '') + '>' + he(t) + '</option>'; };
-  scBox('<div style="font-weight:700;font-size:14px;margin-bottom:4px">eCourts &mdash; find this case\'s CNR</div>' +
+  var Q = window.CNRQ;
+  scBox('<div style="font-weight:700;font-size:14px;margin-bottom:4px">eCourts &mdash; find this case\'s CNR' + (Q ? ' <span class="mini" style="font-weight:400">(case ' + (Q.i + 1) + ' of ' + Q.ids.length + (Q.found.length ? ' · ' + Q.found.length + ' found' : '') + ')</span>' : '') + '</div>' +
     (c ? '<div class="mini" style="margin-bottom:8px">' + he(ctit(c)) + ' &middot; ' + he(c.court || '') + ' &middot; ' + he(c.cn || '(no case number)') + '</div>' : '') +
     '<div class="mini" style="margin-bottom:8px">Only needed once: the CNR is saved on the case, and Official eCourts / Update Status then fetch it like any other case.</div>' +
     '<div style="margin-bottom:6px"><select id="dcqE" class="sinp" style="width:100%" onchange="trDcTypes()">' + (DCQ.est.length ? o('', '— court / establishment on eCourts —', !DCQ.estv) + DCQ.est.map(function (x) { return o(x.v, x.t, x.v === DCQ.estv); }).join('') : o('', '(loading the courts of ' + DCQ.district + '…)', true)) + '</select></div>' +
@@ -873,7 +874,7 @@ function dcPaint(msg, rows) {
       '<button class="btn bg" onclick="trDcGo()">Search</button><a href="#" class="mini" onclick="trDcFind(DCQ.id);return false">new picture</a></div>' : '') +
     '<div id="dcqM" class="mini" style="min-height:16px">' + (msg || '') + '</div>' +
     (rows && rows.length ? rows.map(function (r, i) { return '<div style="border-top:1px solid #eee;padding:5px 0"><b>' + he(r.no || '') + '</b> <span class="mini">' + he(r.cnr) + ' &middot; ' + he(r.court || '') + '</span><br><span class="mini">' + he(r.pet || '') + (r.res ? ' vs. ' + he(r.res) : '') + '</span> <button class="btn bg" style="font-size:10px;padding:2px 8px" onclick="trDcPick(' + i + ')">This is my case</button></div>'; }).join('') : '') +
-    '<div style="text-align:right;margin-top:8px"><button class="btn bo" onclick="trScClose()">Close</button></div>');
+    '<div style="text-align:right;margin-top:8px">' + (Q ? '<button class="btn bo" onclick="cnrQNext()" title="Leave this case for now and go to the next">Skip this case</button> <button class="btn bo" onclick="cnrQEnd()">Stop here</button>' : '<button class="btn bo" onclick="trScClose()">Close</button>') + '</div>');
   DCQ.rows = rows || DCQ.rows;
   var inp = document.getElementById('dcqC'); if (inp && DCQ.types.length) inp.focus();
 }
@@ -903,8 +904,32 @@ window.trDcPick = function (i) {
   c.cnr = r.cnr; touch(c); saveAll(); trScClose();
   if (typeof logAct === 'function') logAct('eCourts CNR ' + r.cnr + ' found for ' + ctit(c));
   try { refresh(); } catch (e) {}
+  if (window.CNRQ) { CNRQ.found.push(c.id); return cnrQNext(); }
+  var after = window.DC_AFTER; window.DC_AFTER = null;
+  if (after && after.id === c.id) { toast('CNR ' + r.cnr + ' saved. Now the case itself: one more CAPTCHA.'); return after.fn(); }
   toast('CNR ' + r.cnr + ' saved. Now type one more CAPTCHA to fetch the case.');
   if (typeof ecoOpenBatch === 'function') ecoOpenBatch([c.id]);
+};
+/* find the CNR of several district-court cases, one after another (one CAPTCHA each; the court, case
+   type, number and year are filled in from the case); at the end the cases found are fetched */
+window.cnrQueue = function (ids) {
+  ids = (ids || []).filter(function (id) { var c = find(id); return c && isOpen(c) && !(typeof ecoOk === 'function' && ecoOk(c)) && !isHC(c) && !kind(c); });
+  if (!ids.length) { toast('No district-court case without a CNR here.'); return; }
+  window.CNRQ = { ids: ids, i: 0, found: [] };
+  trDcFind(ids[0]);
+};
+window.cnrQNext = function () {
+  var Q = window.CNRQ; if (!Q) return;
+  Q.i++;
+  if (Q.i >= Q.ids.length) return cnrQEnd();
+  trDcFind(Q.ids[Q.i]);
+};
+window.cnrQEnd = function () {
+  var Q = window.CNRQ; window.CNRQ = null; trScClose();
+  if (!Q) return;
+  if (!Q.found.length) { toast('No CNR was found in this run.'); return; }
+  toast(Q.found.length + ' CNR' + (Q.found.length === 1 ? '' : 's') + ' found and saved. Now the cases themselves: one CAPTCHA each.');
+  if (typeof ecoOpenBatch === 'function') ecoOpenBatch(Q.found.slice(0, 60));
 };
 
 /* ---------------- a button on each case ---------------- */

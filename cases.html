@@ -1418,10 +1418,12 @@ function renderUnupd(){
     return true;
   });
   if(!all.length){el.innerHTML='<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing pending &mdash; every open matter has a future date on record.</span></div>';return;}
-  var nC=all.filter(function(c){return typeof ecoOk==='function'&&ecoOk(c);}).length;
+  var nC=all.filter(function(c){return typeof ecoOk==='function'&&ecoOk(c);}).length,nN=all.length-nC;
   window.__unupdRow=true;
   try{
-  el.innerHTML='<div class="fetchbar"><button class="btn bg" onclick="fetchUnupd()">&#9878; Fetch all these from eCourts &mdash; one CAPTCHA each</button><span>'+nC+' of '+all.length+' have a CNR and can be fetched; up to 60 CAPTCHAs on one screen. Or press <b>&#9878; Fetch</b> on any one case to fetch just that.</span></div>'+
+  el.innerHTML='<div class="fetchbar"><button class="btn bg" onclick="fetchUnupd()">&#9878; Fetch all these from eCourts &mdash; one CAPTCHA each</button>'+
+    (nN?'<button class="btn bbl" onclick="findCnrs()" title="Cases with no CNR: each is found on eCourts by its number (one CAPTCHA each), its CNR saved, and then all of them fetched">&#9878; Find the CNR of the '+nN+' without one</button>':'')+
+    '<span>'+nC+' of '+all.length+' have a CNR and can be fetched now'+(nN?'; '+nN+' need their CNR found first (the court, case type, number and year are filled in for you — just type each CAPTCHA)':'')+'. Or press <b>&#9878; Fetch</b> on any one case.</span></div>'+
     unupdSect('Subordinate courts, industrial &amp; labour courts and other tribunals',all,'#1a2744');
   }finally{window.__unupdRow=false;}
 }
@@ -1445,7 +1447,8 @@ function renderUnfetch(){
 }
 /* ⚖ Fetch on one case of Unupdated / Unfetched: the CAPTCHA box opens under that case; type it, press Enter */
 function rowFetch(id,btn){
-  var row=(btn&&btn.closest('.crow'))||document.getElementById('cr-'+id),c=find(id);if(!row||!c)return;
+  var vis=[].slice.call(document.querySelectorAll('[id="cr-'+id+'"]')).filter(function(x){return x.offsetParent;})[0];
+  var row=(btn&&btn.closest('.crow'))||vis||document.getElementById('cr-'+id),c=find(id);if(!row||!c)return;
   var box=row.nextSibling&&row.nextSibling.id==='rf-'+id?row.nextSibling:null;
   if(box){box.remove();return;}
   var old=document.getElementById('rf-'+id);if(old)old.remove();
@@ -1453,9 +1456,21 @@ function rowFetch(id,btn){
   box.onclick=function(e){e.stopPropagation();};
   row.parentNode.insertBefore(box,row.nextSibling);
   if(typeof window.cmUpdateCase!=='function'){box.innerHTML='<div class="note">Reload the page once and try again.</div>';return;}
+  var go=function(){cmUpdateCase(id,box).then(function(){setTimeout(function(){refresh();},1800);}).catch(function(){});};
   if(!(window.trKind&&trKind(c))&&!(typeof ecoOk==='function'&&ecoOk(c))){
-    box.innerHTML='<div class="note" style="color:#a35b00">This case has no CNR number, so it cannot be fetched yet. '+(can('edit')?'<button class="btn bo" onclick="editC(\''+id+'\')">Add the CNR</button> or press <b>&#9878; Find on eCourts</b> on the case.':'')+'</div>';return;}
-  cmUpdateCase(id,box).then(function(){setTimeout(function(){refresh();},1800);}).catch(function(){});
+    /* no CNR yet: find it first (one CAPTCHA, through Charpe Helper), then fetch the case */
+    if(isHC(c)&&!/supreme/i.test(c.court||'')&&window.trHcFind){box.remove();trHcFind(id);return;}
+    if(window.trDcFind){
+      box.innerHTML='<div class="note">This case has no CNR yet. First it is found on eCourts by its number (the box that opens: check the court and case type, type the CAPTCHA, press Enter); then the case itself is fetched here.</div>';
+      window.DC_AFTER={id:id,fn:function(){setTimeout(function(){rowFetch(id);},150);}};
+      trDcFind(id);return;}
+    box.innerHTML='<div class="note" style="color:#a35b00">This case has no CNR number. '+(can('edit')?'<button class="btn bo" onclick="editC(\''+id+'\')">Add the CNR</button>':'')+'</div>';return;}
+  go();
+}
+/* ⚖ Find the CNRs: every case of this list without a CNR, one after another */
+function findCnrs(list){
+  var ids=(list||unupdated()).filter(function(c){return !(typeof ecoOk==='function'&&ecoOk(c));}).map(function(c){return c.id;});
+  if(window.cnrQueue)cnrQueue(ids);
 }
 /* Unupdated → ⚖ Fetch these from eCourts: only these subordinate-court cases, one CAPTCHA each */
 function fetchUnupd(){
