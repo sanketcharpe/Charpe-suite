@@ -1349,6 +1349,7 @@ function renderDash(){
   document.getElementById('casesacts').innerHTML=(can('edit')?'<button class="btn bg" onclick="openAdd(\'\')">+ Add case</button>':'')+
     (can('exp')?'<button class="btn bo" onclick="expCSV()">&#8595; CSV</button>':'');
   document.getElementById('unupdacts').innerHTML=
+    '<button class="btn bg" onclick="fetchUnupd()" title="Fetch the status, next date and orders of these subordinate-court cases from eCourts: one CAPTCHA each, up to 60 on one screen">&#9878; Fetch these from eCourts</button>'+
     (can('edit')?'<button class="btn bbl" onclick="openDateImport()">&#8681; Update dates from backup file</button>':'')+
     boardUnupdActs();
   bkReminder();
@@ -1437,6 +1438,13 @@ function renderUnfetch(){
                unupdSect('Central Administrative Tribunal (CAT)',all.filter(function(c){return kindOf(c)==='cat';}),'#1a5276')+
                unupdSect('Maharashtra Administrative Tribunal (MAT)',all.filter(function(c){return kindOf(c)==='mat';}),'#117864');
   }finally{window.__unupdRow=false;}
+}
+/* Unupdated → ⚖ Fetch these from eCourts: only these subordinate-court cases, one CAPTCHA each */
+function fetchUnupd(){
+  if(typeof window.ecoOpenGroup==='function'){ecoOpenGroup('sub');return;}
+  var ids=unupdated().filter(function(c){return typeof ecoOk==='function'&&ecoOk(c);}).map(function(c){return c.id;});
+  if(!ids.length){toast('None of these has a CNR number yet — add it in Edit (or press ⚖ Find on eCourts on the case).','err');return;}
+  ecoOpenBatch(ids.slice(0,60));
 }
 function fetchUnfetched(){
   var all=unfetched(),hc=all.filter(function(c){return !(window.trKind&&trKind(c))&&typeof ecoOk==='function'&&ecoOk(c);}).map(function(c){return c.id;}),
