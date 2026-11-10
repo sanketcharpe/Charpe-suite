@@ -5788,6 +5788,7 @@ function sidePanel(){
 function openLetter(l, msg){
   L = l; resetUndo(); editorMount(); setDirty(false); clearWip();
   A.go("letter"); window.scrollTo(0, 0);
+  (window.CBL && window.CBL.hooks || []).forEach(function(f){ try{ f(L); }catch(e){} });
   if(msg) A.toast(msg);
 }
 function okToLeave(){
@@ -5799,7 +5800,10 @@ function letterForInvoice(v){
   openLetter(invoiceLetter(v), "Letter started for " + v.number + " — type or paste the text");
   setTimeout(function(){ focusBody(); }, 60);
 }
-window.CBL = { fromInvoice:letterForInvoice,
+window.CBL = { fromInvoice:letterForInvoice, hooks:[],
+  /* Enclose orders (Nov 2026) */
+  current: function(){ if(!L) return null; readEditor(); return L; },
+  setEnclosures: function(list, att){ if(!L) return; readEditor(); L.encl = list; L.att = att; L.enclAuto = false; editorMount(); setDirty(true); },
   /* Auto letter (Nov 2026): a letter written from dictation, laid out as if pasted */
   openFromText: function(kind, text, v, msg){
     if(!okToLeave()) return false;
@@ -6084,7 +6088,7 @@ function letterAction(l, what){
     window.CBshareCtx = { kind:"letter", billTo:(lv && lv.billTo) || l.billTo || l.to || "", text:l.text || "", html:l.html || "", number:l.no || "" };
     shareFlow(title, async function(sig){
       var doc = await letterPdf(l, sig);
-      return { blob:doc.output("blob"), name:letterName(l, "pdf", sig) };
+      return { blob:await withEncl(l, doc.output("blob")), name:letterName(l, "pdf", sig) };
     }, "Letter " + (l.no ? "No. " + l.no + " " : "") + "dated " + A.letterDate(l.date) + "\n" + gist(l) + "\n\n" + db().settings.firm,
        "Letter " + (l.no || "") + " — " + gist(l).replace(/^\s*(subject|ref\.?)\s*:\s*/i, "").slice(0, 90));
     return;
@@ -6092,11 +6096,17 @@ function letterAction(l, what){
   askSignature((what === "word" ? "Get Word — " : "Get PDF — ") + title, async function(sig){
     var w = busy(what === "word" ? "Making the Word file…" : "Making the PDF…");
     try{
-      if(what === "word"){ var got = await letterWord(l, sig); dl(got.name, got.blob); A.toast("Downloaded " + got.name); }
-      else { var doc = await letterPdf(l, sig); var name = letterName(l, "pdf", sig); dl(name, doc.output("blob")); A.toast("Downloaded " + name); }
+      if(what === "word"){ if(l.att && l.att.length) A.toast("The enclosed orders go only with the PDF (Get PDF / Share)."); var got = await letterWord(l, sig); dl(got.name, got.blob); A.toast("Downloaded " + got.name); }
+      else { var doc = await letterPdf(l, sig); var name = letterName(l, "pdf", sig); dl(name, await withEncl(l, doc.output("blob"))); A.toast("Downloaded " + name + (l.att && l.att.length ? " with " + l.att.length + " enclosed order" + (l.att.length === 1 ? "" : "s") : "")); }
     }catch(e){ console.error(e); A.toast("Could not make the file: " + (e.message || e)); }
     w.close();
   });
+}
+/* orders ticked under "Enclose orders" are added after the letter, in the same PDF */
+async function withEncl(l, blob){
+  if(!(l && l.att && l.att.length) || !window.CBenclose) return blob;
+  try{ var r = await window.CBenclose(blob, l.att); if(r.miss && r.miss.length) A.toast(r.miss.length + " enclosed order(s) could not be added — open the Case Manager once and try again"); return r.blob; }
+  catch(e){ console.error(e); A.toast("The enclosed orders could not be added: " + (e.message || e)); return blob; }
 }
 function currentForOutput(){
   readEditor();
@@ -6336,6 +6346,7 @@ window.CBm5 = { parseLetter:parseLetter, buildFromParsed:buildFromParsed, letter
 </script>
 <script src="stickers.js"></script>
 <script src="billing-extra.js"></script>
+<script src="assets/dd.js"></script>
 <script src="assets/billing-ai.js"></script>
 <script src="assets/shim.js"></script>
 </body>

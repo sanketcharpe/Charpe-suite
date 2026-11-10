@@ -525,6 +525,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
         <button class="tbt" id="tbEcs" onclick="stab(this,'tecs');renderECS()">Official eCourts</button>
         <button class="tbt" onclick="stab(this,'tbin')">Deleted items</button>
         <button class="tbt" onclick="stab(this,'tlog')">Activity log</button>
+        <button class="tbt" id="tbCt" onclick="stab(this,'tct');if(typeof renderCT==='function')renderCT()">Case numbers &amp; duplicates</button>
       </div>
       <div id="tbk" class="tp on"></div>
       <div id="tdt" class="tp"></div>
@@ -534,6 +535,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
       <div id="tecs" class="tp"></div>
       <div id="tbin" class="tp"></div>
       <div id="tlog" class="tp"></div>
+      <div id="tct" class="tp"></div>
     </div>
   </div>
 </div>
@@ -884,7 +886,8 @@ function normCase0(c){
     mod:c.mod||'',
     del:c.del||'',
     delBy:c.delBy||'',
-    imp:c.imp||''
+    imp:c.imp||'',
+    sn:c.sn||0
   };
 }
 function normTask(t){
@@ -1046,6 +1049,9 @@ function stab(btn,id){
   btn.closest('.cb').querySelectorAll('.tp').forEach(function(p){p.classList.remove('on');});
   btn.classList.add('on');document.getElementById(id).classList.add('on');
 }
+/* the office's own serial number of a case (Settings › Case tools), shown only when switched on */
+function snH(c){return (S&&S.snOn&&c&&c.sn)?'<span class="snb" title="Case No. '+c.sn+' in the office register">'+c.sn+'</span> ':'';}
+function snQ(c){return (S&&S.snOn&&c.sn)?' #'+c.sn+' ':'';}
 function ctit(c){var pl=c.pl||'',de=c.de||'';if(pl&&de)return pl+' vs. '+de;return pl||de||c.court||'Unnamed matter';}
 
 /* ===========================================================
@@ -1138,7 +1144,7 @@ function bldRow(c,ctxDate){
   return '<div class="crow" id="cr-'+c.id+'">'+
     '<div class="crow-head" onclick="togRow(\''+c.id+'\')">'+
       '<div style="flex:1">'+
-        '<div class="crow-title"><span style="color:'+gm.c+';font-style:italic;text-decoration:underline;font-weight:'+(gm.bold?'800':'700')+';font-size:12px">'+he(ctit(c))+'</span>'+(tasks.length?' <span class="caselink">'+tasks.length+' task'+(tasks.length>1?'s':'')+'</span>':'')+'</div>'+
+        '<div class="crow-title">'+snH(c)+'<span style="color:'+gm.c+';font-style:italic;text-decoration:underline;font-weight:'+(gm.bold?'800':'700')+';font-size:12px">'+he(ctit(c))+'</span>'+(tasks.length?' <span class="caselink">'+tasks.length+' task'+(tasks.length>1?'s':'')+'</span>':'')+'</div>'+
         '<div class="crow-sub">'+
           (c.pd?'<b>Prev:</b> '+fd(c.pd)+(c.ps?' ['+he(c.ps)+']':'')+' &nbsp;':'')+
           '<b>Court:</b> '+he(c.court||'—')+(c.cn?' &middot; '+he(c.cn):'')+(c.jd?' &middot; <i>'+he(c.jd)+'</i>':'')+
@@ -1155,7 +1161,7 @@ function bldRow(c,ctxDate){
         '<div class="df"><label>Previous date</label><span>'+fd(c.pd)+'</span></div>'+
         '<div class="df"><label>Previous stage</label><span>'+he(c.ps||'—')+'</span></div>'+
         '<div class="df"><label>Court</label><span>'+he(c.court||'—')+'</span></div>'+
-        '<div class="df"><label>Case no.</label><span>'+he(c.cn||'—')+'</span></div>'+
+        '<div class="df"><label>Case no.</label><span>'+he(c.cn||'—')+'</span></div>'+(S.snOn&&c.sn?'<div class="df"><label>Office serial no.</label><span>'+c.sn+'</span></div>':'')+
         '<div class="df"><label>Judge</label><span>'+he(c.jd||'—')+'</span></div>'+
         '<div class="df"><label>Plaintiff / Petitioner</label><span>'+he(c.pl||'—')+'</span></div>'+
         '<div class="df"><label>Defendant / Respondent</label><span>'+he(c.de||'—')+'</span></div>'+
@@ -1193,9 +1199,10 @@ function selDay(iso){
    =========================================================== */
 function boardActs(iso,pfx){
   return fontCtl()+
+         '<details class="dd"><summary class="btn bg">&#128424; Print / Download <span class="ddc">&#9662;</span></summary><div class="ddm">'+
          '<button class="btn bg" onclick="prtBoard(\''+iso+'\',\'print\')">&#128424; Print board</button>'+
          '<button class="btn bbl" onclick="prtBoard(\''+iso+'\',\'pdf\')">&#128196; Download PDF</button>'+
-         '<button class="btn bgr" onclick="prtBoard(\''+iso+'\',\'word\')">&#128209; Download Word</button>'+
+         '<button class="btn bgr" onclick="prtBoard(\''+iso+'\',\'word\')">&#128209; Download Word</button></div></details>'+
          (can('edit')?'<button class="btn bor" onclick="adjSel(\''+iso+'\',\''+pfx+'\')">&#8631; Adjourn selected</button>':'');
 }
 
@@ -1239,7 +1246,7 @@ function boardTable(iso,pfx){
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+
         '<br><input class="jinp'+(j?' set':'')+'" value="'+he(j)+'" placeholder="Judge — type to add" '+
         'style="color:'+g.c+'" onclick="event.stopPropagation()" onchange="setJudge(\''+c.id+'\',\''+iso+'\',this.value)"></td>'+
-      '<td class="par"'+sty+'>'+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+
+      '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+
         (c.imp&&pfx!=='dsh'?'<div style="font-size:11px;color:#8a4b00;font-style:normal;text-decoration:none;font-weight:600">&#9733; '+he(c.imp)+'</div>':'')+'</td>'+
       '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
       '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini" style="color:'+g.c+';opacity:.8">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
@@ -1247,9 +1254,10 @@ function boardTable(iso,pfx){
       '<td'+sty+'>'+he(ln)+'</td>'+
       '<td class="act">'+
         '<button class="btn bg" onclick="event.stopPropagation();openUpd(\''+c.id+'\')" title="Post the next date">Post</button>'+
-        '<button class="btn bo" onclick="event.stopPropagation();jumpCase(\''+c.id+'\')" title="Open the full case">Open</button>'+
+        '<details class="dd rowdd" onclick="event.stopPropagation()"><summary class="btn bo" title="More for this case">&#8943;</summary><div class="ddm r">'+
+        '<button class="btn bo" onclick="event.stopPropagation();jumpCase(\''+c.id+'\')" title="Open the full case">&#128194; Open the case</button>'+
         (can('del')?'<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')" title="Delete this case — one click, revivable from the Deleted tab">&#x2715; Delete</button>':'')+
-      '</td>'+
+      '</div></details></td>'+
       '</tr>'+
       (pfx==='dsh'&&can('edit')?'<tr class="qprow"><td colspan="'+ncols+'"><div class="qp">'+
         '<b>Next date</b><input class="qpi qpd" id="qpd_'+c.id+'" placeholder="dd/mm/yyyy" maxlength="10" oninput="qpDay(\''+c.id+'\')" onkeydown="if(event.key===\'Enter\')qpSave(\''+c.id+'\',\''+iso+'\')">'+
@@ -1347,7 +1355,7 @@ function renderC(){
   var cf=document.getElementById('cfilter').value||'';
   var sf=document.getElementById('sfilter').value;
   var f=LC().filter(function(c){
-    var hay=[ctit(c),c.court,c.cn,c.cl,c.jd,c.ns,c.ps,c.cp,c.cm,c.pl,c.de,
+    var hay=[snQ(c),ctit(c),c.court,c.cn,c.cl,c.jd,c.ns,c.ps,c.cp,c.cm,c.pl,c.de,
       (c.notes||[]).map(function(n){return n.text;}).join(' ')].join(' ').toLowerCase();
     if(q&&hay.indexOf(q)<0)return false;
     if(cf&&c.court!==cf)return false;
@@ -1376,7 +1384,7 @@ function renderUnupd(){
   var q=((document.getElementById('usq')||{}).value||'').toLowerCase();
   var grp=(document.getElementById('ufilter')||{}).value||'';
   var all=unupdated().filter(function(c){
-    if(q){var hay=[ctit(c),c.court,c.cn,c.cl,c.jd].join(' ').toLowerCase();if(hay.indexOf(q)<0)return false;}
+    if(q){var hay=[snQ(c),ctit(c),c.court,c.cn,c.cl,c.jd].join(' ').toLowerCase();if(hay.indexOf(q)<0)return false;}
     if(grp==='over'&&!c.nd)return false;
     if(grp==='none'&&c.nd)return false;
     return true;
@@ -1460,6 +1468,7 @@ function saveCase(){
     var nc=normCase({});Object.assign(nc,d);
     nc.added=td();nc.addedBy=cu?cu.name:'';touch(nc);
     if(nt)nc.notes.push({text:nt,date:td(),by:cu?cu.name:''});
+    if(S.snOn&&typeof snNext==='function')nc.sn=snNext();
     C.push(nc);logAct('Added case '+ctit(nc));toast('Case added.');
   }
   saveAll();closeM('mcase');refresh();if(S.jbKey)push();
@@ -1990,7 +1999,7 @@ function boardRowsHTML(iso){
     h+='<tr class="'+(x.g==='hc'||x.g==='sc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
       '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(j?'<br><span class="mini">Judge: '+he(j)+'</span>':'<br><span class="mini">Judge: ______________</span>')+'</td>'+
-      '<td class="par"'+sty+'>'+he(ctit(c))+'</td>'+
+      '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+'</td>'+
       '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
       '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
       '<td'+sty+'>'+he(c.cl||'')+'</td>'+
@@ -2140,7 +2149,7 @@ function listTable(arr){
     h+='<tr class="'+(gk==='hc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
       '<td'+sty+'>'+fd(c.pd)+(c.ps?'<br><span class="mini">'+he(c.ps)+'</span>':'')+'</td>'+
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(c.jd?'<br><span class="mini">Judge: '+he(c.jd)+'</span>':'')+'</td>'+
-      '<td class="par"'+sty+'>'+he(ctit(c))+'</td>'+
+      '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+'</td>'+
       '<td'+sty+'>'+fd(c.nd)+(c.ns?'<br><span class="mini">'+he(c.ns)+'</span>':'')+'</td>'+
       '<td'+sty+'>'+he(c.cl||'')+'</td>'+
       '<td'+sty+'>'+he(STL[c.st]||'Active')+'</td>'+
@@ -2249,7 +2258,7 @@ function showRangeReport(){
 /* ===========================================================
    SETTINGS
    =========================================================== */
-function renderSett(){renderBT();renderDT();renderUT();renderFT();renderST();renderBin();renderLog();if(typeof renderECS==='function')renderECS();}
+function renderSett(){renderBT();renderDT();renderUT();renderFT();renderST();renderBin();renderLog();if(typeof renderECS==='function')renderECS();if(typeof renderCT==='function')renderCT();}
 function renderBT(){
   document.getElementById('tbk').innerHTML=
     '<div style="background:#eafaf1;border:1px solid #b0e8c0;border-radius:6px;padding:12px;margin-bottom:10px">'+
@@ -3087,13 +3096,13 @@ function qsRun(){
   qsSel=0;
   qsHits=LC().filter(function(c){
     if(!q)return false;
-    return [ctit(c),c.court,c.cn,c.cl,c.jd].join(' ').toLowerCase().indexOf(q)>=0;
+    return [snQ(c),ctit(c),c.court,c.cn,c.cl,c.jd].join(' ').toLowerCase().indexOf(q)>=0;
   }).slice(0,12);
   var el=document.getElementById('qsres');
   if(!q){el.innerHTML='<div class="qsitem" style="color:#888">Start typing to find a matter&hellip;</div>';return;}
   el.innerHTML=qsHits.length?qsHits.map(function(c,i){
     return'<div class="qsitem'+(i===0?' sel':'')+'" onclick="qsPick(\''+c.id+'\')">'+
-      '<b>'+he(ctit(c))+'</b><div class="mini">'+he(c.court||'')+(c.cn?' &middot; '+he(c.cn):'')+
+      '<b>'+snH(c)+he(ctit(c))+'</b><div class="mini">'+he(c.court||'')+(c.cn?' &middot; '+he(c.cn):'')+
       ' &middot; Next: '+fd(c.nd)+'</div></div>';
   }).join(''):'<div class="qsitem" style="color:#888">No match.</div>';
 }
@@ -3401,10 +3410,13 @@ window.addEventListener('load',function(){setTimeout(cs2Start,1500);});
 <script src="office.js"></script>
 <script src="stickers.js"></script>
 <script src="orders.js"></script>
+<script src="assets/case-tools.js"></script>
 <script src="courts.js"></script>
 <script src="mat-split.js"></script>
 <script src="tribunals.js"></script>
 <script src="bhc.js"></script>
 <script src="assets/shim.js"></script>
+<script src="assets/dd.js"></script>
+<script src="assets/ui-cases.js"></script>
 </body>
 </html>
