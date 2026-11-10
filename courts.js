@@ -113,21 +113,22 @@ window.scLoad = function () {
 /* ---------------- one-time full sync ---------------- */
 window.scFull = function () {
   var el = document.getElementById('scFull'); if (!el) return;
-  var all = LC().filter(hasCnr), done = all.filter(function (c) { return c.eco && c.eco.at; }), left = all.filter(function (c) { return !(c.eco && c.eco.at); });
-  var noC = LC().filter(function (c) { return !hasCnr(c); }).length;
+  /* disposed cases are never fetched (Nov 2026) */
+  var all = LC().filter(function (c) { return isOpen(c) && hasCnr(c); }), done = all.filter(function (c) { return c.eco && c.eco.at; }), left = all.filter(function (c) { return !(c.eco && c.eco.at); });
+  var noC = LC().filter(function (c) { return isOpen(c) && !hasCnr(c); }).length;
   var pc = all.length ? Math.round(done.length * 100 / all.length) : 0;
   el.innerHTML = '<p style="font-size:11px;color:#555;margin-bottom:10px">Brings every case up to date once: status, next date, every order and every order sheet. ' +
     'It goes 50 cases at a time so the CAPTCHA pictures do not expire; stop whenever you like and continue later from where you left off. Orders keep downloading in the background after each batch.</p>' +
     '<div style="background:#eee;border-radius:6px;height:16px;overflow:hidden;margin-bottom:6px"><div style="height:100%;width:' + pc + '%;background:#1e8449"></div></div>' +
-    '<div style="font-size:12px;margin-bottom:10px"><b>' + done.length + ' of ' + all.length + '</b> cases with a CNR fetched at least once (' + pc + '%).' +
+    '<div style="font-size:12px;margin-bottom:10px"><b>' + done.length + ' of ' + all.length + '</b> open cases with a CNR fetched at least once (disposed cases are left out) (' + pc + '%).' +
     (noC ? ' ' + noC + ' case' + (noC === 1 ? ' has' : 's have') + ' no CNR and cannot be fetched until one is added.' : '') + '</div>' +
     (left.length ? '<button class="btn bg" onclick="scNext(false)">&#9878; Next ' + Math.min(50, left.length) + ' cases not yet fetched</button> ' : '<div style="color:#1e8449;font-size:12px;margin-bottom:8px">&#10003; Every case with a CNR has been fetched once.</div>') +
     '<button class="btn bo" onclick="scNext(true)" title="Fetch again, oldest fetch first">Refresh the 50 oldest fetches</button>';
 };
 window.scNext = function (again) {
-  var all = LC().filter(hasCnr), list;
+  var all = LC().filter(function (c) { return isOpen(c) && hasCnr(c); }), list;
   if (again) list = all.slice().sort(function (a, b) { return String((a.eco || {}).at || '').localeCompare(String((b.eco || {}).at || '')); });
-  else list = all.filter(function (c) { return !(c.eco && c.eco.at); }).sort(function (a, b) { return isOpen(b) - isOpen(a); });
+  else list = all.filter(function (c) { return !(c.eco && c.eco.at); });
   if (!list.length) { toast('Nothing left to fetch.'); return; }
   ecoOpenBatch(list.slice(0, 50).map(function (c) { return c.id; }));
 };

@@ -555,6 +555,7 @@ function paintDaily() { var m = document.getElementById('trDailyMsg'); if (m) m.
 
 /* ---------------- Update Status on the board ---------------- */
 window.trUpdate = function (cases) {
+  if (cases.length > 1) cases = cases.filter(isOpen);   /* batches leave disposed cases out */
   var sc = cases.filter(function (c) { var k = kind(c); return k === 'sc' || k === 'cat'; }).map(function (c) { return c.id; });
   var mat = cases.filter(function (c) { return kind(c) === 'mat'; }).map(function (c) { return c.id; });
   var jobs = [];
