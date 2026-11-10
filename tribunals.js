@@ -435,47 +435,83 @@ function savePart(c, date, o, bytes) {
     }).catch(function () { var id = 'local-' + hash(date + c.id); api().pdfPut(id, blob); return { fid: id, nm: name + '.pdf', fo: '', local: true }; });
   });
 }
-/* ids: cases to check (default all open MAT cases); again: also re-check dates already looked at */
-window.trMatDaily = function (ids, again) {
+/* MAT daily orders (rebuilt Nov 2026).
+   Before, only the dates the tool already showed for a case were looked at, a date once "not found" was never
+   looked at again, and it ran only when the button was pressed. Now every sitting day on the MAT Nagpur Order
+   calendar is read once and remembered (which case numbers appear on which day — a small index kept on this
+   computer). So:
+     · every daily order of every MAT case is found, whatever dates the tool has for the case;
+     · a case added later is matched from the index, and only its days are downloaded again;
+     · new sitting days are read automatically once a day when the Case Manager opens;
+     · a day's file that is a scan (no readable text) is attached whole to a case listed that day.          */
+var MIDX_KEY = 'cs_matidx';
+function midxLoad() { try { return JSON.parse(localStorage.getItem(MIDX_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function midxSave(x) { try { localStorage.setItem(MIDX_KEY, JSON.stringify(x)); } catch (e) {} }
+window.trMatDaily = function (ids, again, quiet) {
+  if (TR.dailyBusy) { if (!quiet) toast('MAT daily orders are already being read — ' + (TR.dailyMsg || '')); return Promise.resolve(); }
   var list = LC().filter(function (c) { return kind(c) === 'mat' && (ids && ids.length ? ids.indexOf(c.id) >= 0 : isOpen(c)) && caseRefs(c.cn || '').length; });
-  if (!list.length) { toast('No MAT case with an O.A. number to check.', 'err'); return Promise.resolve(); }
+  if (!list.length) { if (!quiet) toast('No MAT case with an O.A. number to check.', 'err'); return Promise.resolve(); }
+  TR.dailyBusy = true; TR.dailyStop = false;
   TR.dailyMsg = 'Reading the MAT Nagpur Order calendar…'; paintDaily();
+  var want = {};                                   /* case key → [case ids] */
+  list.forEach(function (c) { caseRefs(c.cn || '').forEach(function (r) { (want[r.key] = want[r.key] || []).push(c.id); }); });
+  var have = function (c, d) { var o = (c.eco && c.eco.ord) || {}; return !!(o['md' + d] || o['mdw' + d]); };
   return Promise.all([matDays(), pdfLibs()]).then(function (res) {
-    var days = res[0], byDate = {}, noFile = 0, before = 0;
-    list.forEach(function (c) {
-      var e = c.eco = c.eco || {}; e.matDay = e.matDay || {};
-      listedDates(c).forEach(function (d) {
-        if (!again && e.matDay[d] && e.matDay[d] !== 'nofile') return;
-        if (d < '2025-01-01') { before++; return; }
-        if (!days[d]) { e.matDay[d] = 'nofile'; noFile++; return; }
-        (byDate[d] = byDate[d] || []).push(c.id);
-      });
+    var days = res[0], idx = midxLoad(), need = [], got = 0, whole = 0, n = 0, t = td();
+    Object.keys(days).sort().forEach(function (d) {
+      if (d > t) return;
+      var ix = idx[d];
+      if (!ix || again) { need.push(d); return; }                       /* never read (or "check again") */
+      if (ix.nt) { if (list.some(function (c) { return listedDates(c).indexOf(d) >= 0 && !have(c, d); })) need.push(d); return; }
+      if ((ix.k || []).some(function (k) { return (want[k] || []).some(function (id) { var c = find(id); return c && !have(c, d); }); })) need.push(d);
     });
-    var dates = Object.keys(byDate).sort(), got = 0, miss = 0, n = 0;
-    if (!dates.length) { TR.dailyMsg = 'Nothing new to look for' + (noFile ? ' (' + noFile + ' listed date' + (noFile === 1 ? ' has' : 's have') + ' no order file on the MAT site yet)' : '') + '.'; paintDaily(); toast(TR.dailyMsg); saveAll(); return; }
+    if (!need.length) { TR.dailyMsg = 'Up to date: every MAT sitting day has been read; no new daily orders.'; paintDaily(); if (!quiet) toast(TR.dailyMsg); return; }
+    function finish() {
+      saveAll(); try { refresh(); } catch (e) {}
+      var nd = Object.keys(idx).length;
+      TR.dailyMsg = (got ? got + ' daily order' + (got === 1 ? '' : 's') + ' saved' : 'No new daily orders for your cases') + (whole ? '; ' + whole + ' scanned day file' + (whole === 1 ? '' : 's') + ' attached whole (find the case in it)' : '') +
+        ' · ' + nd + ' sitting day' + (nd === 1 ? '' : 's') + ' read so far' + (TR.dailyStop ? ' (stopped — press again to go on)' : '') + '.';
+      paintDaily(); if (!quiet || got) toast(TR.dailyMsg);
+    }
     function next() {
-      if (n >= dates.length) {
-        saveAll(); try { refresh(); } catch (e) {}
-        TR.dailyMsg = got + ' daily order' + (got === 1 ? '' : 's') + ' saved from ' + dates.length + ' sitting day' + (dates.length === 1 ? '' : 's') + (miss ? '; ' + miss + ' listed date' + (miss === 1 ? '' : 's') + ' had no order for the case in that day\'s file' : '') +
-          (noFile ? '; ' + noFile + ' date' + (noFile === 1 ? '' : 's') + ' not uploaded on the MAT site yet' : '') + (before ? '; dates before 2025 are not on the calendar feed' : '') + '.';
-        paintDaily(); toast(TR.dailyMsg); return;
-      }
-      var d = dates[n++];
-      TR.dailyMsg = 'Day ' + n + ' of ' + dates.length + ': ' + fd(d) + '…'; paintDaily();
+      if (TR.dailyStop || n >= need.length) return finish();
+      var d = need[n++];
+      TR.dailyMsg = 'Reading sitting day ' + n + ' of ' + need.length + ' (' + fd(d) + ')… ' + (got ? got + ' order' + (got === 1 ? '' : 's') + ' saved so far' : ''); paintDaily();
       return tpost({ action: 'matpdf', f: days[d] }).then(function (r) {
-        if (r.missing || !r.b64) { byDate[d].forEach(function (id) { var c = find(id); if (c) c.eco.matDay[d] = 'nofile'; }); return; }
+        if (r.missing || !r.b64) return;                               /* not on the site (yet): read again next time */
         var bytes = b64Bytes(r.b64);
         return pageTexts(bytes.slice()).then(function (pages) {
-          var split = window.matSplit(pages, caseRefs);
-          return byDate[d].reduce(function (p, id) {
+          var text = pages.join(' ').replace(/\s+/g, '');
+          if (text.length < 40 * Math.max(1, pages.length)) {          /* a scanned day file: (almost) no words to read */
+            idx[d] = { nt: 1 }; midxSave(idx);
+            return list.filter(function (c) { return listedDates(c).indexOf(d) >= 0 && !have(c, d); }).reduce(function (p, c) {
+              return p.then(function () {
+                var all = []; for (var q = 0; q < pages.length; q++) all.push(q);
+                return savePart(c, d, { pages: all }, bytes.slice()).then(function (f) {
+                  var e = c.eco = c.eco || {}; e.ord = e.ord || {}; e.src = e.src || 'mat'; e.matDay = e.matDay || {};
+                  e.ord['mdw' + d] = { d: d, t: 'MAT day file — scanned, find the case in it', no: '', fid: f.fid, nm: f.nm, fo: f.fo, man: f.local ? 1 : undefined };
+                  e.matDay[d] = 'scan'; touch(c); whole++;
+                });
+              });
+            }, Promise.resolve());
+          }
+          var split = window.matSplit(pages, caseRefs), keys = {};
+          split.forEach(function (o) { o.keys.forEach(function (k) { keys[k] = 1; }); });
+          idx[d] = { k: Object.keys(keys) }; midxSave(idx);
+          var hits = {}; Object.keys(keys).forEach(function (k) { (want[k] || []).forEach(function (id) { hits[id] = 1; }); });
+          /* a case listed that day but missed by the split: look for its number at the head of a page */
+          list.forEach(function (c) { if (!hits[c.id] && listedDates(c).indexOf(d) >= 0) hits[c.id] = 1; });
+          return Object.keys(hits).reduce(function (p, id) {
             return p.then(function () {
-              var c = find(id); if (!c) return;
+              var c = find(id); if (!c || have(c, d)) return;
+              var e = c.eco = c.eco || {}; e.matDay = e.matDay || {};
               var mine = ordersFor(c, split, pages);
-              if (!mine.length) { c.eco.matDay[d] = 'none'; miss++; return; }
+              if (!mine.length) { e.matDay[d] = 'none'; return; }
               var o = { keys: mine[0].keys, pages: [], text: mine.map(function (x) { return x.text; }).join(' '), guess: mine.some(function (x) { return x.guess; }) };
               mine.forEach(function (x) { x.pages.forEach(function (q) { if (o.pages.indexOf(q) < 0) o.pages.push(q); }); });
+              o.pages.sort(function (a, b) { return a - b; });
               return savePart(c, d, o, bytes.slice()).then(function (f) {
-                var e = c.eco; e.ord = e.ord || {}; e.src = e.src || 'mat';
+                e.ord = e.ord || {}; e.src = e.src || 'mat';
                 e.ord['md' + d] = { d: d, t: 'Daily order' + (o.guess ? ' (please check)' : ''), no: '', fid: f.fid, nm: f.nm, fo: f.fo, man: f.local ? 1 : undefined };
                 e.hh = e.hh || [];
                 var h = e.hh.filter(function (x) { return x.bd === d; })[0];
@@ -487,11 +523,22 @@ window.trMatDaily = function (ids, again) {
             });
           }, Promise.resolve());
         });
-      }).catch(function (e) { TR.dailyErr = e.message || String(e); }).then(function () { saveAll(); return new Promise(function (r) { setTimeout(r, 400); }); }).then(next);
+      }).catch(function (e) { TR.dailyErr = e.message || String(e); })
+        .then(function () { if (n % 5 === 0) saveAll(); return new Promise(function (r) { setTimeout(r, 350); }); }).then(next);
     }
     return next();
-  }).catch(function (e) { TR.dailyMsg = 'Could not read the MAT Order calendar: ' + (e.message || e); paintDaily(); toast(TR.dailyMsg, 'err'); });
+  }).catch(function (e) { TR.dailyMsg = 'Could not read the MAT Order calendar: ' + (e.message || e) + (TR.helper === false ? ' — Charpe Helper is not running on this PC.' : ''); paintDaily(); if (!quiet) toast(TR.dailyMsg, 'err'); })
+    .then(function () { TR.dailyBusy = false; paintDaily(); });
 };
+window.trMatStop = function () { TR.dailyStop = true; };
+/* once a day, on opening the Case Manager: read the new MAT sitting days (only after the first full read) */
+setTimeout(function () {
+  if (/[?&]embed=1/.test(location.search)) return;
+  var last = 0; try { last = +localStorage.getItem('cs_matauto') || 0; } catch (e) {}
+  if (Date.now() - last < 12 * 3600e3 || !Object.keys(midxLoad()).length) return;
+  try { localStorage.setItem('cs_matauto', String(Date.now())); } catch (e) {}
+  if (LC().some(function (c) { return kind(c) === 'mat' && isOpen(c); })) trMatDaily(null, false, true);
+}, 25000);
 function paintDaily() { var m = document.getElementById('trDailyMsg'); if (m) m.textContent = TR.dailyMsg || ''; }
 
 /* ---------------- Update Status on the board ---------------- */
@@ -903,10 +950,10 @@ window.scTri = function () {
     '<h4 style="margin:12px 0 4px">CAT Mumbai Bench &mdash; incl. Nagpur circuit (' + g.cat.length + ')</h4>' + list(g.cat, 'cat') +
     '<div style="margin:8px 0"><button class="btn bg" id="trAllBtn" onclick="trAll()">Fetch all Supreme Court and CAT matters</button> <span id="trAllMsg" class="mini"></span></div>' +
     '<h4 style="margin:14px 0 4px">MAT Nagpur Bench (' + g.mat.length + ')</h4>' +
-    '<div class="mini" style="margin-bottom:4px">Daily orders come from the MAT Order calendar (one PDF per sitting day): for every date the tool shows a MAT case as listed, its own order is cut out of that day\'s PDF. The site gives no next dates, so MAT next dates stay as you enter them.' + (TR.matAt ? ' Last read: ' + (typeof cs2Fmt === 'function' ? cs2Fmt(TR.matAt) : TR.matAt) + ', ' + (TR.mat || []).length + ' judgments.' : '') + '</div>' +
+    '<div class="mini" style="margin-bottom:4px">Daily orders come from the MAT Order calendar (one PDF per sitting day). Every sitting day is read once (the first time takes a while) and remembered; each of your cases gets its own order cut out of every day it appears, whatever dates the tool has for it. New days are read by themselves once a day. The site gives no next dates, so MAT next dates stay as you enter them.' + (TR.matAt ? ' Last read: ' + (typeof cs2Fmt === 'function' ? cs2Fmt(TR.matAt) : TR.matAt) + ', ' + (TR.mat || []).length + ' judgments.' : '') + '</div>' +
     list(g.mat, 'mat') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0"><button class="btn bg" onclick="trMatDaily();trMatCheck()">Check MAT Nagpur now</button>' +
-    '<button class="btn bo" onclick="trMatDaily(null,true)" title="Look again at dates already checked">Re-check all listed dates</button><span id="trDailyMsg" class="mini">' + he(TR.dailyMsg || '') + '</span></div>' +
+    '<button class="btn bo" onclick="trMatDaily(null,true)" title="Read every sitting day again from the start">Read all sitting days again</button><button class="btn bo" onclick="trMatStop()" title="Stop reading; press Check again to go on from where it stopped">Stop</button><span id="trDailyMsg" class="mini">' + he(TR.dailyMsg || '') + '</span></div>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 8px">' +
     '<label class="mini"><input type="checkbox" id="trOld"> include judgments before 2025 (slower)</label>' +
     '<span class="mini">Flag judgments naming advocate:</span><input class="sinp" style="max-width:160px" value="' + he(adv) + '" onchange="trSetAdv(this.value)"></div>';
