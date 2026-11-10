@@ -393,10 +393,12 @@ table.list tr:hover td{background:#f8fafc}
 #m5-body .is-empty::before,#m5-encl li.is-empty::before{content:attr(data-ph);color:#9aa3ad;font-style:italic;pointer-events:none}
 #m5-encl li.is-empty::before{content:"Type an enclosure \2014  Enter adds the next"}
 .lt-nonum{color:#9aa3ad;font-size:10.5pt;font-style:italic}
-.lt-keep{display:none;position:absolute;right:100%;top:50%;transform:translate(-8px,-50%);white-space:nowrap;
-  font:600 11px system-ui,sans-serif;background:#1d2733;color:#fff;border:0;border-radius:6px;padding:5px 9px;cursor:pointer;z-index:5;
-  box-shadow:0 4px 12px rgba(0,0,0,.25)}
-.lt-dopt:hover .lt-keep{display:block}
+.lt-keep{display:block;visibility:hidden;opacity:0;position:absolute;right:100%;top:50%;transform:translate(0,-50%);white-space:nowrap;
+  font:600 11px system-ui,sans-serif;background:#1d2733;color:#fff;border:0;border-radius:6px;padding:7px 11px;cursor:pointer;z-index:5;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);transition:opacity .12s,visibility 0s linear .9s}
+/* a see-through bridge between the words and the button, so the pointer can cross without the button vanishing */
+.lt-keep::after{content:"";position:absolute;left:100%;top:-14px;bottom:-14px;width:22px}
+.lt-dopt:hover .lt-keep,.lt-dopt.lt-show .lt-keep,.lt-keep:hover,.lt-keep:focus{visibility:visible;opacity:1;transition-delay:0s}
 .lt-dopt:hover{background:#eef3fd;border-radius:3px}
 .lt-both{font:12px system-ui,sans-serif;color:var(--accent);background:none;border:0;cursor:pointer;padding:2px 0;text-decoration:underline}
 .m5-regtabs{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -666,7 +668,7 @@ tr.m5-open td{background:#f5f8ff}
             Type straight onto the page. <b>Enter</b> starts a new paragraph and <b>Tab</b> indents &mdash;
             neither saves anything. Copy a letter from Gemini and press <b>Ctrl+V</b> on the page: the
             address, subject, paragraphs and enclosures are laid out for you. Hover over
-            <i>Advocate</i> or <i>Additional Standing Counsel</i> at the foot to keep only one.
+            <i>Advocate</i> or <i>Additional Standing Counsel</i> at the foot (or click it) to keep only one.
           </div>
         </div>
       </div>
@@ -3900,7 +3902,15 @@ function cs2bGet(d){
 }
 function cs2bSet(d,arr){
   if(d.single){var r=arr[0];if(!r)return;var n={};Object.keys(r).forEach(function(k){if(['id','mod','_srv','_dev'].indexOf(k)<0)n[k]=r[k];});
-    db.settings=Object.assign({},DEFAULTS.settings,n);return;}
+    var loc=db.settings||{};
+    /* a device that never had the signature, logo or UPI code must not wipe them on the others;
+       only a deliberate "Remove" (newer than the local picture) clears the signature */
+    ['signature','logo','qr'].forEach(function(k){
+      if(n[k]||!loc[k])return;
+      if(k==='signature'&&n.sigGone&&String(n.sigAt||'')>String(loc.sigAt||''))return;
+      n[k]=loc[k];if(k==='signature'){n.sigAt=loc.sigAt||n.sigAt;delete n.sigGone;}
+    });
+    db.settings=Object.assign({},DEFAULTS.settings,loc,n);return;}
   db[d.key]=arr;
 }
 function cs2bPost(cfg,body){
@@ -4883,7 +4893,17 @@ async function cleanSignature(src){
   ox.drawImage(c, x0, y0, cw, ch, 0, 0, o.width, o.height);
   return o.toDataURL("image/png");
 }
-function sigData(){ return db().settings.signature || ""; }
+/* the signature survives updates and devices that never had it (Nov 2026): a copy stays on this
+   device, and Drive sync never lets a device without a signature blank it out on the others */
+function sigData(){
+  var s = db().settings.signature || "";
+  if(!s && !db().settings.sigGone){
+    try{ s = localStorage.getItem("cb_sig") || ""; }catch(e){}
+    if(s){ db().settings.signature = s; try{ A.saveNow(); }catch(e){} }
+  }
+  if(s){ try{ if(localStorage.getItem("cb_sig") !== s) localStorage.setItem("cb_sig", s); }catch(e){} }
+  return s;
+}
 async function sigRatio(){
   var s = sigData(); if(!s) return 1.66;
   try{ var im = await loadImg(s); return im.naturalWidth / im.naturalHeight; }catch(e){ return 1.66; }
@@ -5753,8 +5773,11 @@ function bindEditor(){
       if(/\n/.test(t.trim())) smartPaste(t); else plainInsert(t.replace(/\s+/g, " "));
     });
   });
-  /* designation: hover shows "Retain"; click keeps only that part */
+  /* designation: hover (or a click / tap on the words) shows "Retain"; click on it keeps only that part */
   $("#m5-page").addEventListener("click", function(e){
+    var o = e.target.closest(".lt-dopt");
+    $$(".lt-dopt.lt-show", $("#m5-page")).forEach(function(x){ if(x !== o) x.classList.remove("lt-show"); });
+    if(o && !e.target.closest("[data-keep]")) o.classList.add("lt-show");
     var b = e.target.closest("[data-keep]"); if(!b) return;
     e.preventDefault();
     readEditor(); pushUndo();
@@ -6185,6 +6208,8 @@ function wire(){
     r.onload = async function(){
       try{
         db().settings.signature = await cleanSignature(r.result);
+        db().settings.sigAt = new Date().toISOString(); delete db().settings.sigGone;
+        try{ localStorage.setItem("cb_sig", db().settings.signature); }catch(x){}
         A.saveNow(); renderSigSettings();
         if(L) editorMount();
         A.toast("Signature saved — it is used only when you choose With signature");
@@ -6195,7 +6220,9 @@ function wire(){
   });
   $("#s-sig-clear").addEventListener("click", function(){
     if(!sigData() || !confirm("Remove the saved signature?")) return;
-    db().settings.signature = ""; A.saveNow(); renderSigSettings(); A.toast("Signature removed");
+    db().settings.signature = ""; db().settings.sigAt = new Date().toISOString(); db().settings.sigGone = true;
+    try{ localStorage.removeItem("cb_sig"); }catch(x){}
+    A.saveNow(); renderSigSettings(); A.toast("Signature removed");
   });
 
   /* ---- letters ---- */
