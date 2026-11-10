@@ -420,6 +420,9 @@ window.ecoClose = function () {
 /* step 1 — choose the cases */
 window.ecoOpenBatch = function (ids) {
   if (!cu) return;
+  /* a batch never includes disposed cases; one case opened on its own can still be fetched (Nov 2026) */
+  if (ids && ids.length > 1) ids = ids.filter(function (id) { var x = find(id); return x && isOpen(x); });
+  if (!ids || !ids.length) { toast('Nothing to fetch — disposed cases are left out.'); return; }
   var c = cfg();
   if (!c.url || !c.tok) {
     if (can('set')) { go('sett'); setTimeout(function () { var b = document.getElementById('tbEcs'); if (b) b.click(); }, 50); }
