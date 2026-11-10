@@ -15,6 +15,7 @@
     '#todacts .dd>summary,#casesacts .dd>summary{display:inline-flex}' +
     'table.board td.act .dd{display:block}table.board td.act .dd>summary{display:block;text-align:center;width:100%;margin:0;font-size:13px;line-height:1;padding:3px 5px;box-sizing:border-box}' +
     'table.board td.act:has(details[open]){z-index:30}' +
+    '.fetchbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #a9c4e6;border-radius:6px;padding:8px 10px;margin:0 0 10px;font-size:11.5px}.fetchbar .btn{font-size:12.5px;padding:7px 14px}' +
     '.card{transition:box-shadow .2s}.card:hover{box-shadow:0 2px 10px rgba(26,39,68,.08)}';
   document.head.appendChild(st);
 

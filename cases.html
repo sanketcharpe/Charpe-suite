@@ -1178,6 +1178,7 @@ function bldRow(c,ctxDate){
       '<div class="crow-dates">'+ndBdg+(c.pd?pdBdg:'')+'</div>'+
       '<div class="rowacts">'+
         (can('edit')?'<button class="btn bg" onclick="event.stopPropagation();openUpd(\''+c.id+'\')" title="Post the next date for this case">Post</button>':'')+
+        (window.__unupdRow?'<button class="btn bbl" onclick="event.stopPropagation();rowFetch(\''+c.id+'\',this)" title="Fetch this case now from the court: the CAPTCHA box opens right here">&#9878; Fetch</button>':'')+
         (window.__unupdRow&&can('edit')?'<button class="btn bo" id="md-'+c.id+'" onclick="event.stopPropagation();markDisp(\''+c.id+'\')" title="This case is over: mark it disposed (asked twice) so it leaves the Unupdated list">&#10003; Disposed</button>':'')+
         (can('del')?'<button class="btn br" onclick="event.stopPropagation();delC(\''+c.id+'\')" title="Delete this case in one click — revivable from the Deleted tab">&#x2715; Delete</button>':'')+
       '</div>'+
@@ -1417,9 +1418,11 @@ function renderUnupd(){
     return true;
   });
   if(!all.length){el.innerHTML='<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing pending &mdash; every open matter has a future date on record.</span></div>';return;}
+  var nC=all.filter(function(c){return typeof ecoOk==='function'&&ecoOk(c);}).length;
   window.__unupdRow=true;
   try{
-  el.innerHTML=unupdSect('Subordinate courts, industrial &amp; labour courts and other tribunals',all,'#1a2744');
+  el.innerHTML='<div class="fetchbar"><button class="btn bg" onclick="fetchUnupd()">&#9878; Fetch all these from eCourts &mdash; one CAPTCHA each</button><span>'+nC+' of '+all.length+' have a CNR and can be fetched; up to 60 CAPTCHAs on one screen. Or press <b>&#9878; Fetch</b> on any one case to fetch just that.</span></div>'+
+    unupdSect('Subordinate courts, industrial &amp; labour courts and other tribunals',all,'#1a2744');
   }finally{window.__unupdRow=false;}
 }
 /* Unfetched: High Court, Supreme Court, CAT, MAT cases with no future date — fetch them from the court */
@@ -1433,11 +1436,26 @@ function renderUnfetch(){
   var kindOf=function(c){var k='';try{k=window.trKind?trKind(c):'';}catch(e){}return k==='sc'||courtGroup(c)==='sc'?'sc':k==='cat'?'cat':k==='mat'?'mat':'hc';};
   window.__unupdRow=true;
   try{
-  el.innerHTML=unupdSect('High Court',all.filter(function(c){return kindOf(c)==='hc';}),'#c0392b')+
+  el.innerHTML='<div class="fetchbar"><button class="btn bg" onclick="fetchUnfetched()">&#9878; Fetch all these from the courts</button><span>High Court: one CAPTCHA each (up to 60 on one screen). Supreme Court, CAT, MAT: no CAPTCHA. Or press <b>&#9878; Fetch</b> on any one case.</span></div>'+
+    unupdSect('High Court',all.filter(function(c){return kindOf(c)==='hc';}),'#c0392b')+
                unupdSect('Supreme Court',all.filter(function(c){return kindOf(c)==='sc';}),'#6b2d8f')+
                unupdSect('Central Administrative Tribunal (CAT)',all.filter(function(c){return kindOf(c)==='cat';}),'#1a5276')+
                unupdSect('Maharashtra Administrative Tribunal (MAT)',all.filter(function(c){return kindOf(c)==='mat';}),'#117864');
   }finally{window.__unupdRow=false;}
+}
+/* ⚖ Fetch on one case of Unupdated / Unfetched: the CAPTCHA box opens under that case; type it, press Enter */
+function rowFetch(id,btn){
+  var row=(btn&&btn.closest('.crow'))||document.getElementById('cr-'+id),c=find(id);if(!row||!c)return;
+  var box=row.nextSibling&&row.nextSibling.id==='rf-'+id?row.nextSibling:null;
+  if(box){box.remove();return;}
+  var old=document.getElementById('rf-'+id);if(old)old.remove();
+  box=document.createElement('div');box.id='rf-'+id;box.style.cssText='margin:-4px 0 10px;padding:8px 12px 10px;border:1px solid #a9c4e6;border-top:0;border-radius:0 0 8px 8px;background:#f6f9fe';
+  box.onclick=function(e){e.stopPropagation();};
+  row.parentNode.insertBefore(box,row.nextSibling);
+  if(typeof window.cmUpdateCase!=='function'){box.innerHTML='<div class="note">Reload the page once and try again.</div>';return;}
+  if(!(window.trKind&&trKind(c))&&!(typeof ecoOk==='function'&&ecoOk(c))){
+    box.innerHTML='<div class="note" style="color:#a35b00">This case has no CNR number, so it cannot be fetched yet. '+(can('edit')?'<button class="btn bo" onclick="editC(\''+id+'\')">Add the CNR</button> or press <b>&#9878; Find on eCourts</b> on the case.':'')+'</div>';return;}
+  cmUpdateCase(id,box).then(function(){setTimeout(function(){refresh();},1800);}).catch(function(){});
 }
 /* Unupdated → ⚖ Fetch these from eCourts: only these subordinate-court cases, one CAPTCHA each */
 function fetchUnupd(){
