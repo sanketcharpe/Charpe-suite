@@ -1029,6 +1029,126 @@ window.addEventListener('focus', function () { inboxCheck(false); });
 setTimeout(function () { inboxCheck(true); }, 4000);
 setInterval(function () { inboxCheck(false); }, 180000);
 
+/* ================================================================ 📎 ENCLOSE ORDERS (letters)
+   The case the letter is about, on the left: its details, every order with its date, 👁 to read
+   it and a tick to enclose it. Ticked orders are added after the letter in the same PDF (Get PDF,
+   Share) and listed under Encl. in the letter. */
+var EN = null;
+function enOrdersApi() { var cw = casesWin(); return cw && cw.f.contentWindow && cw.f.contentWindow.ordListFor ? cw.f.contentWindow : null; }
+async function enApi() {
+  var cw = casesWin(); if (!cw) return null;
+  if (!cw.f.getAttribute('src')) cw.f.setAttribute('src', 'cases.html');
+  var t0 = Date.now();
+  while (!(cw.f.contentWindow && cw.f.contentWindow.ordListFor) && Date.now() - t0 < 20000) await new Promise(function (r) { setTimeout(r, 400); });
+  return enOrdersApi();
+}
+window.CBenclose = async function (blob, att) {
+  var w = await enApi(); if (!w) throw new Error('Open Charpe Suite from its home page so the Case Manager can give the orders.');
+  var r = await w.ordEnclose(blob, att.map(function (a) { return { cid: a.cid, key: a.key }; }));
+  return { blob: new Blob([await r.blob.arrayBuffer()], { type: 'application/pdf' }), miss: r.miss || [] };
+};
+function enGuess(l) {
+  var txt = '';
+  if (l && l.invoiceId) { var v = (db().invoices || []).find(function (x) { return x.id === l.invoiceId; }); if (v) txt += ' ' + (v.reference || ''); }
+  txt += ' ' + ((l && l.text) || '');
+  var hit = cases().filter(function (c) { return refMatches(txt, c); });
+  return hit;
+}
+function enLine(c, o) {
+  var kind = /judg/i.test(o.t || '') ? 'judgment' : 'order';
+  return 'Copy of the ' + kind + ' dated ' + (o.d ? dmy(o.d) : '—') + ' in ' + (c.cn || ctit(c)) + '.';
+}
+function enClose() { if (EN) { if (EN.url) URL.revokeObjectURL(EN.url); EN.el.remove(); EN = null; } }
+async function enclosePanel() {
+  css();
+  if (EN) { EN.el.hidden = false; return; }
+  var l = window.CBL && window.CBL.current && window.CBL.current();
+  if (!l) { toast('Open or start a letter first'); return; }
+  var el = document.createElement('div'); el.className = 'ai-drawer ai-conv';
+  el.innerHTML = '<div class="ai-dh"><b>📎 Enclose orders</b><button class="btn sm" id="en-x">Hide</button></div>' +
+    '<div class="ai-cases"><input id="en-q" placeholder="Which case? Type its number or a party" style="width:100%;box-sizing:border-box;font:inherit;padding:7px 9px;border:1px solid #c9d0da;border-radius:7px"><div id="en-res"></div></div>' +
+    '<div class="ai-pane" id="en-pane" style="padding:10px 12px"></div>' +
+    '<div class="ai-pdfv" id="en-view" hidden></div>' +
+    '<div class="ai-foot" id="en-foot"></div>';
+  document.body.appendChild(el);
+  EN = { el: el, c: null, url: null };
+  $('#en-x', el).onclick = function () { el.hidden = true; };
+  var q = $('#en-q', el);
+  q.addEventListener('keydown', function (e) { e.stopPropagation(); });
+  q.oninput = function () {
+    var v = q.value.trim().toLowerCase();
+    var list = v.length < 2 ? [] : cases().filter(function (c) { return ((c.cn || '') + ' ' + ctit(c) + ' ' + (c.cl || '')).toLowerCase().indexOf(v) >= 0; }).slice(0, 8);
+    $('#en-res', el).innerHTML = '<ul class="ai-hits">' + list.map(function (c, i) { return '<li data-i="' + i + '"><b>' + esc(c.cn || '') + '</b> — ' + esc(ctit(c)) + '<br><small>' + esc(c.court || '') + '</small></li>'; }).join('') + '</ul>';
+    $$('#en-res li', el).forEach(function (li) { li.onclick = function () { $('#en-res', el).innerHTML = ''; q.value = ''; enShow(list[+li.dataset.i]); }; });
+  };
+  var g = enGuess(l);
+  var att = l.att || [];
+  var first = att.length ? cases().find(function (c) { return c.id === att[0].cid; }) : g[0];
+  if (first) enShow(first);
+  else $('#en-pane', el).innerHTML = '<p style="color:#555">Type the case number or a party name above to see its orders.</p>';
+  if (g.length > 1 && !att.length) $('#en-res', el).innerHTML = '<small>Other cases named in this letter:</small><ul class="ai-hits">' + g.slice(1, 6).map(function (c, i) { return '<li data-g="' + (i + 1) + '"><b>' + esc(c.cn || '') + '</b> — ' + esc(ctit(c)) + '</li>'; }).join('') + '</ul>';
+  $$('#en-res li[data-g]', el).forEach(function (li) { li.onclick = function () { enShow(g[+li.dataset.g]); }; });
+  enFoot();
+}
+async function enShow(c) {
+  if (!EN) return;
+  EN.c = c;
+  var pane = $('#en-pane', EN.el);
+  var nd = c.nd || c.next || '', st = c.stage || c.st || '';
+  pane.innerHTML = '<div class="ai-bill" style="margin:0 0 10px"><b>' + esc(c.cn || '') + '</b><br>' + esc(ctit(c)) + '<br><small>' + esc(c.court || '') +
+    (c.cl ? '<br>Client: ' + esc(c.cl) : '') + (st ? '<br>Stage: ' + esc(st) : '') + (nd ? '<br>Next date: ' + esc(/^\d{4}-/.test(nd) ? dmy(nd) : nd) : '') + '</small></div>' +
+    '<div class="ai-bh">Orders</div><div id="en-list"></div>';
+  busy($('#en-list', pane), 'Getting the orders…');
+  var w = await enApi();
+  if (!EN || EN.c !== c) return;
+  if (!w) { $('#en-list', pane).innerHTML = '<div class="ai-warn">Open Charpe Suite from its home page (not the billing page alone) to see the orders.</div>'; return; }
+  var list = w.ordListFor(c.id) || [];
+  if (!list.length) { $('#en-list', pane).innerHTML = '<div class="ai-warn">No orders of this case are on record yet. Fetch them in the Case Manager → Orders &amp; order sheets.</div>'; return; }
+  var l = window.CBL.current(), att = (l && l.att) || [];
+  $('#en-list', pane).innerHTML = list.slice().reverse().map(function (o) {
+    var on = att.some(function (a) { return a.cid === c.id && a.key === o.key; });
+    return '<div class="ai-case" style="align-items:center"><div><b>' + (o.d ? dmy(o.d) : '—') + '</b> ' + esc(o.t || 'Order') + (o.ok ? '' : ' <small style="color:#a15c00">— not downloaded yet</small>') + '</div>' +
+      '<div class="ai-cbtn"><button class="btn sm" data-v="' + esc(o.key) + '"' + (o.ok ? '' : ' disabled') + '>👁 View</button>' +
+      '<label style="display:flex;gap:4px;align-items:center;font-size:13px;white-space:nowrap"><input type="checkbox" data-a="' + esc(o.key) + '"' + (on ? ' checked' : '') + (o.ok ? '' : ' disabled') + ' style="width:auto"> Attach</label></div></div>';
+  }).join('');
+  $$('[data-v]', pane).forEach(function (b) { b.onclick = function () { enView(c, list.find(function (o) { return o.key === b.dataset.v; })); }; });
+  $$('[data-a]', pane).forEach(function (x) { x.onchange = function () { enToggle(c, list.find(function (o) { return o.key === x.dataset.a; }), x.checked); }; });
+}
+function enToggle(c, o, on) {
+  var l = window.CBL.current(); if (!l || !o) return;
+  var att = (l.att || []).slice(), encl = (l.encl || []).slice();
+  var i = att.findIndex(function (a) { return a.cid === c.id && a.key === o.key; });
+  if (on && i < 0) { var line = enLine(c, o); att.push({ cid: c.id, key: o.key, d: o.d, t: o.t, cn: c.cn, line: line }); encl.push(line); }
+  if (!on && i >= 0) { var ln = att[i].line; att.splice(i, 1); var j = encl.indexOf(ln); if (j >= 0) encl.splice(j, 1); }
+  /* enclosed orders in date order, case by case, after any other enclosure */
+  var ours = att.map(function (a) { return a.line; });
+  att.sort(function (a, b) { return (a.cn || '').localeCompare(b.cn || '') || String(a.d).localeCompare(String(b.d)); });
+  encl = encl.filter(function (t) { return ours.indexOf(t) < 0; }).concat(att.map(function (a) { return a.line; }));
+  window.CBL.setEnclosures(encl, att);
+  enFoot();
+}
+function enFoot() {
+  if (!EN) return;
+  var l = window.CBL.current(), n = (l && l.att || []).length;
+  $('#en-foot', EN.el).innerHTML = n ? '<b>' + n + ' order' + (n === 1 ? '' : 's') + ' enclosed</b> — listed under Encl. in the letter and added after it in <b>Get PDF</b> and <b>Share</b>.' : '<span style="color:#555">Tick Attach on the orders to enclose them with this letter.</span>';
+}
+async function enView(c, o) {
+  if (!EN || !o) return;
+  var v = $('#en-view', EN.el), pane = $('#en-pane', EN.el);
+  pane.hidden = true; v.hidden = false;
+  v.innerHTML = '<div class="ai-pvh"><button class="btn sm" id="en-back">← Back</button> <b>' + esc((c.cn || '') + ' — ' + (o.d ? dmy(o.d) : '') + ' ' + (o.t || '')) + '</b></div><div id="en-vb" style="flex:1;min-height:0;display:flex;padding:10px"></div>';
+  $('#en-back', v).onclick = function () { v.hidden = true; v.innerHTML = ''; pane.hidden = false; if (EN.url) { URL.revokeObjectURL(EN.url); EN.url = null; } };
+  busy($('#en-vb', v), 'Opening the order…');
+  try {
+    var w = await enApi(); var b = await w.ordBlobFor(c.id, o.key);
+    if (!EN || v.hidden) return;
+    EN.url = URL.createObjectURL(b);
+    $('#en-vb', v).style.padding = '0';
+    $('#en-vb', v).innerHTML = '<iframe class="ai-pdf" src="' + EN.url + '#view=FitH"></iframe>';
+  } catch (e) { $('#en-vb', v).innerHTML = '<div class="ai-warn">' + esc(e.message || e) + '</div>'; }
+}
+if (window.CBL && window.CBL.hooks) window.CBL.hooks.push(function () { if (EN) { var l = window.CBL.current(); var g = l && (l.att && l.att.length ? cases().find(function (c) { return c.id === l.att[0].cid; }) : enGuess(l)[0]); if (g) enShow(g); enFoot(); } });
+
 /* ================================================================ wiring: the buttons on the bill and letter pages */
 function addBar() {
   css();
@@ -1051,8 +1171,43 @@ function addBar() {
     b.style.cssText = 'background:#1b2a41;color:#fff;border-color:#1b2a41;margin-left:6px';
     b.onclick = startLetter; lv.parentNode.insertBefore(b, lv.nextSibling);
   }
+  if (lv && !$('#en-btn')) {
+    var e2 = document.createElement('button'); e2.className = 'btn sm'; e2.id = 'en-btn'; e2.type = 'button'; e2.textContent = '📎 Enclose orders';
+    e2.title = 'See the orders of the case this letter is about, and enclose any of them with the letter';
+    e2.style.marginLeft = '6px'; e2.onclick = enclosePanel;
+    var anchorBtn = $('#ai-let2') || lv; anchorBtn.parentNode.insertBefore(e2, anchorBtn.nextSibling);
+  }
 }
-if (A.hooks) A.hooks.push(function () { addBar(); });
-addBar();
+/* calmer layout (Nov 2026): related buttons open as one menu — every button still does what it did */
+function groupUi() {
+  if (!window.DD) return;
+  if (!document.getElementById('ddSetup')) {
+    var t = function (v) { return document.querySelector('nav.tabs > .tab[data-view="' + v + '"]'); };
+    if (t('clients')) DD.group({ id: 'ddSetup', label: 'Setup', cls: 'tab', title: 'Clients, Rate card, Backups, Settings', right: true, items: [t('clients'), t('catalog'), t('backups'), t('settings')] });
+  }
+  if ($('#ai-bar') && !document.getElementById('ddAi')) {
+    DD.group({ id: 'ddAi', label: '⋯ More', cls: 'btn sm', title: 'Auto letter, standing instructions, AI settings', items: [$('#ai-let'), $('#ai-ins'), $('#ai-set')] });
+    $('#ai-set').textContent = '⚙ AI settings (Gemini / Claude)';
+    $('#ai-ins').textContent = '📋 Standing instructions';
+  }
+  if ($('#m5-new-inv') && !document.getElementById('ddNewLet')) {
+    var n = DD.group({ id: 'ddNewLet', label: '＋ New letter', cls: 'btn primary', title: 'Letter for an invoice, general letter, or by voice', items: [$('#m5-new-inv'), $('#m5-new-gen'), $('#ai-let2')] });
+    var en = $('#en-btn'); if (n && en) { en.style.marginLeft = '0'; n.parentNode.insertBefore(en, n.nextSibling); }
+    if ($('#ai-let2')) $('#ai-let2').textContent = '🎙 Auto letter (speak it)';
+  }
+  if ($('#m5-pdf') && !document.getElementById('ddGetLet')) {
+    DD.group({ id: 'ddGetLet', label: '⬇ Get / Share', cls: 'btn', title: 'PDF, Word or share', items: [$('#m5-pdf'), $('#m5-word'), $('#m5-share')] });
+  }
+}
+(function () {
+  var c = document.createElement('style');
+  c.textContent = '.tabs .dd>summary.tab{display:inline-flex}.tabs .dd:has(.ddm .tab.on)>summary{background:var(--accent);color:#fff}' +
+    '.tabs .ddm>.tab.on{background:var(--accent)!important;color:#fff!important}' +
+    '#ai-bar .dd>summary,.m5-side .dd>summary{display:inline-flex}.m5-side .btnbar{align-items:center}' +
+    '.btn,.tab{transition:background .15s,border-color .15s,box-shadow .15s,color .15s}';
+  document.head.appendChild(c);
+})();
+if (A.hooks) A.hooks.push(function () { addBar(); groupUi(); });
+addBar(); groupUi();
 window.CBAI = { inboxCheck: inboxCheck, openInboxItem: openInboxItem, startInvoice: startInvoice, startLetter: startLetter, openInstructions: openInstructions, openSettings: openSettings, closeDrawer: closeDrawer, _findCases: findCases, _cnKey: cnKey, _refMatches: refMatches };
 })();

@@ -51,6 +51,24 @@ function sheets(c) {
   return out.sort(function (a, b) { return a.d.localeCompare(b.d); });
 }
 window.ordCounts = function (c) { return { o: orders(c).length, s: sheets(c).length }; };
+/* Billing's letters (Nov 2026): the orders of a case, one order's PDF, and a letter with its enclosed orders */
+window.ordListFor = function (id) { var c = find(id); return c ? orders(c) : []; };
+window.ordBlobFor = function (id, key) { var c = find(id); return c ? A().orderBlob(c, key) : Promise.reject(new Error('Case not found')); };
+window.ordEnclose = function (letterBlob, items) {
+  return lib().then(function (L) {
+    return letterBlob.arrayBuffer().then(function (lb) { return L.PDFDocument.load(new Uint8Array(lb)); })   /* the letter comes from Billing's frame: copy it into this one */.then(function (out) {
+      var p = Promise.resolve(), miss = [];
+      (items || []).forEach(function (it) {
+        p = p.then(function () { var c = find(it.cid); if (!c) throw new Error('no case'); return A().orderBlob(c, it.key); })
+          .then(function (b) { return b.arrayBuffer(); })
+          .then(function (buf) { return L.PDFDocument.load(buf, { ignoreEncryption: true }); })
+          .then(function (src) { return out.copyPages(src, src.getPageIndices()).then(function (pp) { pp.forEach(function (x) { out.addPage(x); }); }); })
+          .catch(function () { miss.push(it); });
+      });
+      return p.then(function () { return out.save(); }).then(function (b) { return { blob: new Blob([b], { type: 'application/pdf' }), miss: miss }; });
+    });
+  });
+};
 /* Billing's Auto invoice: every downloaded order of a case as ONE PDF in date order (null when none) */
 window.ordMergedPdf = function (id) {
   var c = find(id); if (!c) return Promise.resolve(null);
