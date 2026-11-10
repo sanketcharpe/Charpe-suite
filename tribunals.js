@@ -465,18 +465,30 @@ window.trMatDaily = function (ids, again, quiet) {
       if (ix.nt) { if (list.some(function (c) { return listedDates(c).indexOf(d) >= 0 && !have(c, d); })) need.push(d); return; }
       if ((ix.k || []).some(function (k) { return (want[k] || []).some(function (id) { var c = find(id); return c && !have(c, d); }); })) need.push(d);
     });
-    if (!need.length) { TR.dailyMsg = 'Up to date: every MAT sitting day has been read; no new daily orders.'; paintDaily(); if (!quiet) toast(TR.dailyMsg); return; }
+    /* first of all, the LAST date entered for each case (searched afresh each time until its order is found —
+       the MAT site often puts up a day's orders late); then the rest of the calendar */
+    var first = [], notYet = [];
+    list.forEach(function (c) {
+      var ds = listedDates(c), d = ds[ds.length - 1]; if (!d || have(c, d)) return;
+      if (days[d]) { if (first.indexOf(d) < 0) first.push(d); }
+      else if (d >= '2025-01-01') notYet.push((c.cn || ctit(c)) + ' — ' + fd(d));
+    });
+    first.sort().reverse();
+    need = first.concat(need.filter(function (d) { return first.indexOf(d) < 0; }));
+    TR.notYet = notYet;
+    if (!need.length) { TR.dailyMsg = 'Up to date: every MAT sitting day has been read; no new daily orders.' + (notYet.length ? ' Not yet on the MAT site: ' + notYet.join('; ') + '.' : ''); paintDaily(); if (!quiet) toast(TR.dailyMsg); return; }
     function finish() {
       saveAll(); try { refresh(); } catch (e) {}
       var nd = Object.keys(idx).length;
       TR.dailyMsg = (got ? got + ' daily order' + (got === 1 ? '' : 's') + ' saved' : 'No new daily orders for your cases') + (whole ? '; ' + whole + ' scanned day file' + (whole === 1 ? '' : 's') + ' attached whole (find the case in it)' : '') +
-        ' · ' + nd + ' sitting day' + (nd === 1 ? '' : 's') + ' read so far' + (TR.dailyStop ? ' (stopped — press again to go on)' : '') + '.';
+        ' · ' + nd + ' sitting day' + (nd === 1 ? '' : 's') + ' read so far' + (TR.dailyStop ? ' (stopped — press again to go on)' : '') + '.' +
+        (notYet.length ? ' Last dates whose orders are not yet on the MAT site: ' + notYet.join('; ') + '.' : '');
       paintDaily(); if (!quiet || got) toast(TR.dailyMsg);
     }
     function next() {
       if (TR.dailyStop || n >= need.length) return finish();
       var d = need[n++];
-      TR.dailyMsg = 'Reading sitting day ' + n + ' of ' + need.length + ' (' + fd(d) + ')… ' + (got ? got + ' order' + (got === 1 ? '' : 's') + ' saved so far' : ''); paintDaily();
+      TR.dailyMsg = (n <= first.length ? 'Last dates of your cases first — ' : '') + 'reading sitting day ' + n + ' of ' + need.length + ' (' + fd(d) + ')… ' + (got ? got + ' order' + (got === 1 ? '' : 's') + ' saved so far' : ''); paintDaily();
       return tpost({ action: 'matpdf', f: days[d] }).then(function (r) {
         if (r.missing || !r.b64) return;                               /* not on the site (yet): read again next time */
         var bytes = b64Bytes(r.b64);
