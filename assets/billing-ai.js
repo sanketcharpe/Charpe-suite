@@ -1052,6 +1052,7 @@ function enGuess(l) {
   if (l && l.invoiceId) { var v = (db().invoices || []).find(function (x) { return x.id === l.invoiceId; }); if (v) txt += ' ' + (v.reference || ''); }
   txt += ' ' + ((l && l.text) || '');
   var hit = cases().filter(function (c) { return refMatches(txt, c); });
+  if (!hit.length) { var w = enOrdersApi(); if (w && w.cmFindCases) { var ids = w.cmFindCases(txt).map(function (x) { return x.id; }); hit = cases().filter(function (c) { return ids.indexOf(c.id) >= 0; }); } }
   return hit;
 }
 function enLine(c, o) {
@@ -1102,8 +1103,25 @@ async function enShow(c) {
   var w = await enApi();
   if (!EN || EN.c !== c) return;
   if (!w) { $('#en-list', pane).innerHTML = '<div class="ai-warn">Open Charpe Suite from its home page (not the billing page alone) to see the orders.</div>'; return; }
+  var info = w.cmCaseInfo ? w.cmCaseInfo(c.id) : null;
   var list = w.ordListFor(c.id) || [];
-  if (!list.length) { $('#en-list', pane).innerHTML = '<div class="ai-warn">No orders of this case are on record yet. Fetch them in the Case Manager → Orders &amp; order sheets.</div>'; return; }
+  /* when the court was last read, and a button to read it again now (with the CAPTCHA right here) */
+  var head = document.createElement('div'); head.style.cssText = 'margin:0 0 8px';
+  head.innerHTML = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px">' +
+    '<span>' + (info && info.atText ? 'Orders and status updated as on <b>' + esc(info.atText) + '</b>' : '<b style="color:#a15c00">Never fetched from the court yet</b>') +
+    (info && info.pending ? ' · <span style="color:#a15c00">' + info.pending + ' order' + (info.pending === 1 ? '' : 's') + ' not downloaded</span>' : '') + '</span>' +
+    (w.cmUpdateCase ? '<button class="btn sm" id="en-fetch" type="button" style="margin-left:auto">⟳ Fetch latest (with orders)</button>' : '') + '</div><div id="en-upd" style="margin-top:6px"></div>';
+  $('#en-list', pane).innerHTML = ''; $('#en-list', pane).parentNode.insertBefore(head, $('#en-list', pane));
+  var fb = $('#en-fetch', head);
+  if (fb) fb.onclick = function () {
+    if (info && info.kind === 'none') { $('#en-upd', head).innerHTML = '<div class="ai-warn">' + esc(info.why) + '</div>'; return; }
+    fb.disabled = true;
+    w.cmUpdateCase(c.id, $('#en-upd', head)).then(function (r) {
+      toast('Updated: ' + r.after + ' order' + (r.after === 1 ? '' : 's') + ' on record' + (r.after > r.before ? ' (' + (r.after - r.before) + ' new)' : ''));
+      setTimeout(function () { if (EN && EN.c === c) enShow(c); }, 1200);
+    }).catch(function () { fb.disabled = false; });
+  };
+  if (!list.length) { $('#en-list', pane).innerHTML = '<div class="ai-warn">No orders of this case are on record yet. Press <b>⟳ Fetch latest</b> above to get them from the court.</div>'; return; }
   var l = window.CBL.current(), att = (l && l.att) || [];
   $('#en-list', pane).innerHTML = list.slice().reverse().map(function (o) {
     var on = att.some(function (a) { return a.cid === c.id && a.key === o.key; });

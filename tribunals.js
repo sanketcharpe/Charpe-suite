@@ -498,11 +498,14 @@ function paintDaily() { var m = document.getElementById('trDailyMsg'); if (m) m.
 window.trUpdate = function (cases) {
   var sc = cases.filter(function (c) { var k = kind(c); return k === 'sc' || k === 'cat'; }).map(function (c) { return c.id; });
   var mat = cases.filter(function (c) { return kind(c) === 'mat'; }).map(function (c) { return c.id; });
+  var jobs = [];
   if (sc.length) {
     toast('Fetching ' + sc.length + ' Supreme Court / CAT matter' + (sc.length === 1 ? '' : 's') + ' (no CAPTCHA)…');
-    fetchMany(sc).then(function (r) { toast('Supreme Court / CAT: ' + r.ok + ' updated' + (r.bad ? ', ' + r.bad + ' could not be fetched (see the case)' : '') + '.', r.bad ? 'err' : ''); });
+    jobs.push(fetchMany(sc).then(function (r) { toast('Supreme Court / CAT: ' + r.ok + ' updated' + (r.bad ? ', ' + r.bad + ' could not be fetched (see the case)' : '') + '.', r.bad ? 'err' : ''); return r; }));
   }
-  if (mat.length) { trMatCheck(mat); trMatDaily(mat); }
+  if (mat.length) { jobs.push(Promise.resolve(trMatCheck(mat))); jobs.push(Promise.resolve(trMatDaily(mat))); }
+  /* a promise, so Billing and Excerpt Desk can wait for the fetch to finish (Nov 2026) */
+  return Promise.all(jobs.map(function (j) { return j.catch(function () {}); }));
 };
 
 /* ---------------- BOMBAY HIGH COURT: find the CNR of a case that has only its number ----------------

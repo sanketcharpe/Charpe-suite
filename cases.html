@@ -3404,13 +3404,31 @@ function cs2OrderPdf(id,file){
     if(!m.g.pdfId)setTimeout(cs2Cycle,3000);            /* bring the new PDF link to this computer */
   }).catch(function(e){var b=document.getElementById('cs2vbody');if(b)b.innerHTML='<div style="padding:30px;color:#c0392b">'+he(e.message||e)+'</div>';});
 }
-window.addEventListener('load',function(){setTimeout(cs2Start,1500);});
+/* inside Excerpt Desk (cases.html?embed=1) this copy only lends its cases and orders: the Drive sync stays with Charpe Suite itself */
+var CM_EMBED=/[?&]embed=1/.test(location.search);
+window.addEventListener('load',function(){if(!CM_EMBED)setTimeout(cs2Start,1500);});
+/* Two copies of the Case Manager open at once (Charpe Suite, and Billing or Excerpt Desk fetching a case):
+   whatever one saves, the other takes in — the newer copy of each case wins — so neither overwrites
+   orders or dates the other has just fetched (Nov 2026). */
+window.addEventListener('storage',function(e){
+  if(e.key!=='cpm_c'||!e.newValue)return;
+  var other;try{other=JSON.parse(e.newValue);}catch(x){return;}
+  if(!Array.isArray(other))return;
+  var at={},ch=0;C.forEach(function(c,i){at[c.id]=i;});
+  other.forEach(function(o){if(!o||!o.id)return;var i=at[o.id];
+    if(i==null){C.push(normCase(o));ch++;}
+    else if(String(o.mod||'')>String(C[i].mod||'')){C[i]=normCase(o);ch++;}});
+  if(!ch)return;
+  try{localStorage.setItem('cpm_c',JSON.stringify(C));}catch(x){}
+  if(cu)try{refresh();}catch(x){}
+});
 </script>
 <script src="ecourts.js"></script>
 <script src="office.js"></script>
 <script src="stickers.js"></script>
 <script src="orders.js"></script>
 <script src="assets/case-tools.js"></script>
+<script src="assets/case-update.js"></script>
 <script src="courts.js"></script>
 <script src="mat-split.js"></script>
 <script src="tribunals.js"></script>
