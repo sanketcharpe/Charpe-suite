@@ -12,7 +12,7 @@
     '@media print{.snb{background:none;color:#000;border:1px solid #000}}' +
     '.ctbox{border:1px solid #d5dbe4;border-radius:6px;padding:12px;margin-bottom:10px;background:#fbfcfe}.ctbox h4{margin:0 0 6px;font-size:12.5px}.ctbox p{font-size:11px;color:#555;margin:4px 0 8px}' +
     '.ctrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11.5px}.ctrow select,.ctrow input{font-size:11.5px;padding:3px 5px}' +
-    '.dupg{border:1px solid #e6d3a8;background:#fffaf0;border-radius:6px;padding:7px 9px;margin:6px 0;font-size:11.5px}.dupg .keep{color:#127a4b;font-weight:700}.dupg .drop{color:#a5452f}.dupg li{margin:2px 0}.dupg ul{margin:4px 0 0;padding-left:18px}.duptab{width:100%;border-collapse:collapse}.duptab td{padding:4px 6px;border-top:1px dotted #e6d3a8;vertical-align:top;font-size:11.5px}.duptab tr.keep td{background:#eefaf2}.duptab tr.drop td{color:#7a3b33}.duptab label{white-space:nowrap;cursor:pointer}.duptab input{width:auto}';
+    '.dupg{border:1px solid #e6d3a8;background:#fffaf0;border-radius:6px;padding:7px 9px;margin:6px 0;font-size:11.5px}.dupg .keep{color:#127a4b;font-weight:700}.dupg .drop{color:#a5452f}.dupg li{margin:2px 0}.dupg ul{margin:4px 0 0;padding-left:18px}.duptab{width:100%;border-collapse:collapse}.duptab td{padding:4px 6px;border-top:1px dotted #e6d3a8;vertical-align:top;font-size:11.5px}.duptab tr.keep td{background:#eefaf2}.duptab tr.drop td{color:#7a3b33}.duptab label{white-space:nowrap;cursor:pointer}.duptab input{width:auto}.ctact{white-space:nowrap;width:1%}.ctb{display:block;width:100%;margin:0 0 4px;padding:5px 9px;border-radius:14px;border:1px solid #c9d0da;background:#fff;font:600 11px system-ui,Arial,sans-serif;cursor:pointer;text-align:center;color:#1b2433}.ctb:hover{border-color:#1668e3}.ctb.on{background:#127a4b;border-color:#127a4b;color:#fff;cursor:default}.ctb.del{background:#fdecea;border-color:#e6a39b;color:#9b2c1f}.ctb.kept{background:#e9f7ef;border-color:#bfe5cf;color:#127a4b}';
   document.head.appendChild(st);
 
   function live() { return C.filter(function (c) { return !c.del; }); }
@@ -140,8 +140,9 @@
   function rowHTML(g, gi, c) {
     var a = activity(c), keep = g.keep === c.id, drop = g.drop.indexOf(c.id) >= 0;
     return '<tr class="' + (keep ? 'keep' : drop ? 'drop' : '') + '">' +
-      '<td><label title="Keep this one"><input type="radio" name="ctk' + gi + '" ' + (keep ? 'checked' : '') + ' onchange="ctKeep(' + gi + ',\'' + c.id + '\')"> keep</label></td>' +
-      '<td><label title="Delete this one"><input type="checkbox" ' + (drop ? 'checked' : '') + (keep ? ' disabled' : '') + ' onchange="ctDrop(' + gi + ',\'' + c.id + '\',this.checked)"> delete</label></td>' +
+      '<td class="ctact">' + (keep ? '<span class="ctb on">&#10004; Retain — main copy</span>' :
+        '<button class="ctb" onclick="ctKeep(' + gi + ',\'' + c.id + '\')" title="Retain this one as the main copy instead; the others are marked for deletion">Retain this instead</button>' +
+        '<button class="ctb ' + (drop ? 'del' : 'kept') + '" onclick="ctDrop(' + gi + ',\'' + c.id + '\',' + (drop ? 'false' : 'true') + ')" title="' + (drop ? 'Click to retain this one too (it is not a duplicate)' : 'Click to delete this one') + '">' + (drop ? '&#x2715; Delete' : '&#10004; Retain too') + '</button>') + '</td>' +
       '<td><b>' + he(ctit(c)) + '</b><br><span class="mini">' + he(c.court || '—') + (c.cn ? ' · ' + he(c.cn) : '') + (c.cnr ? ' · CNR ' + he(c.cnr) : ' · <i>no CNR</i>') + (c.added ? ' · added ' + fd(c.added) : '') + '</span></td>' +
       '<td class="mini">' + (a.fetched ? 'fetched ' + fd(a.fetched) : '<i>never fetched</i>') + '<br>last activity ' + (a.last ? fd(a.last) : '—') + '</td>' +
       '<td class="mini">' + a.hh + ' hearings · ' + a.ord + ' orders<br>' + a.notes + ' notes · ' + a.hist + ' dates posted</td>' +
@@ -152,14 +153,14 @@
     if (!lastScan.length) { el.innerHTML = '<div style="color:#127a4b;font-size:11.5px;margin-top:6px">&#10004; No duplicate entries among ' + live().length + ' cases.</div>'; return; }
     var n = lastScan.reduce(function (s, g) { return s + g.drop.length; }, 0), pr = lastScan.filter(function (g) { return g.probable; }).length;
     el.innerHTML = '<div style="font-size:11.5px;margin:6px 0"><b>' + lastScan.length + ' case' + (lastScan.length === 1 ? '' : 's') + '</b> appear more than once' + (pr ? ' (' + pr + ' marked <b>probable — check</b>)' : '') +
-      '. In each, the copy most recently brought up to date is marked <b>keep</b>; the others are ticked for deletion. Change any tick or the kept copy before deleting. ' +
+      '. In each, the copy most recently brought up to date is <b>retained as the main copy</b> and the others are marked <b>Delete</b>. Click <b>Retain this instead</b> to choose another main copy, or click <b>Delete</b> / <b>Retain too</b> on any entry to change it. ' +
       'Notes, dates and orders of a deleted copy are carried into the kept one, with a note of the party names it was entered under; deleted copies stay revivable in Deleted.</div>' +
       lastScan.map(function (g, gi) {
         return '<div class="dupg"><div style="margin-bottom:4px"><b>' + he(g.cases[0].cn || ctit(g.cases[0])) + '</b> — ' + g.cases.length + ' entries' +
           (g.probable ? ' <span style="background:#fff1c2;border:1px solid #e8c96a;border-radius:8px;padding:0 6px;font-size:10.5px">probable — check</span>' : '') + '</div>' +
           '<table class="duptab">' + g.cases.map(function (c) { return rowHTML(g, gi, c); }).join('') + '</table></div>';
       }).join('') +
-      '<button class="btn br" id="ctDelBtn" onclick="ctDelete()" style="margin-top:6px"' + (n ? '' : ' disabled') + '>&#x2715; Delete the ' + n + ' ticked entr' + (n === 1 ? 'y' : 'ies') + '</button>';
+      '<button class="btn br" id="ctDelBtn" onclick="ctDelete()" style="margin-top:6px"' + (n ? '' : ' disabled') + '>&#x2715; Delete the ' + n + ' marked entr' + (n === 1 ? 'y' : 'ies') + '</button>';
   }
   window.ctScan = function () { lastScan = groups(); paint(); };
   window.ctKeep = function (gi, id) {

@@ -201,38 +201,48 @@ function clientFor(c, bills) {
 }
 
 /* ================================================================ recorder */
+/* every microphone (Nov 2026): 🎙 start / finish · ⏸ pause, ▶ carry on from there · ↺ scrap it and speak afresh */
 function Recorder(host, onDone) {
-  var me = this, rec = null, chunks = [], t0 = 0, tm = null, stream = null;
-  host.innerHTML = '<div class="ai-rec"><button class="ai-mic" type="button" aria-label="Start or stop listening"><span></span></button>' +
-    '<div class="ai-rst"><b class="ai-rlab">Starting the microphone…</b><span class="ai-rtime"></span></div></div>' +
+  var me = this, rec = null, chunks = [], t0 = 0, held = 0, pausedAt = 0, tm = null, stream = null;
+  host.innerHTML = '<div class="ai-rec"><button class="ai-mic" type="button" aria-label="Start, or finish speaking"><span></span></button>' +
+    '<div class="ai-rst"><b class="ai-rlab">Starting the microphone…</b><span class="ai-rtime"></span></div>' +
+    '<span class="ai-rctl" hidden><button class="btn sm ai-rp" type="button" title="Pause; press again to carry on from where you stopped">⏸ Pause</button> <button class="btn sm ai-rr" type="button" title="Scrap what you have said and speak afresh">↺ Start again</button></span></div>' +
     '<details class="ai-type"><summary>Type instead</summary><textarea rows="4" placeholder="Type the instruction here…"></textarea><button class="btn sm" type="button">Use this text</button></details>';
-  var mic = $('.ai-mic', host), lab = $('.ai-rlab', host), tim = $('.ai-rtime', host);
+  var mic = $('.ai-mic', host), lab = $('.ai-rlab', host), tim = $('.ai-rtime', host), ctl = $('.ai-rctl', host), pb = $('.ai-rp', host), rb = $('.ai-rr', host);
   $('.ai-type button', host).onclick = function () { var t = $('.ai-type textarea', host).value.trim(); if (!t) return; me.stop(true); onDone({ text: t }); };
-  function tick() { var s = Math.round((Date.now() - t0) / 1000); tim.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function tick() { var s = Math.max(0, Math.round(((rec && rec.state === 'paused' ? pausedAt : Date.now()) - t0 - held) / 1000)); tim.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2) + (rec && rec.state === 'paused' ? ' · paused' : ''); }
   me.start = async function () {
+    me.cancelled = false;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     } catch (e) { lab.textContent = 'The microphone could not be used (' + (e.message || e.name) + '). Allow it, or type instead.'; mic.disabled = true; $('.ai-type', host).open = true; return; }
     var type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].filter(function (t) { return window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0] || '';
     rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
-    chunks = [];
+    chunks = []; held = 0;
     rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
     rec.onstop = function () {
-      clearInterval(tm); stream.getTracks().forEach(function (t) { t.stop(); });
+      clearInterval(tm); stream.getTracks().forEach(function (t) { t.stop(); }); ctl.hidden = true;
       if (me.cancelled) return;
       var blob = new Blob(chunks, { type: (rec.mimeType || 'audio/webm').split(';')[0] });
       if (blob.size < 1500) { lab.textContent = 'Nothing was heard. Press the microphone and speak.'; mic.classList.remove('on'); return; }
       lab.textContent = 'Got it.'; onDone({ audio: blob });
     };
     rec.start(1000); t0 = Date.now(); tick(); tm = setInterval(tick, 500);
-    mic.classList.add('on'); lab.textContent = 'Listening — press the microphone when you finish';
+    mic.classList.add('on'); ctl.hidden = false; pb.textContent = '⏸ Pause'; lab.textContent = 'Listening — press the microphone when you finish';
   };
   me.stop = function (cancel) {
     me.cancelled = !!cancel;
     if (rec && rec.state !== 'inactive') rec.stop(); else if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
-    mic.classList.remove('on'); clearInterval(tm);
+    mic.classList.remove('on'); clearInterval(tm); ctl.hidden = true;
   };
-  mic.onclick = function () { if (rec && rec.state === 'recording') me.stop(false); else { me.cancelled = false; me.start(); } };
+  me.pause = function () {
+    if (!rec) return;
+    if (rec.state === 'recording') { rec.pause(); pausedAt = Date.now(); pb.textContent = '▶ Carry on'; mic.classList.remove('on'); lab.textContent = 'Paused — ▶ Carry on goes on from here; the microphone finishes'; tick(); }
+    else if (rec.state === 'paused') { held += Date.now() - pausedAt; rec.resume(); pb.textContent = '⏸ Pause'; mic.classList.add('on'); lab.textContent = 'Listening — press the microphone when you finish'; }
+  };
+  me.redo = function () { me.stop(true); lab.textContent = 'Scrapped. Speak afresh…'; setTimeout(me.start, 250); };
+  pb.onclick = me.pause; rb.onclick = me.redo;
+  mic.onclick = function () { if (rec && (rec.state === 'recording' || rec.state === 'paused')) me.stop(false); else me.start(); };
 }
 
 /* ================================================================ UI bits */
@@ -266,7 +276,7 @@ function css() {
     '.ai-dates{max-height:30%;overflow:auto;padding:8px 12px;font-size:12.5px;border-bottom:1px solid #d5dbe4;background:#fff}.ai-dates div{padding:2px 0;border-bottom:1px dotted #e2e6ec}' +
     '.ai-df{padding:10px 12px;border-top:1px solid #c9d0da;background:#fff}' +
     '.ai-il{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:6px}.ai-il li{border:1px solid #d5dbe4;border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:flex-start}.ai-il li .t{flex:1;white-space:pre-wrap}.ai-il li b{min-width:22px}' +
-    '.ai-drawer[hidden]{display:none!important}.ai-conv{width:min(46vw,680px)!important}.ai-cases{padding:6px 12px;background:#fff;border-bottom:1px solid #d5dbe4;max-height:24vh;overflow:auto}.ai-case{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px dotted #e2e6ec;font-size:13px}.ai-case>div:first-child{flex:1;min-width:0}.ai-cbtn{display:flex;gap:4px}.ai-pane{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}.ai-pane[hidden],.ai-pdfv[hidden]{display:none!important}.ai-pdfv{flex:1;min-height:0;display:flex;flex-direction:column}.ai-pvh{padding:6px 12px;background:#fff;border-bottom:1px solid #d5dbe4}.ai-log{padding:10px 12px;display:flex;flex-direction:column;gap:8px}.ai-m{max-width:92%;padding:8px 11px;border-radius:12px;font-size:13.5px;white-space:pre-wrap;line-height:1.45}.ai-m.me{align-self:flex-end;background:#1668e3;color:#fff;border-bottom-right-radius:4px}.ai-m.me small{color:#dbe6ff}.ai-m.ai{align-self:flex-start;background:#fff;border:1px solid #d5dbe4;border-bottom-left-radius:4px}.ai-m.q{border-color:#f0c36d;background:#fffaf0}.ai-pick{white-space:normal;margin-top:8px}.ai-pick label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer}.ai-pick label input{width:auto;margin-top:3px}.ai-pg{padding:4px 0;border-top:1px dotted #e2e6ec}.ai-bills{padding:4px 12px 12px}.ai-bh{font-weight:700;margin:6px 0}.ai-bill{background:#fff;border:1px solid #d5dbe4;border-radius:10px;padding:8px 10px;margin:0 0 8px;font-size:13px}.ai-bill.open{border-color:#1668e3;box-shadow:0 0 0 2px #cfe0ff}.ai-bill.saved{opacity:.75}.ai-bill ul{margin:6px 0;padding-left:18px}.ai-bill li{margin:2px 0}.ai-bf{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.ai-tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:8px;background:#eef3fb;color:#1b4d9b;border:1px solid #cddcf3}.ai-tag.ok{background:#e9f7ef;color:#127a4b;border-color:#bfe5cf}.ai-foot{padding:8px 12px;border-top:1px solid #c9d0da;background:#fff}.ai-in{display:flex;gap:8px;align-items:center}.ai-in textarea{flex:1;font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid #c9d0da;border-radius:8px;resize:vertical;min-height:40px}.ai-mic.sm{width:46px;height:46px}.ai-mic.sm span{width:14px;height:22px}.ai-status{font-size:12.5px;color:#555;min-height:18px;margin-top:4px}.ai-replying{font-size:12.5px;background:#fffaf0;border:1px solid #f0c36d;border-radius:8px;padding:4px 8px;margin-bottom:6px}.ai-prev{overflow:auto;max-height:72vh;background:#e9ecf1;padding:10px;border-radius:8px}.ai-prev .sheet{zoom:.72;margin:0 auto}' +
+    '.ai-drawer[hidden]{display:none!important}.ai-conv{width:min(46vw,680px)!important}.ai-cases{padding:6px 12px;background:#fff;border-bottom:1px solid #d5dbe4;max-height:24vh;overflow:auto}.ai-case{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px dotted #e2e6ec;font-size:13px}.ai-case>div:first-child{flex:1;min-width:0}.ai-cbtn{display:flex;gap:4px}.ai-pane{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}.ai-pane[hidden],.ai-pdfv[hidden]{display:none!important}.ai-pdfv{flex:1;min-height:0;display:flex;flex-direction:column}.ai-pvh{padding:6px 12px;background:#fff;border-bottom:1px solid #d5dbe4}.ai-log{padding:10px 12px;display:flex;flex-direction:column;gap:8px}.ai-m{max-width:92%;padding:8px 11px;border-radius:12px;font-size:13.5px;white-space:pre-wrap;line-height:1.45}.ai-m.me{align-self:flex-end;background:#1668e3;color:#fff;border-bottom-right-radius:4px}.ai-m.me small{color:#dbe6ff}.ai-m.ai{align-self:flex-start;background:#fff;border:1px solid #d5dbe4;border-bottom-left-radius:4px}.ai-m.q{border-color:#f0c36d;background:#fffaf0}.ai-pick{white-space:normal;margin-top:8px}.ai-pick label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer}.ai-pick label input{width:auto;margin-top:3px}.ai-pg{padding:4px 0;border-top:1px dotted #e2e6ec}.ai-bills{padding:4px 12px 12px}.ai-bh{font-weight:700;margin:6px 0}.ai-bill{background:#fff;border:1px solid #d5dbe4;border-radius:10px;padding:8px 10px;margin:0 0 8px;font-size:13px}.ai-bill.open{border-color:#1668e3;box-shadow:0 0 0 2px #cfe0ff}.ai-bill.saved{opacity:.75}.ai-bill ul{margin:6px 0;padding-left:18px}.ai-bill li{margin:2px 0}.ai-bf{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.ai-tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:8px;background:#eef3fb;color:#1b4d9b;border:1px solid #cddcf3}.ai-tag.ok{background:#e9f7ef;color:#127a4b;border-color:#bfe5cf}.ai-foot{padding:8px 12px;border-top:1px solid #c9d0da;background:#fff}.ai-in{display:flex;gap:8px;align-items:center}.ai-in textarea{flex:1;font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid #c9d0da;border-radius:8px;resize:vertical;min-height:40px}.ai-mic.sm{width:46px;height:46px}.ai-mic.sm span{width:14px;height:22px}.ai-ctl{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.ai-ctl .btn{font-size:12.5px}#ai-mctl{display:inline-flex;gap:6px}.ai-ctl [hidden],.ai-rctl[hidden]{display:none!important}.ai-rctl{display:inline-flex;gap:6px;flex-wrap:wrap}.btn.warn{background:#fdecea;border-color:#e6a39b;color:#9b2c1f}.ai-status{font-size:12.5px;color:#555;min-height:18px;margin-top:4px}.ai-replying{font-size:12.5px;background:#fffaf0;border:1px solid #f0c36d;border-radius:8px;padding:4px 8px;margin-bottom:6px}.ai-prev{overflow:auto;max-height:72vh;background:#e9ecf1;padding:10px;border-radius:8px}.ai-prev .sheet{zoom:.72;margin:0 auto}' +
     '@media (max-width:900px){.ai-drawer,.ai-conv{width:100vw!important;height:62vh;top:auto;border-right:0;border-top:1px solid #c9d0da}}';
   document.head.appendChild(s);
 }
@@ -470,7 +480,7 @@ function openDrawer(listenNow) {
   closeDrawer();
   var el = document.createElement('div'); el.className = 'ai-drawer ai-conv';
   el.innerHTML =
-    '<div class="ai-dh"><b>🎙 Auto invoice</b><button class="btn sm" id="ai-new" title="Forget this conversation and start again">New</button><button class="btn sm" id="ai-hide" title="Hide; the button 🎙 Auto invoice brings it back">Hide</button></div>' +
+    '<div class="ai-dh"><b>🎙 Auto invoice</b><button class="btn sm" id="ai-dins" title="Change what you have said so far, or the standing instructions">📋 Instructions</button><button class="btn sm" id="ai-new" title="Forget this conversation and start again">New</button><button class="btn sm" id="ai-hide" title="Hide; the button 🎙 Auto invoice brings it back">Hide</button></div>' +
     '<div class="ai-cases" id="ai-cases"></div>' +
     '<div class="ai-pane" id="ai-pane">' +
       '<div class="ai-log" id="ai-log"></div>' +
@@ -483,6 +493,8 @@ function openDrawer(listenNow) {
       '<div class="ai-in"><button class="ai-mic sm" id="ai-mic" type="button" title="Speak (press again to finish)"><span></span></button>' +
         '<textarea id="ai-txt" rows="2" placeholder="Speak with the microphone, or type here — a new instruction, a correction, or an answer — any time"></textarea>' +
         '<button class="btn primary" id="ai-send" type="button">Send</button></div>' +
+      '<div class="ai-ctl"><span id="ai-mctl" hidden><button class="btn sm" id="ai-mpause" type="button" title="Pause; press again to carry on from where you stopped">⏸ Pause</button><button class="btn sm" id="ai-mredo" type="button" title="Scrap what you have said in this recording and speak afresh">↺ Start again</button></span>' +
+        '<button class="btn sm warn" id="ai-stop" type="button" hidden title="Stop the AI now; add or correct anything and it starts again">■ Stop working</button></div>' +
       '<div class="ai-status" id="ai-status"></div>' +
     '</div>';
   document.body.appendChild(el);
@@ -495,19 +507,23 @@ function openDrawer(listenNow) {
   $('#ai-send', el).onclick = function () { var t = $('#ai-txt', el).value.trim(); if (!t) return; $('#ai-txt', el).value = ''; heard(t); };
   $('#ai-txt', el).addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#ai-send', el).click(); });
   $('#ai-mic', el).onclick = micToggle;
+  $('#ai-mpause', el).onclick = micPause;
+  $('#ai-mredo', el).onclick = function () { if (!MREC) return; MREC.scrap = true; MREC.stop(); setTimeout(micToggle, 300); };
+  $('#ai-stop', el).onclick = function () { abortRun(); status('Stopped. Add or correct anything (speak or type) and it starts again — or press 📋 Instructions to change what was said.'); say('ai', 'Stopped at your request. Tell me what to add or change.'); };
+  $('#ai-dins', el).onclick = openSaid;
   paintAll();
   if (!SS.log.length) say('ai', 'Say the case or cases and what is to be charged — e.g. “Prepare separate bills for O.A. 297 of 2026 Gondnale and O.A. 935 of 2025 Wakodkar. In Gondnale, 10th September was heard at length; the other sittings non-effective. Add typing and Xerox 450 rupees.” Or ask for one common bill for both. You can speak again at any time to add or correct anything.');
   if (listenNow) micToggle();
 }
 function closeDrawer() { if (UI) { abortRun(); if (UI.rec) try { UI.rec.stop(true); } catch (e) {} if (UI.url) URL.revokeObjectURL(UI.url); UI.el.remove(); UI = null; } }
-function status(t, spin) { if (!UI) return; $('#ai-status', UI.el).innerHTML = t ? (spin ? '<span class="ai-spin" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:-2px"></span> ' : '') + esc(t) : ''; }
+function status(t, spin) { if (!UI) return; var sb = $('#ai-stop', UI.el); if (sb) sb.hidden = !spin; $('#ai-status', UI.el).innerHTML = t ? (spin ? '<span class="ai-spin" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:-2px"></span> ' : '') + esc(t) : ''; }
 
 /* ---- the microphone in the drawer: speak → typed by Gemini → treated like typed text ---- */
 var MREC = null;
 async function micToggle() {
   if (!UI) return;
   var mic = $('#ai-mic', UI.el);
-  if (MREC && MREC.state === 'recording') { MREC.stop(); return; }
+  if (MREC && (MREC.state === 'recording' || MREC.state === 'paused')) { MREC.stop(); return; }
   var stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
   catch (e) { status('The microphone could not be used (' + (e.message || e.name) + '). Type instead.'); return; }
@@ -518,17 +534,44 @@ async function micToggle() {
   rec.onstop = async function () {
     clearInterval(tm); stream.getTracks().forEach(function (t) { t.stop(); }); MREC = null;
     if (!UI) return;
-    mic.classList.remove('on');
+    mic.classList.remove('on'); $('#ai-mctl', UI.el).hidden = true;
+    if (rec.scrap) { status('Scrapped — speak afresh.'); return; }
     var blob = new Blob(chunks, { type: (rec.mimeType || 'audio/webm').split(';')[0] });
     if (blob.size < 1500) { status('Nothing was heard.'); return; }
     status('Typing what you said…', true);
     try { var t = await transcribe(blob); if (!t) { status('Nothing was heard.'); return; } heard(t); }
     catch (e) { status(e.message); }
   };
-  rec.start(1000); mic.classList.add('on');
-  var tick = function () { var s = Math.round((Date.now() - t0) / 1000); status('Listening ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) + ' — press the microphone when you finish'); };
+  rec.start(1000); mic.classList.add('on'); rec.held = 0; $('#ai-mctl', UI.el).hidden = false; $('#ai-mpause', UI.el).textContent = '⏸ Pause';
+  var tick = function () {
+    if (rec.state === 'paused') return;
+    var s = Math.round((Date.now() - t0 - rec.held) / 1000); status('Listening ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) + ' — press the microphone when you finish');
+  };
   tick(); tm = setInterval(tick, 500);
 }
+function micPause() {
+  var r = MREC; if (!r || !UI) return;
+  if (r.state === 'recording') { r.pause(); r.pausedAt = Date.now(); $('#ai-mpause', UI.el).textContent = '▶ Carry on'; $('#ai-mic', UI.el).classList.remove('on'); status('Paused — ▶ Carry on goes on from here; the microphone finishes and sends.'); }
+  else if (r.state === 'paused') { r.held += Date.now() - r.pausedAt; r.resume(); $('#ai-mpause', UI.el).textContent = '⏸ Pause'; $('#ai-mic', UI.el).classList.add('on'); }
+}
+/* 📋 Instructions in the drawer: everything said so far, to change or add to; and the standing instructions */
+function openSaid() {
+  if (!UI) return;
+  var o = overlay('Instructions for these bills',
+    '<p style="margin:0 0 6px;color:#555">Everything you have said in this conversation, one instruction per line. Change, delete or add lines, then press <b>Use these</b> — the bills are prepared again from them.</p>' +
+    '<textarea id="ai-saidt" rows="12" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid #c9d0da;border-radius:8px"></textarea>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" id="ai-saidok">Use these</button><button class="btn" id="ai-saidstd">Standing instructions…</button></div>');
+  var ta = $('#ai-saidt', o.box); ta.value = SS.said.join('\n');
+  ta.addEventListener('keydown', function (e) { e.stopPropagation(); });
+  $('#ai-saidok', o.box).onclick = function () {
+    var l = ta.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+    o.close(); abortRun(); SS.said = l; ssSave();
+    say('ai', 'Instructions changed (' + l.length + ' line' + (l.length === 1 ? '' : 's') + '). Preparing the bills again.');
+    if (l.length) next();
+  };
+  $('#ai-saidstd', o.box).onclick = function () { o.close(); openInstructions(); };
+}
+
 
 /* ---- everything you say comes here ---- */
 function heard(text) {
@@ -910,6 +953,7 @@ function letterText(l) {
   var t = $$('p, li', d).map(function (p) { return p.textContent.trim(); }).filter(Boolean).join('\n');
   return t || String(l.text || '');
 }
+var LETTER_SAID = {};   /* the last instructions for each kind of letter, to change and write again */
 function startLetter() {
   var bills = (db().invoices || []).slice().sort(function (a, b) { return String(b.date + b.number).localeCompare(String(a.date + a.number)); }).slice(0, 30);
   var last = A.lastSaved && A.lastSaved();
@@ -929,15 +973,38 @@ function startLetter() {
       $$('[data-k]', o.box).forEach(function (x) { x.classList.toggle('primary', x === b); });
       $('#ai-lbill', o.box).hidden = kind !== 'invoice';
       if (kind === 'invoice' && !bills.length) { step.innerHTML = '<div class="ai-warn">There are no saved bills yet.</div>'; return; }
-      step.innerHTML = '<p style="margin:10px 0 0;color:#555">' + (kind === 'invoice' ? 'Say anything to add to the usual covering letter, or just “the usual letter”.' : 'Say whom it is to, the subject, and what it should say.') + '</p><div id="ai-rh"></div>';
-      if (recr) recr.stop(true);
-      recr = new Recorder($('#ai-rh', step), function (inp) { recr = null; write(inp); });
-      recr.start();
+      step.innerHTML = '<p style="margin:10px 0 0;color:#555">' + (kind === 'invoice' ? 'Say anything to add to the usual covering letter, or just “the usual letter”.' : 'Say whom it is to, the subject, and what it should say.') + ' What you say is typed below — change it, or speak again to add to it, then press <b>Write the letter</b>.</p><div id="ai-rh"></div>' +
+        '<label class="ai-lbl">Your instructions for this letter</label><textarea id="ai-ltxt" rows="5" style="width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid #c9d0da;border-radius:8px"></textarea>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center"><button class="btn primary" id="ai-lgo">✍ Write the letter</button><button class="btn warn" id="ai-lstop" hidden>■ Stop</button>' +
+        '<button class="btn" id="ai-lmic">🎙 Speak more</button><button class="btn" id="ai-lclr" title="Scrap these instructions and speak afresh">↺ Clear and speak afresh</button><button class="btn" id="ai-lstd">📋 Standing instructions</button></div><div id="ai-lmsg" style="margin-top:8px"></div>';
+      var ta = $('#ai-ltxt', step); ta.value = LETTER_SAID[kind] || '';
+      ta.addEventListener('keydown', function (e) { e.stopPropagation(); });
+      ta.addEventListener('input', function () { LETTER_SAID[kind] = ta.value; });
+      function listen() {
+        if (recr) recr.stop(true);
+        recr = new Recorder($('#ai-rh', step), async function (inp) {
+          recr = null;
+          var add = inp.text || '';
+          if (inp.audio) { busy($('#ai-rh', step), 'Typing what you said…'); try { add = await transcribe(inp.audio); } catch (e) { $('#ai-rh', step).innerHTML = '<div class="ai-warn">' + esc(e.message) + '</div>'; return; } }
+          ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + add; LETTER_SAID[kind] = ta.value;
+          $('#ai-rh', step).innerHTML = '<p style="color:#127a4b;margin:6px 0">Typed below. Check it, then press <b>Write the letter</b>.</p>';
+        });
+        recr.start();
+      }
+      $('#ai-lmic', step).onclick = listen;
+      $('#ai-lclr', step).onclick = function () { ta.value = ''; LETTER_SAID[kind] = ''; listen(); };
+      $('#ai-lstd', step).onclick = function () { o.close(); openInstructions(); };
+      $('#ai-lgo', step).onclick = function () { var t = ta.value.trim(); if (!t) { toast('Speak or type the instructions first'); return; } if (recr) { recr.stop(true); recr = null; $('#ai-rh', step).innerHTML = ''; } write({ text: t }); };
+      $('#ai-lstop', step).onclick = function () { job++; $('#ai-lstop', step).hidden = true; $('#ai-lgo', step).hidden = false; $('#ai-lmsg', step).innerHTML = '<p style="color:#555">Stopped. Change the instructions and press Write the letter again.</p>'; };
+      if (!ta.value) listen();
     };
   });
+  var job = 0;
   async function write(inp) {
+    var my = ++job;
+    $('#ai-lgo', step).hidden = true; $('#ai-lstop', step).hidden = false;
     var v = kind === 'invoice' ? (db().invoices || []).find(function (x) { return x.id === $('#ai-lsel', o.box).value; }) : null;
-    busy($('#ai-rh', step), 'Writing the letter…');
+    busy($('#ai-lmsg', step), 'Writing the letter…');
     var samples = (db().letters || []).filter(function (l) { return l.status !== 'draft' && (l.kind || 'general') === kind; }).slice(-3);
     var task = 'Write the body of a letter for Adv. Sanket R. Charpe from his dictation. It goes on his printed letterhead; the date, letter number, "Thanking you" and the signature block are added by the tool — do NOT write them.\n\n' +
       (v ? 'THE BILL IT GOES WITH: ' + v.number + ' dated ' + dmy(v.date) + '; amount ₹' + A.money(A.totalOf(v)) + ' (' + A.amountWords(A.totalOf(v)) + '); reference: ' + (v.reference || '') + '; addressed to: ' + String(v.billTo || '').replace(/\n/g, ', ') + '\nItems: ' + (v.items || []).map(function (it) { return it.name + ' ₹' + it.rate + '×' + it.qty; }).join('; ') + '\n' : '') +
@@ -948,13 +1015,16 @@ function startLetter() {
       '\nReturn JSON: {"letter":"the letter text exactly in the layout above","said":"the dictation in words"}';
     try {
       var r = await run(pick(), inp, task, AI_SYS);
+      if (my !== job) return;   /* stopped */
       var text = String((r.json || {}).letter || '').trim();
       if (!text) throw new Error('The AI sent back no letter. Please try again.');
       o.close();
       if (!window.CBL || !window.CBL.openFromText) { toast('This page needs reloading once to place letters'); return; }
       window.CBL.openFromText(kind, text, v, 'Letter prepared by ' + r.engine + ' — check it, then Save letter for its number');
     } catch (e) {
-      var h = $('#ai-rh', step); if (h) h.innerHTML = '<div class="ai-warn">' + esc(e.message) + '</div>';
+      if (my !== job) return;
+      var h = $('#ai-lmsg', step); if (h) h.innerHTML = '<div class="ai-warn">' + esc(e.message) + '</div>';
+      $('#ai-lgo', step).hidden = false; $('#ai-lstop', step).hidden = true;
     }
   }
 }
