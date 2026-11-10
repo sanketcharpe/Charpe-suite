@@ -247,7 +247,8 @@ table.board td.act .btn:last-child{margin-bottom:0}
   <nav id="nav">
     <button data-page="dash" onclick="go('dash')" class="on">Dashboard</button>
     <button data-page="cases" onclick="go('cases')">All Cases</button>
-    <button data-page="unupd" onclick="go('unupd')">Unupdated<span class="navbdg" id="nbUn"></span></button>
+    <button data-page="unupd" onclick="go('unupd')" title="Subordinate courts whose next date has passed or was never entered">Unupdated<span class="navbdg" id="nbUn"></span></button>
+    <button data-page="unfetch" onclick="go('unfetch')" title="High Court, Supreme Court, CAT and MAT cases with no future date — fetch them from the court">Unfetched<span class="navbdg" id="nbUf"></span></button>
     <button data-page="cal" onclick="go('cal')">Calendar</button>
     <button data-page="plan" onclick="go('plan')">Planner</button>
     <button data-page="tasks" onclick="go('tasks')">Tasks<span class="navbdg" id="nbTk"></span></button>
@@ -350,6 +351,23 @@ table.board td.act .btn:last-child{margin-bottom:0}
         </select>
       </div>
       <div id="ulist"></div>
+    </div>
+  </div>
+</div>
+
+<div id="punfetch" class="page">
+  <div class="card">
+    <div class="ch"><span class="g">Unfetched cases &mdash; High Court, Supreme Court, CAT and MAT with no future date</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="ufacts"></div>
+    </div>
+    <div class="cb">
+      <div style="background:#eef4fb;border:1px solid #a9c4e6;border-radius:5px;padding:8px 11px;font-size:11px;line-height:1.6;margin-bottom:10px">
+        The dates of these courts come from the court sites, so instead of posting them by hand, fetch them:
+        <b>&#9878; Fetch these from the courts</b> opens one CAPTCHA per High Court case (up to 60 on one screen); Supreme Court, CAT and MAT need none.
+        A case that is over can be marked <b>&#10003; Disposed</b> here too.
+      </div>
+      <div class="srow"><input class="sinp" id="ufq" oninput="renderUnfetch()" placeholder="Search within unfetched cases..."></div>
+      <div id="uflist"></div>
     </div>
   </div>
 </div>
@@ -1022,6 +1040,7 @@ function go(name){
   if(name==='dash')renderDash();
   if(name==='cases')renderC();
   if(name==='unupd')renderUnupd();
+  if(name==='unfetch')renderUnfetch();
   if(name==='cal')renderCal();
   if(name==='plan')renderPlan();
   if(name==='tasks'){renderTasks();renderMsgs();}
@@ -1030,12 +1049,13 @@ function go(name){
   window.scrollTo(0,0);
 }
 function refresh(){
-  renderDash();renderC();renderUnupd();renderCal();renderPlan();
+  renderDash();renderC();renderUnupd();renderUnfetch();renderCal();renderPlan();
   renderTasks();renderDashT();renderMsgs();renderDashM();renderDeleted();
   updCF();popCaseSel();updBadges();
 }
 function updBadges(){
-  var un=unupdated().length,tk=LT().filter(function(t){return !t.done;}).length;
+  var un=unupdated().length,uf=unfetched().length,tk=LT().filter(function(t){return !t.done;}).length;
+  var f=document.getElementById('nbUf');if(f){f.textContent=uf;f.style.display=uf?'inline':'none';}
   var dl=C.filter(function(c){return c.del;}).length+T.filter(function(t){return t.del;}).length;
   var a=document.getElementById('nbUn'),b=document.getElementById('nbTk'),e=document.getElementById('nbDl');
   if(a){a.textContent=un;a.style.display=un?'inline':'none';}
@@ -1088,9 +1108,14 @@ function tOn(iso){return LT().filter(function(t){return t.due===iso&&!t.done;});
 /* Unupdated: open matters with no future date on record.
    Subordinate courts and tribunals are listed first; High Court last. */
 function isHC(c){var g=courtGroup(c);return g==='hc'||g==='sc';}
+/* High Court, Supreme Court, CAT and MAT: their dates come by fetching from the court, so when behind they are
+   "Unfetched"; "Unupdated" is only the subordinate courts, whose dates are posted by hand (Nov 2026) */
+function isUpper(c){if(isHC(c))return true;try{return !!(window.trKind&&trKind(c));}catch(e){return false;}}
+function unfetched(){var t=td();return LC().filter(function(c){return isOpen(c)&&isUpper(c)&&(!c.nd||c.nd<t);})
+  .sort(function(a,b){return String(a.court||'').localeCompare(String(b.court||''))||String(a.nd||'').localeCompare(String(b.nd||''));});}
 function unupdated(){
   var t=td();
-  return LC().filter(function(c){return isOpen(c)&&(!c.nd||c.nd<t);})
+  return LC().filter(function(c){return isOpen(c)&&!isUpper(c)&&(!c.nd||c.nd<t);})
     .sort(function(a,b){
       var ha=isHC(a)?1:0,hb=isHC(b)?1:0;
       if(ha!==hb)return ha-hb;                          /* High Court sinks to the bottom */
@@ -1391,12 +1416,36 @@ function renderUnupd(){
     return true;
   });
   if(!all.length){el.innerHTML='<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing pending &mdash; every open matter has a future date on record.</span></div>';return;}
-  var sub=all.filter(function(c){return !isHC(c);}),hc=all.filter(isHC);
   window.__unupdRow=true;
   try{
-  el.innerHTML=unupdSect('Subordinate courts, tribunals, industrial &amp; labour courts',sub,'#1a2744')+
-               unupdSect('High Court',hc,'#c0392b');
+  el.innerHTML=unupdSect('Subordinate courts, industrial &amp; labour courts and other tribunals',all,'#1a2744');
   }finally{window.__unupdRow=false;}
+}
+/* Unfetched: High Court, Supreme Court, CAT, MAT cases with no future date — fetch them from the court */
+function renderUnfetch(){
+  var el=document.getElementById('uflist');if(!el)return;
+  var q=((document.getElementById('ufq')||{}).value||'').toLowerCase();
+  var all=unfetched().filter(function(c){if(!q)return true;return [snQ(c),ctit(c),c.court,c.cn,c.cl,c.jd].join(' ').toLowerCase().indexOf(q)>=0;});
+  var acts=document.getElementById('ufacts');
+  if(acts)acts.innerHTML=all.length?'<button class="btn bg" onclick="fetchUnfetched()" title="High Court cases with a CNR: one CAPTCHA each (up to 60 on one screen). Supreme Court, CAT, MAT: no CAPTCHA">&#9878; Fetch these from the courts</button>':'';
+  if(!all.length){el.innerHTML='<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing unfetched &mdash; every open High Court, Supreme Court, CAT and MAT matter has a future date.</span></div>';return;}
+  var kindOf=function(c){var k='';try{k=window.trKind?trKind(c):'';}catch(e){}return k==='sc'||courtGroup(c)==='sc'?'sc':k==='cat'?'cat':k==='mat'?'mat':'hc';};
+  window.__unupdRow=true;
+  try{
+  el.innerHTML=unupdSect('High Court',all.filter(function(c){return kindOf(c)==='hc';}),'#c0392b')+
+               unupdSect('Supreme Court',all.filter(function(c){return kindOf(c)==='sc';}),'#6b2d8f')+
+               unupdSect('Central Administrative Tribunal (CAT)',all.filter(function(c){return kindOf(c)==='cat';}),'#1a5276')+
+               unupdSect('Maharashtra Administrative Tribunal (MAT)',all.filter(function(c){return kindOf(c)==='mat';}),'#117864');
+  }finally{window.__unupdRow=false;}
+}
+function fetchUnfetched(){
+  var all=unfetched(),hc=all.filter(function(c){return !(window.trKind&&trKind(c))&&typeof ecoOk==='function'&&ecoOk(c);}).map(function(c){return c.id;}),
+      tr=all.filter(function(c){return window.trKind&&trKind(c);});
+  var none=all.length-hc.length-tr.length;
+  if(tr.length&&window.trUpdate)trUpdate(tr);
+  if(hc.length&&typeof ecoOpenBatch==='function')ecoOpenBatch(hc.slice(0,60));
+  if(!hc.length&&!tr.length){toast('None of these can be fetched: add the CNR number (High Court) in Edit first.','err');return;}
+  if(none)toast(none+' High Court case'+(none===1?' has':'s have')+' no CNR number — add it in Edit so the tool can fetch '+(none===1?'it':'them')+'.');
 }
 /* one section of the unupdated list, split into never-dated and overdue */
 /* Unupdated → ✓ Disposed: asked twice, then the case is disposed and leaves the list (revivable: Edit → Status) */
@@ -2191,7 +2240,7 @@ function prtAll(mode){
 function prtUnupd(mode){
   var arr=unupdated();
   if(!arr.length){toast('Nothing pending — every open matter has a future date.','err');return;}
-  var sub=arr.filter(function(c){return !isHC(c);}),hc=arr.filter(isHC);
+  var sub=arr,hc=[];
   var body=prtHeader('Printed on '+fd(td())+(cu?' by '+he(cu.name||cu.username):''))+
     '<h1>Unupdated matters &mdash; no future date on record ('+arr.length+')</h1>';
   var sect=function(t,a){
