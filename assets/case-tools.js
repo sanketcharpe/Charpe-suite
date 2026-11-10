@@ -12,7 +12,7 @@
     '@media print{.snb{background:none;color:#000;border:1px solid #000}}' +
     '.ctbox{border:1px solid #d5dbe4;border-radius:6px;padding:12px;margin-bottom:10px;background:#fbfcfe}.ctbox h4{margin:0 0 6px;font-size:12.5px}.ctbox p{font-size:11px;color:#555;margin:4px 0 8px}' +
     '.ctrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11.5px}.ctrow select,.ctrow input{font-size:11.5px;padding:3px 5px}' +
-    '.dupg{border:1px solid #e6d3a8;background:#fffaf0;border-radius:6px;padding:7px 9px;margin:6px 0;font-size:11.5px}.dupg .keep{color:#127a4b;font-weight:700}.dupg .drop{color:#a5452f}.dupg li{margin:2px 0}.dupg ul{margin:4px 0 0;padding-left:18px}';
+    '.dupg{border:1px solid #e6d3a8;background:#fffaf0;border-radius:6px;padding:7px 9px;margin:6px 0;font-size:11.5px}.dupg .keep{color:#127a4b;font-weight:700}.dupg .drop{color:#a5452f}.dupg li{margin:2px 0}.dupg ul{margin:4px 0 0;padding-left:18px}.duptab{width:100%;border-collapse:collapse}.duptab td{padding:4px 6px;border-top:1px dotted #e6d3a8;vertical-align:top;font-size:11.5px}.duptab tr.keep td{background:#eefaf2}.duptab tr.drop td{color:#7a3b33}.duptab label{white-space:nowrap;cursor:pointer}.duptab input{width:auto}';
   document.head.appendChild(st);
 
   function live() { return C.filter(function (c) { return !c.del; }); }
@@ -66,7 +66,13 @@
     toast(on ? 'Case numbers are shown.' : 'Case numbers are hidden (kept, not lost).');
   };
 
-  /* ---------- duplicates ---------- */
+  /* ---------- duplicates ----------
+     Sure duplicates: same CNR; or same court and case number; or (no case number) same court and parties.
+     Probable duplicates: the same case type, number and year under a differently written court name,
+     with a party in common or a note "Connected matter — <that number>" (the eCourts import made one
+     entry per co-petitioner). The copy kept is the one most recently brought up to date — judged by
+     real activity (last fetch from the court, last hearing, last note), not by the time of saving,
+     which Drive sync renews on every case. */
   function k(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
   function cnKey(c) {
     var s = String(c.cn || '').toLowerCase();
@@ -75,14 +81,36 @@
     return nums.length ? letters + '|' + nums.map(Number).join('/') : '';
   }
   function courtKey(c) { return k(c.court).replace(/(nagpur|bench|circuit|at|the)/g, ''); }
-  function score(c) {
+  function typeNo(c) {
+    var s = String(c.cn || ''), m = s.match(/^\s*(.*?)(\d{1,7})\s*(?:\/|of|-)\s*((?:19|20)\d\d)\s*$/i);
+    if (!m) return '';
+    return k(m[1].replace(/\b(no|nos|of|case|complaint)\b\.?/gi, ' ')) + '|' + (+m[2]) + '|' + m[3];
+  }
+  var STOP = /^(state|union|india|maharashtra|others|through|corporation|msrtc|divisional|controller|road|transport|manager|general|secretary|government|director|private|limited|pvt|ltd)$/;
+  function ptoks(c) { return (String(c.pl || '') + ' ' + String(c.de || '')).toLowerCase().match(/[a-z]{4,}/g) || []; }
+  function share(a, b) { var A = {}; ptoks(a).forEach(function (t) { if (!STOP.test(t)) A[t] = 1; }); return ptoks(b).some(function (t) { return A[t]; }); }
+  function connected(a, b) { var n = k(b.cn); if (!n) return false; return (a.notes || []).some(function (x) { return /connected matter/i.test(x.text || '') && k(x.text).indexOf(n) >= 0; }); }
+  /* the same court written differently: "7th District and Session Court" = "District and Session Court" */
+  function courtFam(c) { return String(c.court || '').toLowerCase().replace(/\b\d+(st|nd|rd|th)?\b/g, ' ').replace(/\b(no|court|the|at|nagpur|bench|ad ?hoc|n\/b)\b\.?/g, ' ').replace(/[^a-z]/g, ''); }
+  function iso(x) { var m = String(x || '').match(/^\d{4}-\d\d-\d\d/); return m ? m[0] : ''; }
+  function activity(c) {
+    var e = c.eco || {}, t = td(), ds = [iso(e.at), c.pd && c.pd <= t ? c.pd : ''];
+    (c.hist || []).forEach(function (h) { ds.push(iso(h.pd)); ds.push(iso(h.dt)); });
+    (e.hh || []).forEach(function (h) { var d = iso(h.bd || h.d); if (d && d <= t) ds.push(d); });
+    (c.notes || []).forEach(function (n) { ds.push(iso(n.date)); });
+    var last = ds.filter(Boolean).sort().pop() || '';
     var f = ['court', 'cn', 'cnr', 'jd', 'pl', 'de', 'cl', 'cp', 'cm', 'pd', 'ps', 'nd', 'ns'].filter(function (x) { return c[x]; }).length;
-    var e = c.eco || {};
-    return f + (c.notes || []).length * 2 + (c.hist || []).length * 2 + ((e.hh || []).length + (e.ord || []).length) * 3 + (c.imp ? 1 : 0);
+    var hh = (e.hh || []).length, ord = Object.keys(e.ord || {}).length, nt = (c.notes || []).length, hs = (c.hist || []).length;
+    return { last: last, nd: iso(c.nd), fetched: iso(e.at), hh: hh, ord: ord, notes: nt, hist: hs, score: f + nt * 2 + hs * 2 + (hh + ord) * 3 + (c.cnr ? 5 : 0) + (c.nd ? 3 : 0) };
+  }
+  function better(a, b) {   /* > 0 when b is more up to date than a */
+    var A = activity(a), B = activity(b);
+    return String(B.fetched).localeCompare(String(A.fetched)) || String(B.nd).localeCompare(String(A.nd)) || String(B.last).localeCompare(String(A.last)) || B.score - A.score || String(a.added || '').localeCompare(String(b.added || ''));
   }
   function groups() {
-    var L = live(), par = {}, keyOwner = {};
+    var L = live(), par = {}, keyOwner = {}, soft = {};
     function root(i) { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; }
+    function join(x, y, probable) { var a = root(x), b = root(y); if (a === b) return; par[b] = a; if (probable || soft[b]) soft[a] = 1; }
     L.forEach(function (c) { par[c.id] = c.id; });
     L.forEach(function (c) {
       var keys = [];
@@ -90,44 +118,78 @@
       var ck = cnKey(c);
       if (ck) keys.push('cn:' + courtKey(c) + ':' + ck);
       else if (c.pl && c.de) keys.push('pt:' + courtKey(c) + ':' + k(c.pl) + ':' + k(c.de));
-      keys.forEach(function (key) {
-        if (keyOwner[key]) { var a = root(keyOwner[key]), b = root(c.id); if (a !== b) par[b] = a; }
-        else keyOwner[key] = c.id;
-      });
+      keys.forEach(function (key) { if (keyOwner[key]) join(keyOwner[key], c.id, false); else keyOwner[key] = c.id; });
+    });
+    var byNo = {};
+    L.forEach(function (c) { var t = typeNo(c); if (t) (byNo[t] = byNo[t] || []).push(c); });
+    Object.keys(byNo).forEach(function (t) {
+      var cs = byNo[t];
+      for (var i = 0; i < cs.length; i++) for (var j = i + 1; j < cs.length; j++) {
+        var a = cs[i], b = cs[j]; if (root(a.id) === root(b.id)) continue;
+        if (share(a, b) || (courtFam(a) === courtFam(b) && (connected(a, b) || connected(b, a)))) join(a.id, b.id, true);
+      }
     });
     var g = {};
     L.forEach(function (c) { var r = root(c.id); (g[r] = g[r] || []).push(c); });
-    return Object.keys(g).map(function (r) { return g[r]; }).filter(function (x) { return x.length > 1; }).map(function (x) {
-      x.sort(function (a, b) { return score(b) - score(a) || String(a.added || '').localeCompare(String(b.added || '')); });
-      return x;
+    return Object.keys(g).filter(function (r) { return g[r].length > 1; }).map(function (r) {
+      var x = g[r].slice().sort(better);
+      return { cases: x, probable: !!soft[r], keep: x[0].id, drop: x.slice(1).map(function (c) { return c.id; }) };
     });
   }
   var lastScan = null;
-  window.ctScan = function () {
-    lastScan = groups();
-    var el = document.getElementById('ctDup'); if (!el) return;
+  function rowHTML(g, gi, c) {
+    var a = activity(c), keep = g.keep === c.id, drop = g.drop.indexOf(c.id) >= 0;
+    return '<tr class="' + (keep ? 'keep' : drop ? 'drop' : '') + '">' +
+      '<td><label title="Keep this one"><input type="radio" name="ctk' + gi + '" ' + (keep ? 'checked' : '') + ' onchange="ctKeep(' + gi + ',\'' + c.id + '\')"> keep</label></td>' +
+      '<td><label title="Delete this one"><input type="checkbox" ' + (drop ? 'checked' : '') + (keep ? ' disabled' : '') + ' onchange="ctDrop(' + gi + ',\'' + c.id + '\',this.checked)"> delete</label></td>' +
+      '<td><b>' + he(ctit(c)) + '</b><br><span class="mini">' + he(c.court || '—') + (c.cn ? ' · ' + he(c.cn) : '') + (c.cnr ? ' · CNR ' + he(c.cnr) : ' · <i>no CNR</i>') + (c.added ? ' · added ' + fd(c.added) : '') + '</span></td>' +
+      '<td class="mini">' + (a.fetched ? 'fetched ' + fd(a.fetched) : '<i>never fetched</i>') + '<br>last activity ' + (a.last ? fd(a.last) : '—') + '</td>' +
+      '<td class="mini">' + a.hh + ' hearings · ' + a.ord + ' orders<br>' + a.notes + ' notes · ' + a.hist + ' dates posted</td>' +
+      '<td class="mini">' + (c.nd ? 'next ' + fd(c.nd) : 'no next date') + '</td></tr>';
+  }
+  function paint() {
+    var el = document.getElementById('ctDup'); if (!el || !lastScan) return;
     if (!lastScan.length) { el.innerHTML = '<div style="color:#127a4b;font-size:11.5px;margin-top:6px">&#10004; No duplicate entries among ' + live().length + ' cases.</div>'; return; }
-    var n = lastScan.reduce(function (s, g) { return s + g.length - 1; }, 0);
-    el.innerHTML = '<div style="font-size:11.5px;margin:6px 0"><b>' + lastScan.length + ' case' + (lastScan.length === 1 ? '' : 's') + '</b> entered more than once — <b>' + n + '</b> extra entr' + (n === 1 ? 'y' : 'ies') + '. The fullest entry of each is kept (green); blanks in it are filled from the others.</div>' +
-      lastScan.map(function (g) {
-        return '<div class="dupg"><ul>' + g.map(function (c, i) {
-          return '<li class="' + (i ? 'drop' : 'keep') + '">' + (i ? '&#x2715; remove: ' : '&#10004; keep: ') + he(ctit(c)) + ' <span style="color:#555;font-weight:400">— ' + he(c.court || '—') + (c.cn ? ' · ' + he(c.cn) : '') + (c.cnr ? ' · ' + he(c.cnr) : '') + (c.nd ? ' · next ' + fd(c.nd) : '') + (c.added ? ' · added ' + fd(c.added) : '') + '</span></li>';
-        }).join('') + '</ul></div>';
+    var n = lastScan.reduce(function (s, g) { return s + g.drop.length; }, 0), pr = lastScan.filter(function (g) { return g.probable; }).length;
+    el.innerHTML = '<div style="font-size:11.5px;margin:6px 0"><b>' + lastScan.length + ' case' + (lastScan.length === 1 ? '' : 's') + '</b> appear more than once' + (pr ? ' (' + pr + ' marked <b>probable — check</b>)' : '') +
+      '. In each, the copy most recently brought up to date is marked <b>keep</b>; the others are ticked for deletion. Change any tick or the kept copy before deleting. ' +
+      'Notes, dates and orders of a deleted copy are carried into the kept one, with a note of the party names it was entered under; deleted copies stay revivable in Deleted.</div>' +
+      lastScan.map(function (g, gi) {
+        return '<div class="dupg"><div style="margin-bottom:4px"><b>' + he(g.cases[0].cn || ctit(g.cases[0])) + '</b> — ' + g.cases.length + ' entries' +
+          (g.probable ? ' <span style="background:#fff1c2;border:1px solid #e8c96a;border-radius:8px;padding:0 6px;font-size:10.5px">probable — check</span>' : '') + '</div>' +
+          '<table class="duptab">' + g.cases.map(function (c) { return rowHTML(g, gi, c); }).join('') + '</table></div>';
       }).join('') +
-      '<button class="btn br" id="ctDelBtn" onclick="ctDelete()" style="margin-top:6px">&#x2715; Delete the ' + n + ' duplicate entr' + (n === 1 ? 'y' : 'ies') + '</button>';
+      '<button class="btn br" id="ctDelBtn" onclick="ctDelete()" style="margin-top:6px"' + (n ? '' : ' disabled') + '>&#x2715; Delete the ' + n + ' ticked entr' + (n === 1 ? 'y' : 'ies') + '</button>';
+  }
+  window.ctScan = function () { lastScan = groups(); paint(); };
+  window.ctKeep = function (gi, id) {
+    var g = lastScan[gi]; g.keep = id; g.drop = g.cases.filter(function (c) { return c.id !== id; }).map(function (c) { return c.id; }); paint();
+  };
+  window.ctDrop = function (gi, id, on) {
+    var g = lastScan[gi]; g.drop = g.drop.filter(function (x) { return x !== id; }); if (on && id !== g.keep) g.drop.push(id); paint();
   };
   window.ctDelete = function () {
     if (!guard('del', 'You are not allowed to delete records.')) return;
     if (!lastScan) return;
     var who = cu ? (cu.name || cu.username) : '', n = 0, t = now();
     lastScan.forEach(function (g) {
-      var keep = g[0];
-      g.slice(1).forEach(function (d) {
+      var keep = find(g.keep); if (!keep) return;
+      var names = [];
+      g.drop.forEach(function (id) {
+        var d = find(id); if (!d || d.del) return;
         ['court', 'cn', 'cnr', 'jd', 'pl', 'de', 'cl', 'cp', 'cm', 'pd', 'ps', 'nd', 'ns', 'imp'].forEach(function (f) { if (!keep[f] && d[f]) keep[f] = d[f]; });
-        if (!keep.eco && d.eco) keep.eco = d.eco;
+        var ke = keep.eco || {}, de = d.eco || {};
+        if (!keep.eco || ((de.hh || []).length > (ke.hh || []).length && !keep.cnr)) { if (d.eco) keep.eco = d.eco; }
+        else if (de.ord) { ke.ord = ke.ord || {}; Object.keys(de.ord).forEach(function (x) { if (!ke.ord[x]) ke.ord[x] = de.ord[x]; }); }
+        keep.notes = keep.notes || [];
+        (d.notes || []).forEach(function (x) { if (!keep.notes.some(function (y) { return y.text === x.text; })) keep.notes.push(x); });
+        keep.hist = keep.hist || [];
+        (d.hist || []).forEach(function (h) { if (!keep.hist.some(function (y) { return y.pd === h.pd && y.nd === h.nd; })) keep.hist.push(h); });
         if (!keep.sn && d.sn) keep.sn = d.sn;
+        if (ctit(d) !== ctit(keep)) names.push(ctit(d) + (d.court && d.court !== keep.court ? ' (' + d.court + ')' : ''));
         d.del = t; d.delBy = who; touch(d); n++;
       });
+      if (names.length) keep.notes.push({ text: 'Also entered as: ' + names.join('; ') + ' — duplicate entries merged into this one.', date: td(), by: who });
       touch(keep);
     });
     saveAll(); logAct('Removed ' + n + ' duplicate case entries');
@@ -147,7 +209,7 @@
       ' starting at <input id="ctFrom" type="number" min="1" value="1" style="width:64px">' +
       ' <button class="btn bg" id="ctNumBtn" onclick="ctNumber()">' + (numbered ? 'Renumber all cases' : 'Number all cases') + '</button></div></div>' +
       '<div class="ctbox"><h4>&#9776; Duplicate case entries</h4>' +
-      '<p>Finds a case entered more than once: same CNR, or same court and case number, or (without a case number) same court and same parties.</p>' +
-      '<button class="btn bo" onclick="ctScan()">Find duplicates</button><div id="ctDup"></div></div>';
+      '<p>Finds a case entered more than once — same CNR, same court and case number, or the same case number under a differently written court name — and recommends the less updated copies for deletion. Nothing is deleted until you press the red button.</p>' +
+      '<button class="btn bg" onclick="ctScan()">&#128269; Recommend duplicates to delete</button><div id="ctDup"></div></div>';
   };
 })();
