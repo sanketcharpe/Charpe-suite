@@ -266,7 +266,8 @@ function css() {
     '.ai-dates{max-height:30%;overflow:auto;padding:8px 12px;font-size:12.5px;border-bottom:1px solid #d5dbe4;background:#fff}.ai-dates div{padding:2px 0;border-bottom:1px dotted #e2e6ec}' +
     '.ai-df{padding:10px 12px;border-top:1px solid #c9d0da;background:#fff}' +
     '.ai-il{list-style:none;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:6px}.ai-il li{border:1px solid #d5dbe4;border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:flex-start}.ai-il li .t{flex:1;white-space:pre-wrap}.ai-il li b{min-width:22px}' +
-    '@media (max-width:900px){.ai-drawer{width:100vw;height:55vh;top:auto;border-right:0;border-top:1px solid #c9d0da}}';
+    '.ai-drawer[hidden]{display:none!important}.ai-conv{width:min(46vw,680px)!important}.ai-cases{padding:6px 12px;background:#fff;border-bottom:1px solid #d5dbe4;max-height:24vh;overflow:auto}.ai-case{display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px dotted #e2e6ec;font-size:13px}.ai-case>div:first-child{flex:1;min-width:0}.ai-cbtn{display:flex;gap:4px}.ai-pane{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}.ai-pane[hidden],.ai-pdfv[hidden]{display:none!important}.ai-pdfv{flex:1;min-height:0;display:flex;flex-direction:column}.ai-pvh{padding:6px 12px;background:#fff;border-bottom:1px solid #d5dbe4}.ai-log{padding:10px 12px;display:flex;flex-direction:column;gap:8px}.ai-m{max-width:92%;padding:8px 11px;border-radius:12px;font-size:13.5px;white-space:pre-wrap;line-height:1.45}.ai-m.me{align-self:flex-end;background:#1668e3;color:#fff;border-bottom-right-radius:4px}.ai-m.me small{color:#dbe6ff}.ai-m.ai{align-self:flex-start;background:#fff;border:1px solid #d5dbe4;border-bottom-left-radius:4px}.ai-m.q{border-color:#f0c36d;background:#fffaf0}.ai-pick{white-space:normal;margin-top:8px}.ai-pick label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer}.ai-pick label input{width:auto;margin-top:3px}.ai-pg{padding:4px 0;border-top:1px dotted #e2e6ec}.ai-bills{padding:4px 12px 12px}.ai-bh{font-weight:700;margin:6px 0}.ai-bill{background:#fff;border:1px solid #d5dbe4;border-radius:10px;padding:8px 10px;margin:0 0 8px;font-size:13px}.ai-bill.open{border-color:#1668e3;box-shadow:0 0 0 2px #cfe0ff}.ai-bill.saved{opacity:.75}.ai-bill ul{margin:6px 0;padding-left:18px}.ai-bill li{margin:2px 0}.ai-bf{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.ai-tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:8px;background:#eef3fb;color:#1b4d9b;border:1px solid #cddcf3}.ai-tag.ok{background:#e9f7ef;color:#127a4b;border-color:#bfe5cf}.ai-foot{padding:8px 12px;border-top:1px solid #c9d0da;background:#fff}.ai-in{display:flex;gap:8px;align-items:center}.ai-in textarea{flex:1;font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid #c9d0da;border-radius:8px;resize:vertical;min-height:40px}.ai-mic.sm{width:46px;height:46px}.ai-mic.sm span{width:14px;height:22px}.ai-status{font-size:12.5px;color:#555;min-height:18px;margin-top:4px}.ai-replying{font-size:12.5px;background:#fffaf0;border:1px solid #f0c36d;border-radius:8px;padding:4px 8px;margin-bottom:6px}.ai-prev{overflow:auto;max-height:72vh;background:#e9ecf1;padding:10px;border-radius:8px}.ai-prev .sheet{zoom:.72;margin:0 auto}' +
+    '@media (max-width:900px){.ai-drawer,.ai-conv{width:100vw!important;height:62vh;top:auto;border-right:0;border-top:1px solid #c9d0da}}';
   document.head.appendChild(s);
 }
 function overlay(title, html) {
@@ -364,211 +365,543 @@ function openInstructions() {
 /* ================================================================ 🎙 AUTO INVOICE */
 var AI_SYS = 'You assist Adv. Sanket R. Charpe (Nagpur; Additional Standing Counsel, Central Government, CAT Mumbai Bench circuit sittings at Nagpur) with his professional fee bills. Be exact. Never invent dates, case numbers, amounts or events that were not said or are not in the material given. Indian names: spell carefully; mark doubtful ones with [?].';
 
-function startInvoice() {
-  var o = overlay('Auto invoice',
-    '<div class="ai-eng" id="ai-eng"></div>' +
-    '<p style="margin:0 0 4px;color:#555">Say which case, e.g. “Prepare invoice for O.A. 297 of 2026, Gondnale versus Union of India, pending before the Central Administrative Tribunal, Nagpur.”</p>' +
-    '<div id="ai-step"></div>');
-  var pick = engineChips($('#ai-eng', o.box));
-  var step = $('#ai-step', o.box), recr;
-  function listen() {
-    recr = new Recorder(step, function (inp) { understand(inp); });
-    recr.start();
-  }
-  o.onclose = function () { if (recr) recr.stop(true); };
-  async function understand(inp) {
-    busy(step, 'Finding the case…');
+/* ================================================================ 🎙 AUTO INVOICE — a conversation
+   You speak (or type) as often as you like: the cases, which bills are separate and which
+   common, what happened on which dates, the heads to charge, corrections, answers to the
+   AI's questions — even while it is still working (it starts again with everything said).
+   The drafts are kept here until each one is opened in the form and saved. */
+
+/* ---- one AI call that can carry PDFs (the orders) as well as text ---- */
+async function aiCall(engine, parts, system, signal) {
+  var c = aiCfg();
+  var order = [engine, engine === 'gemini' ? 'claude' : 'gemini'].filter(function (e, i) { return i === 0 || hasKey(e); });
+  var last = null;
+  for (var i = 0; i < order.length; i++) {
+    var eng = order[i];
     try {
-      var task = 'From the advocate\'s instruction, pick out which case the bill is for.\nINSTRUCTION: {{SAID}}\n\n' +
-        'Return JSON: {"said":"the instruction in words","type":"case type as said, e.g. O.A., ULP, W.P., R.C.S., M.A., C.P.","number":"","year":"","parties":"names said","court":"court as said"}';
-      var r = await run(pick(), inp, task, AI_SYS);
-      var q = r.json || {};
-      q.text = q.said || r.heard || inp.text || '';
-      choose(q);
-    } catch (e) { step.innerHTML = '<div class="ai-warn">' + esc(e.message) + '</div><div class="ai-row"><button class="btn" id="ai-again">Try again</button></div>'; $('#ai-again').onclick = listen; }
+      var t;
+      if (eng === 'gemini') {
+        if (!c.gemKey) throw new Error('Add your Gemini API key first (⚙ AI).');
+        var gp = parts.map(function (p) { return p.pdf ? { inline_data: { mime_type: 'application/pdf', data: p.pdf } } : { text: p.text }; });
+        var body = { contents: [{ role: 'user', parts: gp }], systemInstruction: { parts: [{ text: system }] },
+                     generationConfig: { temperature: 0.2, maxOutputTokens: 32768, responseMimeType: 'application/json' } };
+        var r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(c.gemModel) + ':generateContent?key=' + encodeURIComponent(c.gemKey),
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: signal });
+        var j = await r.json().catch(function () { return {}; });
+        if (!r.ok) throw new Error('Gemini: ' + ((j.error && j.error.message) || 'HTTP ' + r.status));
+        var cand = j.candidates && j.candidates[0];
+        t = cand && cand.content && (cand.content.parts || []).map(function (p) { return p.thought ? '' : (p.text || ''); }).join('');
+        if (!t) throw new Error('Gemini sent back nothing' + (cand && cand.finishReason ? ' (' + cand.finishReason + ')' : '') + '.');
+      } else {
+        if (!c.claudeKey) throw new Error('Add your Claude API key first (⚙ AI).');
+        var cp = parts.map(function (p) { return p.pdf ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: p.pdf }, title: p.title || 'Orders' } : { type: 'text', text: p.text }; });
+        cp.push({ type: 'text', text: 'Reply with the JSON only.' });
+        var r2 = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: signal,
+          headers: { 'content-type': 'application/json', 'x-api-key': c.claudeKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model: c.claudeModel, max_tokens: 16000, system: system, messages: [{ role: 'user', content: cp }] }) });
+        var j2 = await r2.json().catch(function () { return {}; });
+        if (!r2.ok) throw new Error('Claude: ' + ((j2.error && j2.error.message) || 'HTTP ' + r2.status));
+        t = (j2.content || []).map(function (p) { return p.text || ''; }).join('');
+      }
+      return { json: parseJson(t), engine: eng === 'gemini' ? 'Gemini' : 'Claude' };
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      last = e;
+      if (i + 1 < order.length) toast(e.message + ' — trying ' + (order[i + 1] === 'claude' ? 'Claude' : 'Gemini') + ' instead');
+    }
   }
-  function choose(q) {
-    var hits = findCases(q);
-    var said = q.text ? '<div class="ai-said">' + esc(q.text) + '</div>' : '';
-    if (hits.length === 1 || (hits.length > 1 && hits[0].s >= 12 && hits[0].s - hits[1].s >= 4)) { o.close(); openBill(hits[0].c, q); return; }
-    step.innerHTML = said + (hits.length ? '<b>Which case?</b><ul class="ai-hits">' + hits.map(function (h, i) {
-      return '<li data-i="' + i + '"><b>' + esc(h.c.cn || '(no number)') + '</b> — ' + esc(ctit(h.c)) + '<br><small>' + esc(h.c.court || '') + (h.c.cl ? ' · ' + esc(h.c.cl) : '') + '</small></li>';
-    }).join('') + '</ul>' : '<div class="ai-warn">No case in the Case Manager matches what was said.</div>') +
-      '<label class="ai-lbl">Or search by number or party</label><input id="ai-q" placeholder="e.g. 297/2026 or Gondnale">' +
-      '<ul class="ai-hits" id="ai-qh"></ul>' +
-      '<div class="ai-row"><button class="btn" id="ai-again">Speak again</button><button class="btn" id="ai-nocase">Bill without a case from the list</button></div>';
-    $$('.ai-hits li[data-i]', step).forEach(function (li) { li.onclick = function () { o.close(); openBill(hits[+li.dataset.i].c, q); }; });
-    $('#ai-again').onclick = listen;
-    $('#ai-nocase').onclick = function () { o.close(); openBill({ cn: [q.type, q.number && q.year ? q.number + '/' + q.year : q.number].filter(Boolean).join(' '), pl: q.parties || '', court: q.court || '', nocase: true }, q); };
-    $('#ai-q').oninput = function () {
-      var v = this.value.trim().toLowerCase();
-      var l = v.length < 2 ? [] : cases().filter(function (c) { return ((c.cn || '') + ' ' + ctit(c) + ' ' + (c.cl || '')).toLowerCase().indexOf(v) >= 0; }).slice(0, 8);
-      $('#ai-qh').innerHTML = l.map(function (c, i) { return '<li data-j="' + i + '"><b>' + esc(c.cn || '') + '</b> — ' + esc(ctit(c)) + '<br><small>' + esc(c.court || '') + '</small></li>'; }).join('');
-      $$('#ai-qh li', step).forEach(function (li) { li.onclick = function () { o.close(); openBill(l[+li.dataset.j], q); }; });
-    };
-  }
-  listen();
+  throw last;
 }
 
-var CUR = null;   /* the case the bill on screen was started for */
-function openBill(c, q) {
-  if (A.draftHasContent(A.currentDraft()) && !A.editingId() && !confirm('The bill on screen has not been saved. Replace it with a new bill for ' + (c.cn || 'this case') + '?')) return;
-  var bills = c.nocase ? [] : priorBills(c);
-  var who = clientFor(c, bills);
-  var d = A.blankDraft();
-  d.clientId = who.clientId; d.billTo = who.billTo;
-  var last = bills[bills.length - 1];
-  d.reference = last && last.reference ? last.reference.replace(/\s*\(?(judg(e)?ment|order)\s+dated?[^)]*\)?\s*$/i, '') : [c.cn, ctit(c)].filter(Boolean).join(' ');
-  d.items = [{ name: '', hsn: '', rate: 0, qty: 1, note: '', clerkable: true }];
-  A.setDraft(d, null); A.go('build');
-  CUR = { c: c, bills: bills, q: q };
-  drawer(c, bills, who);
-  toast('Bill ' + d.number + ' started for ' + (c.cn || 'the case') + (who.billTo ? '' : ' — addressee not known yet; fill Bill To'));
+/* ---- what earlier bills already charged, case by case ---- */
+var RATE_FROM = /revised\s+rate\s+(?:from|w\.?e\.?f\.?)\s*\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}/gi;
+function itemDates(it) {
+  var out = [];
+  String((it.name || '') + ' ' + (it.note || '')).replace(RATE_FROM, ' ').replace(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/g, function (m, d, mo, y) {
+    var iso = y + '-' + ('0' + mo).slice(-2) + '-' + ('0' + d).slice(-2); if (out.indexOf(iso) < 0) out.push(iso); return m; });
+  return out;
+}
+function caseTag(c) { var k = cnKey(c.cn); return k.n ? new RegExp('(^|\\D)0*' + k.n + '\\s*(\\/|OF|-)\\s*' + k.y + '(\\D|$)', 'i') : null; }
+/* in a common bill, an item belongs to the case its note names; an item naming no case belongs to every case of the bill */
+function itemForCase(it, c, allTags) {
+  var txt = String((it.name || '') + ' ' + (it.note || '')), mine = caseTag(c);
+  if (mine && mine.test(txt)) return true;
+  return !allTags.some(function (rx) { return rx.test(txt); });
+}
+function caseHistory(c) {
+  var bills = priorBills(c), dates = {}, ne = 0, lastD = '';
+  bills.forEach(function (v) {
+    var tags = cases().filter(function (k) { return refMatches(v.reference, k); }).map(caseTag).filter(Boolean);
+    (v.items || []).forEach(function (it) {
+      if (!itemForCase(it, c, tags)) return;
+      if (NE_RX.test(it.name || '')) ne += Number(it.qty) || 0;
+      itemDates(it).forEach(function (d) { dates[d] = v.number; if (d > lastD) lastD = d; });
+    });
+  });
+  return { bills: bills, dates: dates, ne: ne, last: lastD };
+}
+function incNo(n, k) { return k ? String(n).replace(/(\d+)(?!.*\d)/, function (m) { return String(+m + k).padStart(m.length, '0'); }) : n; }
+
+/* ---- the session ---- */
+var SK = 'cs_ai_inv';
+var SS = null;      /* {log:[], said:[], cases:[ids], pend:null, plan:null, saved:{}, engine} */
+var UI = null;      /* the drawer */
+function ssLoad() { try { var s = JSON.parse(localStorage.getItem(SK) || 'null'); if (s && s.log) return s; } catch (e) {} return null; }
+function ssSave() { try { localStorage.setItem(SK, JSON.stringify(SS)); } catch (e) {} }
+function ssNew() { SS = { log: [], said: [], cases: [], pend: null, plan: null, saved: {}, engine: aiCfg().def, at: Date.now() }; ssSave(); }
+function caseById(id) { return cases().find(function (c) { return c.id === id; }) || null; }
+function say(who, text, extra) { var m = Object.assign({ who: who, text: String(text || ''), at: Date.now() }, extra || {}); SS.log.push(m); ssSave(); paintLog(); return m; }
+
+function startInvoice() {
+  css();
+  var old = ssLoad();
+  if (old && (old.said.length || old.cases.length) && !UI) {
+    var o = overlay('Auto invoice', '<p style="margin:0 0 10px">You have an Auto invoice in progress (' + old.said.length + ' instruction' + (old.said.length === 1 ? '' : 's') + (old.plan ? ', ' + (old.plan.invoices || []).length + ' draft bill(s)' : '') + ').</p>' +
+      '<div class="ai-row"><button class="btn" id="ai-ss-new">Start afresh</button><button class="btn primary" id="ai-ss-go">Continue it</button></div>');
+    $('#ai-ss-go').onclick = function () { o.close(); SS = old; openDrawer(false); };
+    $('#ai-ss-new').onclick = function () { o.close(); ssNew(); openDrawer(true); };
+    return;
+  }
+  if (UI) { UI.el.hidden = false; return; }
+  ssNew(); openDrawer(true);
 }
 
-/* the left drawer: orders (CAT), the dates on record, and the microphone for what happened */
-var DR = null;
-function closeDrawer() { if (DR) { if (DR.recr) DR.recr.stop(true); if (DR.url) URL.revokeObjectURL(DR.url); DR.el.remove(); DR = null; } }
-function drawer(c, bills, who) {
-  closeDrawer(); css();
-  var el = document.createElement('div'); el.className = 'ai-drawer';
-  var hd = c.nocase ? [] : hearingDates(c), ne = neCharged(bills), cat = isCat(c);
-  el.innerHTML = '<div class="ai-dh"><b>' + esc((c.cn || '') + ' — ' + ctit(c)) + '</b><button class="btn sm" id="ai-dclose">Hide</button></div>' +
-    '<div class="ai-db">' +
-      '<div class="ai-dates"><b>' + (cat ? 'CAT matter. ' : '') + 'Earlier bills for this case: ' + (bills.length ? bills.map(function (v) { return esc(v.number) + ' (' + dmy(v.date) + ')'; }).join(', ') : 'none') + '.</b>' +
-        (cat ? '<br>Non-effective hearings already charged: <b>' + ne + ' of 5</b>.' : '') +
-        (hd.length ? '<div style="margin-top:6px;font-weight:600">Dates on record</div>' + hd.map(function (h) { return '<div><b>' + dmy(h.d) + '</b> ' + esc(h.t) + '</div>'; }).join('') : '') + '</div>' +
-      '<div id="ai-pdfhost" style="flex:1;min-height:0;display:flex;flex-direction:column"></div>' +
+function openDrawer(listenNow) {
+  closeDrawer();
+  var el = document.createElement('div'); el.className = 'ai-drawer ai-conv';
+  el.innerHTML =
+    '<div class="ai-dh"><b>🎙 Auto invoice</b><button class="btn sm" id="ai-new" title="Forget this conversation and start again">New</button><button class="btn sm" id="ai-hide" title="Hide; the button 🎙 Auto invoice brings it back">Hide</button></div>' +
+    '<div class="ai-cases" id="ai-cases"></div>' +
+    '<div class="ai-pane" id="ai-pane">' +
+      '<div class="ai-log" id="ai-log"></div>' +
+      '<div class="ai-bills" id="ai-bills"></div>' +
     '</div>' +
-    '<div class="ai-df"><div class="ai-eng" id="ai-deng" style="margin-bottom:6px"></div>' +
-      '<div style="color:#555;font-size:13px">Say what happened, date by date: “On 12th January the matter was heard at length… On 3rd February it was adjourned… Typing and Xerox expenses 450 rupees…”. Say it again later to change anything.</div>' +
-      '<div id="ai-dstep"></div></div>';
+    '<div class="ai-pdfv" id="ai-pdfv" hidden></div>' +
+    '<div class="ai-foot">' +
+      '<div class="ai-replying" id="ai-replying" hidden></div>' +
+      '<div class="ai-eng" id="ai-deng" style="margin:0 0 6px"></div>' +
+      '<div class="ai-in"><button class="ai-mic sm" id="ai-mic" type="button" title="Speak (press again to finish)"><span></span></button>' +
+        '<textarea id="ai-txt" rows="2" placeholder="Speak with the microphone, or type here — a new instruction, a correction, or an answer — any time"></textarea>' +
+        '<button class="btn primary" id="ai-send" type="button">Send</button></div>' +
+      '<div class="ai-status" id="ai-status"></div>' +
+    '</div>';
   document.body.appendChild(el);
-  DR = { el: el, c: c, bills: bills };
-  $('#ai-dclose', el).onclick = closeDrawer;
-  var pick = engineChips($('#ai-deng', el));
-  var step = $('#ai-dstep', el);
-  function ready(msg) {
-    step.innerHTML = (msg || '') + '<div class="ai-row" style="justify-content:flex-start"><button class="btn primary" id="ai-dmic">🎙 Dictate what happened</button></div>';
-    $('#ai-dmic', el).onclick = function () { DR.recr = new Recorder(step, function (inp) { DR.recr = null; events(inp, pick(), step, ready); }); DR.recr.start(); };
-  }
-  ready();
-  if (cat && !c.nocase) showOrders(c);
-  else $('#ai-pdfhost', el).innerHTML = '<p style="padding:10px 12px;color:#666;margin:0">' + (c.nocase ? 'This case is not in the Case Manager.' : 'Orders are shown here for CAT matters.') + '</p>';
+  UI = { el: el, rec: null, ac: null, replyTo: null, busy: false, url: null };
+  $('#ai-hide', el).onclick = function () { el.hidden = true; toast('Auto invoice hidden — press 🎙 Auto invoice to continue'); };
+  $('#ai-new', el).onclick = function () { if (!confirm('Forget this Auto invoice conversation and its unsaved draft bills?')) return; abortRun(); ssNew(); paintAll(); };
+  engineChips($('#ai-deng', el), function (e) { SS.engine = e; ssSave(); });
+  /* the chips start at the first default; keep the one chosen in this conversation */
+  if (SS.engine && SS.engine !== aiCfg().def) { var b = $('#ai-deng button[data-e="' + SS.engine + '"]', el); if (b) b.click(); }
+  $('#ai-send', el).onclick = function () { var t = $('#ai-txt', el).value.trim(); if (!t) return; $('#ai-txt', el).value = ''; heard(t); };
+  $('#ai-txt', el).addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#ai-send', el).click(); });
+  $('#ai-mic', el).onclick = micToggle;
+  paintAll();
+  if (!SS.log.length) say('ai', 'Say the case or cases and what is to be charged — e.g. “Prepare separate bills for O.A. 297 of 2026 Gondnale and O.A. 935 of 2025 Wakodkar. In Gondnale, 10th September was heard at length; the other sittings non-effective. Add typing and Xerox 450 rupees.” Or ask for one common bill for both. You can speak again at any time to add or correct anything.');
+  if (listenNow) micToggle();
 }
-/* the orders of the case, as ONE PDF in date order, made by the Case Manager */
+function closeDrawer() { if (UI) { abortRun(); if (UI.rec) try { UI.rec.stop(true); } catch (e) {} if (UI.url) URL.revokeObjectURL(UI.url); UI.el.remove(); UI = null; } }
+function status(t, spin) { if (!UI) return; $('#ai-status', UI.el).innerHTML = t ? (spin ? '<span class="ai-spin" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:-2px"></span> ' : '') + esc(t) : ''; }
+
+/* ---- the microphone in the drawer: speak → typed by Gemini → treated like typed text ---- */
+var MREC = null;
+async function micToggle() {
+  if (!UI) return;
+  var mic = $('#ai-mic', UI.el);
+  if (MREC && MREC.state === 'recording') { MREC.stop(); return; }
+  var stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { status('The microphone could not be used (' + (e.message || e.name) + '). Type instead.'); return; }
+  var type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].filter(function (t) { return window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0] || '';
+  var chunks = [], rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined), t0 = Date.now(), tm;
+  MREC = rec;
+  rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = async function () {
+    clearInterval(tm); stream.getTracks().forEach(function (t) { t.stop(); }); MREC = null;
+    if (!UI) return;
+    mic.classList.remove('on');
+    var blob = new Blob(chunks, { type: (rec.mimeType || 'audio/webm').split(';')[0] });
+    if (blob.size < 1500) { status('Nothing was heard.'); return; }
+    status('Typing what you said…', true);
+    try { var t = await transcribe(blob); if (!t) { status('Nothing was heard.'); return; } heard(t); }
+    catch (e) { status(e.message); }
+  };
+  rec.start(1000); mic.classList.add('on');
+  var tick = function () { var s = Math.round((Date.now() - t0) / 1000); status('Listening ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) + ' — press the microphone when you finish'); };
+  tick(); tm = setInterval(tick, 500);
+}
+
+/* ---- everything you say comes here ---- */
+function heard(text) {
+  if (!UI) return;
+  var reply = UI.replyTo;
+  UI.replyTo = null; paintReplying();
+  if (reply != null) {
+    var q = SS.log[reply];
+    if (q && q.q) q.answered = true;
+    say('me', text, { reply: q ? q.text : '' });
+    SS.said.push('Answer to your question “' + (q ? q.text : '') + '”: ' + text);
+  } else {
+    say('me', text);
+    SS.said.push(text);
+  }
+  ssSave();
+  next();
+}
+function abortRun() { if (UI && UI.ac) { try { UI.ac.abort(); } catch (e) {} UI.ac = null; } }
+function next() {
+  abortRun();
+  if (!SS.cases.length || SS.pend) return identify();
+  return plan();
+}
+
+/* ---- 1. which cases? (as many as were said) ---- */
+async function identify() {
+  var ac = new AbortController(); UI.ac = ac;
+  status('Finding the cases…', true);
+  try {
+    var r = await aiCall(SS.engine, [{ text:
+      'The advocate is asking for fee bills. Pick out EVERY case he mentions (there may be one, two or more).\n' +
+      'WHAT HE SAID SO FAR:\n' + SS.said.map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n') + '\n\n' +
+      (SS.cases.length ? 'CASES ALREADY CONFIRMED: ' + SS.cases.map(function (id) { var c = caseById(id); return c ? c.cn + ' ' + ctit(c) : ''; }).join('; ') + ' (list only further cases)\n\n' : '') +
+      'Return JSON: {"cases":[{"type":"O.A. / ULP / W.P. / R.C.S. …","number":"","year":"","parties":"names said","court":"court as said","said":"how he referred to it"}]}' }], AI_SYS, ac.signal);
+    if (ac !== UI.ac) return;
+    UI.ac = null;
+    var want = (r.json.cases || []).filter(function (q) { return q && (q.number || q.parties); });
+    SS.pend = want.map(function (q) {
+      var hits = findCases(q).filter(function (h) { return SS.cases.indexOf(h.c.id) < 0; });
+      return { q: q, hits: hits.map(function (h) { return { id: h.c.id, s: h.s }; }) };
+    });
+    ssSave();
+    if (!SS.pend.length) {
+      SS.pend = null; ssSave();
+      if (SS.cases.length) return plan();
+      say('ai', 'I could not make out which case the bill is for. Please say the case number and the parties, or pick the cases below.', { pick: true });
+      paintPick(true); status(''); return;
+    }
+    status('');
+    say('ai', 'Please confirm the case' + (SS.pend.length > 1 || (SS.pend[0].hits.length > 1) ? 's' : '') + ' — tick every one the bills are for (you can tick more than one), then press “These are the cases”.', { pick: true });
+    paintPick(true);
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    UI.ac = null; status(''); say('ai', '⚠ ' + e.message);
+  }
+}
+
+/* ---- 2. the bills ---- */
+function catalogLines() { return (db().catalog || []).map(function (k) { return k.id + ' | ' + k.name + ' | ₹' + k.rate + (k.clerkable === false ? ' | expense (no clerkage)' : ''); }).join('\n'); }
+async function ordersPdf(c) {
+  if (c._pdf !== undefined) return c._pdf;
+  try {
+    var cw = casesWin(); if (!cw) return (c._pdf = null);
+    if (!cw.f.getAttribute('src')) cw.f.setAttribute('src', 'cases.html');
+    var t0 = Date.now();
+    while (!(cw.f.contentWindow && cw.f.contentWindow.ordMergedPdf) && Date.now() - t0 < 20000) await new Promise(function (r) { setTimeout(r, 400); });
+    var w = cw.f.contentWindow;
+    if (!w || !w.ordMergedPdf) return (c._pdf = null);
+    var r = await w.ordMergedPdf(c.id);
+    if (!r || !r.blob) return (c._pdf = null);
+    c._pdf = { blob: r.blob, size: r.blob.size };
+    return c._pdf;
+  } catch (e) { return (c._pdf = null); }
+}
+var PDFS = {};   /* case id → {blob,size} for this page visit */
+async function plan() {
+  var ac = new AbortController(); UI.ac = ac;
+  var cs = SS.cases.map(caseById).filter(Boolean);
+  if (!cs.length) return identify();
+  status('Reading the orders and the earlier bills…', true);
+  var info = [], parts = [], total = 0;
+  for (var i = 0; i < cs.length; i++) {
+    var c = cs[i], h = caseHistory(c), cat = isCat(c);
+    var p = PDFS[c.id] !== undefined ? PDFS[c.id] : (PDFS[c.id] = await ordersPdf(c));
+    if (ac !== UI.ac) return;
+    var useP = p && p.size < 12e6 && total + p.size < 24e6;
+    if (useP) { total += p.size; parts.push({ pdf: await b64(p.blob), title: 'Orders — ' + c.cn }); parts.push({ text: '(The PDF just above holds all the downloaded orders of ' + c.cn + ', in date order.)' }); }
+    info.push({ c: c, h: h, cat: cat, pdf: !!useP });
+  }
+  paintCases(info);
+  var cur = SS.plan ? JSON.stringify({ invoices: (SS.plan.invoices || []).filter(function (v) { return !v.savedAs; }).map(function (v) { return { cases: v.cases, billTo: v.billTo, reference: v.reference, items: v.items }; }) }) : '';
+  var task =
+    'Prepare the professional fee bill(s) from everything the advocate has said.\nTODAY: ' + dmy(today()) + '\n\n' +
+    'CASES:\n' + info.map(function (x, k) {
+      var c = x.c, hd = hearingDates(c);
+      return '[' + c.id + '] ' + c.cn + ' — ' + ctit(c) + '\n  Court: ' + (c.court || '') + (x.cat ? ' (Central Administrative Tribunal)' : '') + '\n  Client: ' + (c.cl || '') +
+        '\n  Earlier bills: ' + (x.h.bills.length ? x.h.bills.map(function (v) { return v.number + ' (' + dmy(v.date) + ')'; }).join(', ') : 'none') +
+        '\n  LAST DATE ALREADY CHARGED: ' + (x.h.last ? dmy(x.h.last) : 'none') +
+        (x.cat ? '\n  Non-effective hearings already charged in this case: ' + x.h.ne + ' of the 5 allowed' : '') +
+        (Object.keys(x.h.dates).length ? '\n  Dates already charged: ' + Object.keys(x.h.dates).sort().map(function (d) { return dmy(d) + ' (' + x.h.dates[d] + ')'; }).join(', ') : '') +
+        (hd.length ? '\n  Dates on record (court site / diary):\n' + hd.map(function (z) { return '    ' + dmy(z.d) + ': ' + z.t; }).join('\n') : '') +
+        '\n  Orders PDF attached: ' + (x.pdf ? 'yes' : 'no');
+    }).join('\n\n') + '\n\n' +
+    (info.some(function (x) { return x.h.bills.length; }) ? 'EARLIER BILLS IN FULL (style of headings and notes to follow):\n' + info.map(function (x) { return x.h.bills.slice(-2).map(billText).join('\n'); }).filter(Boolean).join('\n') + '\n\n' : '') +
+    'RATE CARD (id | item title | rate):\n' + catalogLines() + '\n\n' +
+    'WHAT THE ADVOCATE SAID, IN ORDER (later instructions and corrections override earlier ones):\n' + SS.said.map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n') + '\n\n' +
+    (cur ? 'THE DRAFT BILLS AS THEY STAND (revise them; return the complete new set):\n' + cur + '\n\n' : '') +
+    'RULES:\n' +
+    '1. One bill per case, unless he asks for a common (combined, joint, one) bill for some cases — then those cases share one bill. If it is not clear which he wants for two or more cases, ask.\n' +
+    '2. In a common bill, begin every note with the case it belongs to, e.g. "O.A. 297/2026 — On 10/09/2026 …", and put the case id in "case". The reference of a common bill names all its cases.\n' +
+    '3. Charge only sittings AFTER the last date already charged for that case, unless he names an earlier date; never charge a date that is in "Dates already charged" unless he insists — and then say so in "notes".\n' +
+    '4. Which sittings to charge: those he names; if he says e.g. "all sittings since the last bill", take the dates on record after the last charged date up to today.\n' +
+    '5. Effective or non-effective: as he says. Where he does not say, decide from the order of that date in the attached orders PDF (or, if there is none, the business on record): EFFECTIVE if the matter was actually taken up — heard, argued, reply/rejoinder taken on record and heard, interim relief heard, order or judgment pronounced, evidence; NON-EFFECTIVE if adjourned, not reached, time sought, leave note, no board. Give the reason in "why" and set "basis" to "said", "order" or "record".\n' +
+    '6. One line per effective hearing (qty 1; note e.g. "On 10/09/2026 the Hon\'ble Tribunal heard the matter at length."). Non-effective hearings of a case go in ONE line with qty = their number and the dates in the note ("Dates: 03/02/2026, 17/02/2026").\n' +
+    '7. CAT cases: at most 5 non-effective hearings in the whole case (the count already charged is given). Effective hearings have no limit.\n' +
+    '8. Other heads as he says (drafting the reply/written statement, conference, opinion, notice, appearance, typing, Xerox, postage, travel …): rate-card item when one fits (catalogId), otherwise his amount. Expenses: kind "expense", clerkable false, heading as he says it and his narration as the note. Never add a head or an expense he did not mention.\n' +
+    '9. Use the rate-card rate unless he gives another amount (then rateFromDictation true). Do not add clerkage — the tool adds it.\n' +
+    '10. billTo and reference: as in the earlier bills of that case/client; if unknown, leave billTo empty and ask.\n' +
+    '11. Ask a question ONLY where you genuinely cannot decide (separate or common; a head with no rate and no amount; an unclear date; to whom the bill goes). Ask each thing once; do not ask what has already been answered. Make the drafts anyway with your best reading.\n' +
+    instrText('invoice') +
+    '\nReturn JSON: {"invoices":[{"cases":["case id",…],"billTo":"","reference":"","items":[{"case":"case id or null","catalogId":"k1 or null","name":"heading","rate":0,"qty":1,"note":"","kind":"effective|noneffective|fee|expense","dates":["YYYY-MM-DD"],"basis":"said|order|record|","why":"short reason when decided from an order","clerkable":true,"rateFromDictation":false}]}],' +
+    '"questions":["…"],"notes":["anything he should know: dates already charged that he asked for, orders that were unclear, …"],"newCases":[{"type":"","number":"","year":"","parties":""}]}\n' +
+    '"newCases": only cases he mentions that are NOT among the CASES above.';
+  parts.unshift({ text: task });
+  status('Preparing the bill' + (cs.length > 1 ? 's' : '') + ' with ' + (SS.engine === 'claude' ? 'Claude' : 'Gemini') + '…', true);
+  try {
+    var r = await aiCall(SS.engine, parts, AI_SYS, ac.signal);
+    if (!UI || ac !== UI.ac) return;
+    UI.ac = null; status('');
+    settle(r, info);
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    if (UI) UI.ac = null;
+    status(''); say('ai', '⚠ ' + e.message + ' — speak again or press Send to retry.');
+  }
+}
+
+/* checks the AI must not be trusted with: the CAT cap, dates already charged, rates */
+function settle(r, info) {
+  var out = r.json || {}, byId = {}, warn = [];
+  info.forEach(function (x) { byId[x.c.id] = x; });
+  var keepSaved = SS.plan ? (SS.plan.invoices || []).filter(function (v) { return v.savedAs; }) : [];
+  var invs = (out.invoices || []).map(function (v) {
+    var ids = (v.cases || []).filter(function (id) { return byId[id]; });
+    if (!ids.length && info.length === 1) ids = [info[0].c.id];
+    var items = (v.items || []).map(function (it) {
+      var k = it.catalogId && (db().catalog || []).find(function (z) { return z.id === it.catalogId; });
+      var o = { name: String(it.name || (k && k.name) || '').trim(), hsn: (k && k.hsn) || '', qty: Math.max(1, Math.round(Number(it.qty) || 1)),
+                note: String(it.note || '').trim(), clerkable: it.kind === 'expense' ? false : (it.clerkable !== false),
+                _k: it.kind, _d: (it.dates || []).filter(function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d); }), _c: byId[it.case] ? it.case : (ids.length === 1 ? ids[0] : null), _b: it.basis || '', _w: it.why || '' };
+      if (k && !it.rateFromDictation) { o.name = k.name; o.rate = Number(k.rate) || 0; if (k.clerkable === false) o.clerkable = false; }
+      else o.rate = Number(it.rate) || (k ? Number(k.rate) : 0) || 0;
+      if (!k && it.kind !== 'expense' && !it.rateFromDictation) warn.push('“' + o.name + '” is not on the rate card — check its rate (₹' + o.rate + ').');
+      if (it.rateFromDictation) warn.push('“' + o.name + '” at ₹' + o.rate + ' as you said (not the rate card).');
+      return o;
+    }).filter(function (o) { return o.name || o.rate; });
+    return { cases: ids, billTo: String(v.billTo || ''), reference: String(v.reference || ''), items: items };
+  }).filter(function (v) { return v.items.length; });
+  /* dates already charged, and dates before the last charged date */
+  invs.forEach(function (v) { v.items.forEach(function (o) {
+    var x = o._c && byId[o._c]; if (!x) return;
+    o._d.forEach(function (d) {
+      if (x.h.dates[d]) warn.push(x.c.cn + ': ' + dmy(d) + ' was already charged in ' + x.h.dates[d] + '.');
+      else if (x.h.last && d < x.h.last) warn.push(x.c.cn + ': ' + dmy(d) + ' is before the last date already charged (' + dmy(x.h.last) + ').');
+    });
+  }); });
+  /* CAT: at most 5 non-effective hearings in the whole case — across earlier bills AND these drafts */
+  info.filter(function (x) { return x.cat; }).forEach(function (x) {
+    var left = Math.max(0, 5 - x.h.ne), want = 0;
+    var mine = [];
+    invs.forEach(function (v) { v.items.forEach(function (o) { if (o._c === x.c.id && (o._k === 'noneffective' || NE_RX.test(o.name))) { want += o.qty; mine.push(o); } }); });
+    if (want <= left) return;
+    var cut = want - left;
+    for (var i = mine.length - 1; i >= 0 && cut > 0; i--) {
+      var o = mine[i], take = Math.min(cut, o.qty); o.qty -= take; cut -= take;
+      if (o.qty > 0) o.note = (o.note ? o.note + '\n' : '') + '(since more than 5, only charges for ' + o.qty + ' sitting' + (o.qty === 1 ? '' : 's') + ')';
+    }
+    warn.push(x.c.cn + ': ' + (left === 0 ? 'no non-effective hearing charged — the 5 allowed were already charged in earlier bills.' : 'non-effective hearings capped at ' + left + ' (5 in the whole case; ' + x.h.ne + ' already charged).'));
+  });
+  invs.forEach(function (v) {
+    v.items = v.items.filter(function (o) { return o.qty > 0; });
+    var c0 = caseById(v.cases[0]);
+    var who = c0 ? clientFor(c0, byId[c0.id] ? byId[c0.id].h.bills : []) : { clientId: '', billTo: '' };
+    v.clientId = who.clientId; if (!v.billTo) v.billTo = who.billTo;
+    if (!v.reference) v.reference = v.cases.map(function (id) { var c = caseById(id); return c ? c.cn + ' ' + ctit(c) : ''; }).join('; ');
+    if (!v.billTo) warn.push('Bill for ' + v.cases.map(function (id) { var c = caseById(id); return c ? c.cn : ''; }).join(' + ') + ': to whom is it addressed? (Bill To is empty.)');
+  });
+  invs = invs.filter(function (v) { return v.items.length; });
+  SS.plan = { invoices: keepSaved.concat(invs), at: Date.now(), engine: r.engine };
+  var qs = (out.questions || []).filter(Boolean);
+  var notes = (out.notes || []).filter(Boolean).concat(warn);
+  say('ai', '✓ ' + invs.length + ' draft bill' + (invs.length === 1 ? '' : 's') + ' prepared by ' + r.engine + ' — below. Open one in the form to check it and Save invoice; 👁 shows it as it will print.' + (notes.length ? '' : ''), { notes: notes });
+  qs.forEach(function (q) { say('ai', q, { q: true }); });
+  var nc = (out.newCases || []).filter(function (q) { return q && (q.number || q.parties); });
+  if (nc.length) {
+    SS.pend = nc.map(function (q) { return { q: q, hits: findCases(q).filter(function (h) { return SS.cases.indexOf(h.c.id) < 0; }).map(function (h) { return { id: h.c.id, s: h.s }; }) }; });
+    say('ai', 'You also mentioned ' + nc.map(function (q) { return [q.type, q.number && q.year ? q.number + '/' + q.year : q.number, q.parties].filter(Boolean).join(' '); }).join('; ') + '. Tick it below to include it.', { pick: true });
+  }
+  ssSave(); paintAll();
+  /* the first unsaved bill goes into the form at once, so its preview is on the right */
+  var first = SS.plan.invoices.findIndex(function (v) { return !v.savedAs; });
+  if (first >= 0) openInForm(first, true);
+}
+
+/* ---- drafts → the form, and the preview ---- */
+function draftOf(v, k) {
+  var d = A.blankDraft();
+  d.number = incNo(d.number, k || 0);
+  d.clientId = v.clientId || ''; d.billTo = v.billTo || ''; d.reference = v.reference || '';
+  d.items = v.items.map(function (o) { return { name: o.name, hsn: o.hsn || '', rate: o.rate, qty: o.qty, note: o.note, clerkable: o.clerkable }; });
+  return d;
+}
+function unsavedIndex(i) { var k = 0; (SS.plan.invoices || []).forEach(function (v, j) { if (j < i && !v.savedAs) k++; }); return k; }
+function openInForm(i, quiet) {
+  var v = SS.plan && SS.plan.invoices[i]; if (!v || v.savedAs) return;
+  var cur = A.currentDraft(), mine = UI && UI.open != null;   /* the form holds one of these drafts already */
+  if (!mine && (A.editingId() || A.draftHasContent(cur))) {
+    if (quiet) { toast('Draft bills are ready in Auto invoice — the bill on screen was left as it is'); return; }
+    if (!confirm('The bill on screen has not been saved. Replace it with this draft?')) return;
+  }
+  A.setDraft(draftOf(v, 0), null); A.go('build');
+  if (UI) { UI.open = i; UI.openSaved = (A.lastSaved && A.lastSaved()) ? A.lastSaved().id : null; }
+  paintBills();
+}
+function preview(i) {
+  var v = SS.plan.invoices[i]; if (!v) return;
+  var d = v.savedAs ? (db().invoices || []).find(function (x) { return x.number === v.savedAs; }) : draftOf(v, unsavedIndex(i));
+  if (!d) return;
+  if (!v.savedAs) d.isDraft = true;
+  var html = A.sheetHTML ? A.sheetHTML(d) : '';
+  var o = overlay((v.savedAs ? 'Saved bill ' + v.savedAs : 'Draft bill — as it will print') , '<div class="ai-prev">' + (html || '<p>Reload Billing once to see the preview.</p>') + '</div>' +
+    '<div class="ai-row">' + (v.savedAs ? '' : '<button class="btn primary" id="ai-pv-open">Open in the form</button>') + '<button class="btn" id="ai-pv-x">Close</button></div>');
+  o.box.style.width = 'min(900px,100%)';
+  $('#ai-pv-x').onclick = o.close;
+  if (!v.savedAs) $('#ai-pv-open').onclick = function () { o.close(); openInForm(i); };
+}
+/* a bill saved from the form: mark its draft as saved */
+setInterval(function () {
+  if (!UI || UI.open == null || !SS || !SS.plan) return;
+  var ls = A.lastSaved && A.lastSaved();
+  if (ls && ls.id !== UI.openSaved) {
+    var v = SS.plan.invoices[UI.open];
+    if (v && !v.savedAs) { v.savedAs = ls.number; say('ai', '✓ Saved as ' + ls.number + '.'); }
+    UI.open = null; UI.openSaved = ls.id; ssSave(); paintBills();
+    var nx = SS.plan.invoices.findIndex(function (x) { return !x.savedAs; });
+    if (nx >= 0) say('ai', 'Next: ' + billLabel(SS.plan.invoices[nx]) + ' — press “Open in the form”.');
+  }
+}, 1500);
+
+/* ---- painting ---- */
+function billLabel(v) { return v.cases.map(function (id) { var c = caseById(id); return c ? c.cn : '?'; }).join(' + ') + (v.cases.length > 1 ? ' (common bill)' : ''); }
+function paintAll() { paintCases(); paintLog(); paintBills(); paintReplying(); }
+function paintCases(info) {
+  if (!UI) return;
+  var host = $('#ai-cases', UI.el);
+  var cs = SS.cases.map(caseById).filter(Boolean);
+  host.innerHTML = cs.length ? cs.map(function (c) {
+    var h = caseHistory(c), cat = isCat(c);
+    var x = info && info.find(function (z) { return z.c.id === c.id; });
+    return '<div class="ai-case"><div><b>' + esc(c.cn || '') + '</b> ' + esc(ctit(c)) + '<br><small>' + esc(c.court || '') +
+      ' · last charged: <b>' + (h.last ? dmy(h.last) : '—') + '</b>' + (h.bills.length ? ' (' + esc(h.bills[h.bills.length - 1].number) + ')' : '') +
+      (cat ? ' · non-effective charged: <b>' + h.ne + '/5</b>' : '') + (x ? (x.pdf ? ' · orders read' : ' · <span style="color:#a15c00">no orders downloaded</span>') : '') + '</small></div>' +
+      '<div class="ai-cbtn"><button class="btn sm" data-ord="' + esc(c.id) + '" title="See the orders of this case">📄</button><button class="btn sm" data-rm="' + esc(c.id) + '" title="Remove this case">×</button></div></div>';
+  }).join('') + '<button class="btn sm" id="ai-addcase" style="margin:4px 0 0">＋ Add a case</button>' : '';
+  $$('[data-rm]', host).forEach(function (b) { b.onclick = function () { SS.cases = SS.cases.filter(function (id) { return id !== b.dataset.rm; }); ssSave(); paintCases(); say('ai', 'Removed. Speak or press Send to prepare the bills again.'); }; });
+  $$('[data-ord]', host).forEach(function (b) { b.onclick = function () { showPdf(b.dataset.ord); }; });
+  var ad = $('#ai-addcase', host); if (ad) ad.onclick = function () { say('ai', 'Pick the case to add.', { pick: true }); paintPick(true); };
+}
+function paintLog() {
+  if (!UI) return;
+  var host = $('#ai-log', UI.el);
+  host.innerHTML = SS.log.map(function (m, i) {
+    if (m.who === 'me') return '<div class="ai-m me">' + (m.reply ? '<small>↳ in reply to: ' + esc(m.reply) + '</small><br>' : '') + esc(m.text) + '</div>';
+    var h = '<div class="ai-m ai' + (m.q ? ' q' : '') + '">' + (m.q ? '<b>❓ </b>' : '') + esc(m.text);
+    if (m.notes && m.notes.length) h += '<div class="ai-warn" style="margin:6px 0 0">' + m.notes.map(esc).join('<br>') + '</div>';
+    if (m.q) h += '<div style="margin-top:6px">' + (m.answered ? '<small style="color:#127a4b">answered</small> ' : '') + '<button class="btn sm" data-rep="' + i + '">🎙 Reply</button> <button class="btn sm" data-rept="' + i + '">⌨ Type a reply</button></div>';
+    if (m.pick && i === lastPick()) h += '<div id="ai-pickhost"></div>';
+    return h + '</div>';
+  }).join('');
+  $$('[data-rep]', host).forEach(function (b) { b.onclick = function () { UI.replyTo = +b.dataset.rep; paintReplying(); if (!(MREC && MREC.state === 'recording')) micToggle(); }; });
+  $$('[data-rept]', host).forEach(function (b) { b.onclick = function () { UI.replyTo = +b.dataset.rept; paintReplying(); $('#ai-txt', UI.el).focus(); }; });
+  if ($('#ai-pickhost', host)) paintPick(false);
+  host.scrollTop = host.scrollHeight;
+}
+function lastPick() { for (var i = SS.log.length - 1; i >= 0; i--) if (SS.log[i].pick) return SS.log[i].done ? -1 : i; return -1; }
+function paintReplying() {
+  if (!UI) return;
+  var r = $('#ai-replying', UI.el), m = UI.replyTo != null ? SS.log[UI.replyTo] : null;
+  r.hidden = !m;
+  if (m) { r.innerHTML = '↳ Replying to: <i>' + esc(m.text.slice(0, 140)) + '</i> <button class="btn sm" id="ai-repx">cancel</button>'; $('#ai-repx', r).onclick = function () { UI.replyTo = null; paintReplying(); }; }
+}
+/* tick the cases: every candidate for every case mentioned, plus a search to add any other */
+function paintPick(scroll) {
+  if (!UI) return;
+  var host = $('#ai-pickhost', UI.el); if (!host) { paintLog(); host = $('#ai-pickhost', UI.el); if (!host) return; }
+  var groups = SS.pend || [];
+  var shown = {};
+  host.innerHTML = '<div class="ai-pick">' + groups.map(function (g, gi) {
+    var q = g.q, lab = [q.type, q.number && q.year ? q.number + '/' + q.year : q.number, q.parties].filter(Boolean).join(' ');
+    var best = g.hits[0] && (g.hits.length === 1 || g.hits[0].s - (g.hits[1] ? g.hits[1].s : 0) >= 4) ? g.hits[0].id : null;
+    return '<div class="ai-pg"><small>You said: <b>' + esc(q.said || lab || '—') + '</b></small>' + (g.hits.length ? g.hits.map(function (h) {
+      var c = caseById(h.id); if (!c || shown[h.id]) return ''; shown[h.id] = 1;
+      return '<label><input type="checkbox" value="' + esc(c.id) + '"' + (c.id === best ? ' checked' : '') + '> <b>' + esc(c.cn || '') + '</b> — ' + esc(ctit(c)) + ' <small>' + esc(c.court || '') + '</small></label>';
+    }).join('') : '<div style="color:#a15c00;font-size:13px">No case in the Case Manager matches — search below.</div>') + '</div>';
+  }).join('') +
+    '<input id="ai-psearch" placeholder="Search any case by number, party or client" style="margin-top:6px"><div id="ai-pres"></div>' +
+    '<div class="ai-row" style="justify-content:flex-start"><button class="btn primary" id="ai-pok">These are the cases</button><button class="btn" id="ai-pno">Cancel</button></div></div>';
+  $('#ai-psearch', host).addEventListener('keydown', function (e) { e.stopPropagation(); });
+  $('#ai-psearch', host).oninput = function () {
+    var v = this.value.trim().toLowerCase();
+    var l = v.length < 2 ? [] : cases().filter(function (c) { return SS.cases.indexOf(c.id) < 0 && !shown[c.id] && ((c.cn || '') + ' ' + ctit(c) + ' ' + (c.cl || '')).toLowerCase().indexOf(v) >= 0; }).slice(0, 8);
+    $('#ai-pres', host).innerHTML = l.map(function (c) { return '<label><input type="checkbox" value="' + esc(c.id) + '"> <b>' + esc(c.cn || '') + '</b> — ' + esc(ctit(c)) + ' <small>' + esc(c.court || '') + '</small></label>'; }).join('');
+  };
+  $('#ai-pno', host).onclick = function () { SS.pend = null; var m = SS.log[lastPick()]; if (m) m.done = true; ssSave(); paintLog(); };
+  $('#ai-pok', host).onclick = function () {
+    var ids = $$('input[type=checkbox]:checked', host).map(function (x) { return x.value; });
+    if (!ids.length) { toast('Tick at least one case'); return; }
+    ids.forEach(function (id) { if (SS.cases.indexOf(id) < 0) SS.cases.push(id); });
+    SS.pend = null; var m = SS.log[lastPick()]; if (m) m.done = true;
+    say('me', 'Cases: ' + ids.map(function (id) { var c = caseById(id); return c ? c.cn + ' ' + ctit(c) : id; }).join('; '));
+    ssSave(); paintCases();
+    if (SS.said.length) plan(); else say('ai', 'Now say what is to be charged — the sittings (effective / non-effective, or let me read the orders), other heads and expenses, and whether the bills are separate or common.');
+  };
+  if (scroll) { var lg = $('#ai-log', UI.el); lg.scrollTop = lg.scrollHeight; }
+}
+function paintBills() {
+  if (!UI) return;
+  var host = $('#ai-bills', UI.el), invs = SS.plan ? SS.plan.invoices || [] : [];
+  if (!invs.length) { host.innerHTML = ''; return; }
+  host.innerHTML = '<div class="ai-bh">Draft bills</div>' + invs.map(function (v, i) {
+    var d = v.savedAs ? null : draftOf(v, unsavedIndex(i)), tot = d ? A.totalOf(d) : 0;
+    return '<div class="ai-bill' + (UI.open === i ? ' open' : '') + (v.savedAs ? ' saved' : '') + '"><div class="ai-bt"><b>' + (i + 1) + '. ' + esc(billLabel(v)) + '</b>' +
+      (v.savedAs ? ' <span class="ai-tag ok">saved as ' + esc(v.savedAs) + '</span>' : (UI.open === i ? ' <span class="ai-tag">in the form</span>' : '')) + '</div>' +
+      '<small>' + esc(String(v.billTo || '— Bill To not known —').split('\n')[0]) + '</small>' +
+      '<ul>' + v.items.map(function (o) {
+        var c = o._c && v.cases.length > 1 ? caseById(o._c) : null;
+        return '<li>' + (c ? '<small>' + esc(c.cn) + '</small> ' : '') + esc(o.name) + ' — ₹' + A.money(o.rate) + (o.qty > 1 ? ' × ' + o.qty : '') +
+          (o._b === 'order' || o._b === 'record' ? ' <span class="ai-tag" title="' + esc(o._w || '') + '">' + (o._b === 'order' ? 'from the order' : 'from the record') + '</span>' : '') +
+          (o.note ? '<br><small>' + esc(o.note) + '</small>' : '') + (o._w && o._b !== 'said' ? '<br><small style="color:#666">why: ' + esc(o._w) + '</small>' : '') + '</li>';
+      }).join('') + '</ul>' +
+      (d ? '<div class="ai-bf"><b>Total ₹' + A.money(tot) + '</b> <small>(with clerkage)</small><span style="flex:1"></span><button class="btn sm" data-pv="' + i + '">👁 View</button><button class="btn sm primary" data-op="' + i + '">Open in the form</button></div>'
+         : '<div class="ai-bf"><span style="flex:1"></span><button class="btn sm" data-pv="' + i + '">👁 View</button></div>') + '</div>';
+  }).join('');
+  $$('[data-pv]', host).forEach(function (b) { b.onclick = function () { preview(+b.dataset.pv); }; });
+  $$('[data-op]', host).forEach(function (b) { b.onclick = function () { openInForm(+b.dataset.op); }; });
+}
+/* the orders of one case, inside the drawer */
+async function showPdf(id) {
+  if (!UI) return;
+  var c = caseById(id), v = $('#ai-pdfv', UI.el), pane = $('#ai-pane', UI.el);
+  pane.hidden = true; v.hidden = false;
+  v.innerHTML = '<div class="ai-pvh"><button class="btn sm" id="ai-pdfback">← Back</button> <b>' + esc(c ? c.cn : '') + '</b></div><div id="ai-pdfb" style="flex:1;min-height:0;display:flex;padding:10px"></div>';
+  $('#ai-pdfback', v).onclick = function () { v.hidden = true; v.innerHTML = ''; pane.hidden = false; if (UI.url) { URL.revokeObjectURL(UI.url); UI.url = null; } };
+  busy($('#ai-pdfb', v), 'Putting the orders together…');
+  var p = PDFS[id] !== undefined ? PDFS[id] : (PDFS[id] = c ? await ordersPdf(c) : null);
+  if (!UI || v.hidden) return;
+  if (!p) { $('#ai-pdfb', v).innerHTML = '<div class="ai-warn">No orders of this case have been downloaded yet (or the Case Manager is not open). Fetch them in the Case Manager → Orders &amp; order sheets.</div>'; return; }
+  UI.url = URL.createObjectURL(p.blob);
+  $('#ai-pdfb', v).style.padding = '0';
+  $('#ai-pdfb', v).innerHTML = '<iframe class="ai-pdf" src="' + UI.url + '#view=FitH"></iframe>';
+}
+
 function casesWin() {
   try {
     var f = window.parent && window.parent !== window ? window.parent.document.getElementById('fCases') : null;
     return f && f.contentWindow ? { f: f, w: f.contentWindow } : null;
   } catch (e) { return null; }
 }
-async function showOrders(c) {
-  var host = $('#ai-pdfhost', DR.el);
-  busy(host, 'Putting the orders together…'); host.style.padding = '10px 12px';
-  try {
-    var cw = casesWin();
-    if (!cw) throw new Error('Open Charpe Suite from its home page (not the billing page alone) to see the orders here.');
-    if (!cw.f.getAttribute('src')) { cw.f.setAttribute('src', 'cases.html'); }
-    var t0 = Date.now();
-    while (!(cw.f.contentWindow && cw.f.contentWindow.ordMergedPdf) && Date.now() - t0 < 20000) await new Promise(function (r) { setTimeout(r, 400); });
-    var w = cw.f.contentWindow;
-    if (!w.ordMergedPdf) throw new Error('The Case Manager did not open. Open it once (and sign in), then press Show orders.');
-    var r = await w.ordMergedPdf(c.id);
-    if (!DR || DR.c !== c) return;
-    if (!r) throw new Error('No orders of this case have been downloaded yet. Fetch them in the Case Manager (Orders & order sheets), then press Show orders.');
-    DR.url = URL.createObjectURL(r.blob);
-    host.style.padding = '0';
-    host.innerHTML = '<iframe class="ai-pdf" src="' + DR.url + '#view=FitH"></iframe>' + (r.miss && r.miss.length ? '<div class="ai-warn" style="margin:6px">' + r.miss.length + ' order(s) could not be opened and are left out.</div>' : '');
-  } catch (e) {
-    if (!DR) return;
-    host.innerHTML = '<div class="ai-warn">' + esc(e.message) + '</div><button class="btn sm" id="ai-reord">Show orders</button>';
-    $('#ai-reord', DR.el).onclick = function () { showOrders(c); };
-  }
-}
-
-function catalogText() {
-  return (db().catalog || []).map(function (k) { return k.id + ' | ' + k.name + ' | ₹' + k.rate + (k.clerkable ? '' : ' | expense (no clerkage)'); }).join('\n');
-}
 function billText(v) {
   return v.number + ' dated ' + dmy(v.date) + ' — ' + (v.reference || '') + '\n' + (v.items || []).map(function (it) {
     return '  • ' + it.name + ' — ₹' + it.rate + ' × ' + it.qty + (it.note ? '\n    note: ' + String(it.note).replace(/\n/g, ' ') : '');
   }).join('\n');
-}
-function sampleFor(clientId) {
-  var s = (db().invoices || []).filter(function (v) { return v.sample && (!clientId || v.clientId === clientId); });
-  return s[s.length - 1] || null;
-}
-async function events(inp, engine, step, ready) {
-  busy(step, 'Preparing the bill…');
-  var x = CUR, c = x.c, d = A.currentDraft(), cat = isCat(c);
-  var ne = neCharged(x.bills), done = billedDates(x.bills);
-  var hd = c.nocase ? [] : hearingDates(c);
-  var have = (d.items || []).filter(function (it) { return (it.name || '').trim() || Number(it.rate); });
-  var sample = sampleFor(d.clientId);
-  var task =
-    'Prepare the fee items of a professional bill from the advocate\'s dictation.\n\n' +
-    'CASE: ' + (c.cn || '') + ' — ' + ctit(c) + '\nCOURT: ' + (c.court || '') + (cat ? ' (Central Administrative Tribunal)' : '') + '\nTODAY: ' + dmy(today()) + '\n' +
-    (hd.length ? '\nDATES ON RECORD (from the court site / case diary):\n' + hd.map(function (h) { return dmy(h.d) + ': ' + h.t; }).join('\n') + '\n' : '') +
-    (x.bills.length ? '\nEARLIER BILLS FOR THIS CASE (do not charge again for a date already charged here):\n' + x.bills.map(billText).join('\n') + '\n' : '') +
-    (sample ? '\nSAMPLE BILL THE ADVOCATE MARKED FOR THIS CLIENT (follow its item titles and the style of its notes):\n' + billText(sample) + '\n' : '') +
-    '\nRATE CARD (id | item title | rate):\n' + catalogText() + '\n' +
-    (have.length ? '\nTHE BILL AS IT STANDS NOW (the dictation may change it; return the whole revised list):\n' + have.map(function (it) { return '• ' + it.name + ' — ₹' + it.rate + ' × ' + it.qty + (it.note ? ' — note: ' + it.note : ''); }).join('\n') + '\n' : '') +
-    '\nDICTATION: {{SAID}}\n\n' +
-    'RULES:\n' +
-    '1. Each date on which something happened is a hearing. If the description shows the matter was really taken up (heard, argued, arguments, evidence, final hearing, order or judgment pronounced, reply filed and matter heard, interim relief heard, etc.) it is EFFECTIVE; anything else (adjourned, not reached, board did not reach, leave note, time sought, matter not taken up) is NON-EFFECTIVE.\n' +
-    '2. Use the rate-card item that fits the court and client (CAT items for CAT; Railway items for Railway clients; MSRTC items for MSRTC). Put its id in catalogId. Use the rate from the rate card unless the advocate said a different amount — then put that amount in rate and set rateFromDictation true.\n' +
-    '3. One line per effective hearing, with qty 1, and a note describing what happened, e.g. "On 12/01/2026 the Hon\'ble Tribunal heard the matter at length." Dates as DD/MM/YYYY.\n' +
-    '4. Non-effective hearings go together in ONE line with qty = their number and the note listing their dates, e.g. "Dates: 03/02/2026, 17/02/2026".\n' +
-    '5. Expenses: one line each, kind "expense", heading as the advocate said it (e.g. "Typing and Xerox expenses") with the narration he gave as the note, amount as said, clerkable false. Never add expenses that were not said.\n' +
-    '6. Other work (drafting the reply, legal opinion, notice, conference) as its own line from the rate card.\n' +
-    '7. Do not add clerkage — the tool adds it.\n' +
-    '8. List in "doubts" anything you were unsure about (a date that is not clear, an event that could be either effective or non-effective).\n' +
-    instrText('invoice') +
-    '\nReturn JSON: {"items":[{"catalogId":"k1 or null","name":"item heading","rate":0,"qty":1,"note":"","kind":"effective|noneffective|expense|fee","dates":["YYYY-MM-DD"],"clerkable":true,"rateFromDictation":false}],"doubts":["…"],"said":"the dictation in words"}';
-  try {
-    var r = await run(engine, inp, task, AI_SYS);
-    var out = r.json || {};
-    var warn = [];
-    var items = (out.items || []).map(function (it) {
-      var k = it.catalogId && (db().catalog || []).find(function (z) { return z.id === it.catalogId; });
-      var o = { name: String(it.name || (k && k.name) || '').trim(), hsn: (k && k.hsn) || '', qty: Math.max(1, Math.round(Number(it.qty) || 1)),
-                note: String(it.note || '').trim(), clerkable: it.kind === 'expense' ? false : (it.clerkable !== false), _kind: it.kind, _dates: it.dates || [] };
-      if (k && !it.rateFromDictation) { o.name = k.name; o.rate = Number(k.rate) || 0; if (k.clerkable === false) o.clerkable = false; }
-      else o.rate = Number(it.rate) || (k ? Number(k.rate) : 0) || 0;
-      if (!k && it.kind !== 'expense' && !it.rateFromDictation) warn.push('“' + o.name + '” is not on the rate card — check its rate.');
-      if (it.rateFromDictation) warn.push('“' + o.name + '” is charged at ₹' + o.rate + ' as you said (not the rate card).');
-      return o;
-    }).filter(function (o) { return o.name || o.rate; });
-    /* dates already charged in an earlier bill */
-    items.forEach(function (o) { (o._dates || []).forEach(function (dt) { if (done[dt]) warn.push(dmy(dt) + ' was already charged in ' + done[dt] + '.'); }); });
-    /* CAT: at most 5 non-effective hearings in the whole case */
-    if (cat) {
-      var left = Math.max(0, 5 - ne), want = 0;
-      items.forEach(function (o) { if (o._kind === 'noneffective' || NE_RX.test(o.name)) want += o.qty; });
-      if (want > left) {
-        var cut = want - left;
-        for (var i = items.length - 1; i >= 0 && cut > 0; i--) {
-          var o2 = items[i];
-          if (!(o2._kind === 'noneffective' || NE_RX.test(o2.name))) continue;
-          var take = Math.min(cut, o2.qty); o2.qty -= take; cut -= take;
-          if (o2.qty > 0) o2.note = (o2.note ? o2.note + '\n' : '') + '(since more than 5, only charges for ' + o2.qty + ' sitting' + (o2.qty === 1 ? '' : 's') + ')';
-        }
-        items = items.filter(function (o) { return o.qty > 0; });
-        warn.push(left === 0 ? 'No non-effective hearing is charged: the 5 allowed for this CAT case were already charged in earlier bills.'
-                             : 'Non-effective hearings capped at ' + left + ' (5 for the whole case; ' + ne + ' already charged).');
-      }
-    }
-    items.forEach(function (o) { delete o._kind; delete o._dates; });
-    if (!items.length) throw new Error('Nothing chargeable was found in what you said. Please try again.');
-    var nd = clone(A.currentDraft());
-    nd.items = items;
-    A.setDraft(nd, A.editingId());
-    (out.doubts || []).forEach(function (q) { if (q) warn.push(q); });
-    ready((out.said || r.heard ? '<div class="ai-said">' + esc(out.said || r.heard) + '</div>' : '') +
-      '<div style="color:#127a4b;font-weight:600">✓ ' + items.length + ' item' + (items.length === 1 ? '' : 's') + ' put in the bill by ' + r.engine + '. Check it on the right, then Save invoice.</div>' +
-      (warn.length ? '<div class="ai-warn">' + warn.map(esc).join('<br>') + '</div>' : ''));
-  } catch (e) { ready('<div class="ai-warn">' + esc(e.message) + '</div>'); }
 }
 
 /* ================================================================ 🎙 AUTO LETTER */
@@ -719,13 +1052,6 @@ function addBar() {
     b.onclick = startLetter; lv.parentNode.insertBefore(b, lv.nextSibling);
   }
 }
-/* the drawer belongs to the bill it was opened for: once that bill is saved, it closes */
-setInterval(function () {
-  if (!DR) return;
-  var ls = A.lastSaved && A.lastSaved();
-  if (DR.saved === undefined) { DR.saved = ls ? ls.id : null; return; }
-  if (ls && ls.id !== DR.saved) { var no = ls.number; closeDrawer(); toast('Saved as ' + no); }
-}, 1500);
 if (A.hooks) A.hooks.push(function () { addBar(); });
 addBar();
 window.CBAI = { inboxCheck: inboxCheck, openInboxItem: openInboxItem, startInvoice: startInvoice, startLetter: startLetter, openInstructions: openInstructions, openSettings: openSettings, closeDrawer: closeDrawer, _findCases: findCases, _cnKey: cnKey, _refMatches: refMatches };

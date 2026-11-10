@@ -3825,6 +3825,7 @@ function boot(keepView){
 window.CBapp = {
   get db(){ return db; },
   currentDraft: function(){ return draft; },
+  sheetHTML: function(d){ return sheetHTML(d); },   /* Auto invoice: preview any draft as it will print */
   save: save, toast: toast, money: money, fmtDate: fmtDate,
   amountWords: amountWords, printedRows: printedRows, totalOf: totalOf,
   renderCatalog: renderCatalog, catalogOptions: catalogOptions, renderSaved: renderSaved,
