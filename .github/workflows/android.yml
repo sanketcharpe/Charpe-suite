@@ -1,6 +1,8 @@
 # Builds the Charpe Suite Android app (APK) whenever the android/ folder changes,
 # and publishes it at a fixed address:
 #   https://github.com/sanketcharpe/Charpe-suite/releases/latest/download/CharpeSuite.apk
+#   https://github.com/sanketcharpe/Charpe-suite/releases/latest/download/ExcerptDesk.apk  (the same app;
+#   it puts two icons on the phone, Charpe Suite and Excerpt Desk, sharing one set of data)
 # Can also be started by hand: Actions > Build Android app > Run workflow.
 name: Build Android app
 
@@ -33,7 +35,9 @@ jobs:
         run: gradle -p android assembleRelease --no-daemon
 
       - name: Name it
-        run: cp android/app/build/outputs/apk/release/app-release.apk CharpeSuite.apk
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk CharpeSuite.apk
+          cp CharpeSuite.apk ExcerptDesk.apk
 
       - name: Publish it
         uses: softprops/action-gh-release@v2
@@ -43,5 +47,8 @@ jobs:
           body: |
             Install on the phone: open this page on the phone, tap CharpeSuite.apk, then Install.
             A new build installs over the old one and keeps everything on the phone.
-          files: CharpeSuite.apk
+            CharpeSuite.apk and ExcerptDesk.apk are the same app: either one gives two icons, Charpe Suite and Excerpt Desk.
+          files: |
+            CharpeSuite.apk
+            ExcerptDesk.apk
           make_latest: true

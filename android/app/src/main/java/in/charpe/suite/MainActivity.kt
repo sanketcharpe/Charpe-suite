@@ -33,7 +33,10 @@ import java.util.concurrent.Executors
  *    job Charpe Helper does on a PC (CourtNet + assets/charpe-wrap.js);
  *  · it hands generated bills and PDFs to Android's share sheet and printer.
  */
-class MainActivity : AppCompatActivity() {
+open class MainActivity : AppCompatActivity() {
+
+    /** The page this launcher icon opens (Excerpt Desk overrides it). */
+    protected open val startUrl: String = START_URL
 
     private lateinit var web: WebView
     private var fileCallback: ValueCallback<Array<Uri>>? = null
@@ -124,7 +127,7 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() { if (web.canGoBack()) web.goBack() else finish() }
         })
 
-        if (savedInstanceState == null) web.loadUrl(START_URL) else web.restoreState(savedInstanceState)
+        if (savedInstanceState == null) web.loadUrl(startUrl) else web.restoreState(savedInstanceState)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -206,7 +209,7 @@ class MainActivity : AppCompatActivity() {
 
         /** "Reload" from the offline page. */
         @JavascriptInterface
-        fun retry() { runOnUiThread { web.loadUrl(START_URL) } }
+        fun retry() { runOnUiThread { web.loadUrl(startUrl) } }
     }
 
     override fun onDestroy() {
