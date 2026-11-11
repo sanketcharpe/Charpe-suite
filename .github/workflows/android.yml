@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   apk:
@@ -52,3 +53,19 @@ jobs:
             CharpeSuite.apk
             ExcerptDesk.apk
           make_latest: true
+
+      # Also on the site itself (sanketcharpe.github.io), which every phone network reaches;
+      # GitHub's release file server is blocked or very slow on some mobile networks.
+      - name: Put it on the site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p app
+          cp CharpeSuite.apk app/CharpeSuite.apk
+          cp CharpeSuite.apk app/ExcerptDesk.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add -f app/CharpeSuite.apk app/ExcerptDesk.apk
+          git commit -m "Android app build ${{ github.run_number }} on the site" || exit 0
+          git pull --rebase -q && git push
+          gh api -X POST repos/${{ github.repository }}/pages/builds || true
