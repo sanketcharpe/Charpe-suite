@@ -1,6 +1,6 @@
 /* Charpe Suite service worker v3 — network first, so every computer and phone
    always gets the latest version when online; the saved copy is used offline. */
-const CACHE = 'charpe-suite-v35';
+const CACHE = 'charpe-suite-v36';
 self.addEventListener('install', function (e) { self.skipWaiting(); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
@@ -12,6 +12,7 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;          // Google script calls are never cached
+  if (/\/app\//.test(url.pathname)) return;                 // the Android app downloads go straight to the phone
   /* no-cache: always ask GitHub whether the file changed (a quick check), so an update shows at once, not after the browser's 10-minute cache */
   e.respondWith(fetch(req, { cache: 'no-cache' }).then(function (res) {
     if (res && res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
