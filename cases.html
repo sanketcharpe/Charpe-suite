@@ -1523,11 +1523,12 @@ function unupdSect(title,arr,col){
 /* ===========================================================
    ADD / EDIT CASE
    =========================================================== */
-var CF=['fc','fcn','fcnr','fjd','fp','fd','fcl','fcp','fcm','fps','fns','fno'];
+/* the Add-case form's fields (named CASE_FIELDS: the court filter further down uses the name CF) */
+var CASE_FIELDS=['fc','fcn','fcnr','fjd','fp','fd','fcl','fcp','fcm','fps','fns','fno'];
 function openAdd(pd){
   if(!guard('edit'))return;
   eid=null;document.getElementById('cmtit').textContent='Add case';
-  CF.forEach(function(id){document.getElementById(id).value='';});
+  CASE_FIELDS.forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('fpd').value='';
   document.getElementById('fnd').value=pd||'';
   document.getElementById('fst').value='active';
