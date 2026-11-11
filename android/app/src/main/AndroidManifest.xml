@@ -31,6 +31,24 @@
             </intent-filter>
         </activity>
 
+        <!-- Excerpt Desk: a second icon, its own window, the same data as Charpe Suite -->
+        <activity
+            android:name=".ExcerptActivity"
+            android:exported="true"
+            android:label="Excerpt Desk"
+            android:icon="@mipmap/ic_excerpt"
+            android:roundIcon="@mipmap/ic_excerpt"
+            android:taskAffinity="in.charpe.suite.excerpt"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.CharpeSuite">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

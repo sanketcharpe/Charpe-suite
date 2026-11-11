@@ -4,4 +4,5 @@
     <color name="accent">#FF1668E3</color>
     <color name="white">#FFFFFFFF</color>
     <color name="ic_launcher_background">#151D2B</color>
+    <color name="ic_excerpt_background">#12343B</color>
 </resources>
