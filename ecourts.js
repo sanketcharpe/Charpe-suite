@@ -439,7 +439,7 @@ window.ecoOpenBatch = function (ids) {
   ECO.pick = {}; due.forEach(function (x) { ECO.pick[x.id] = 1; });
   var seg = function (g, t) { return '<button class="btn ' + (grp === g ? 'bg' : 'bo') + '" onclick="ecoOpenGroup(\'' + g + '\')">' + t + '</button>'; };
   shell('&#9878; eCourts &mdash; fetch from the official site',
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + seg('sub', 'Unupdated &mdash; subordinate courts (' + nSub + ')') + seg('hc', 'Unfetched &mdash; High Court (' + nHc + ')') + seg('all', 'Both') + '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' + seg('sub', 'Unupdated &mdash; subordinate courts (' + nSub + ')') + seg('hc', 'High Court (' + nHc + ')') + seg('all', 'Both') + '</div>' +
     '<div class="note">Ticked below' + (grp === 'sub' ? ' (subordinate courts only)' : grp === 'hc' ? ' (High Court only)' : '') + ': open cases whose next date is <b>' + (+(c.days || 0) ? 'within ' + c.days + ' day(s) or earlier' : 'today or earlier') +
     '</b>, cases with no next date, and cases where the court had not updated last time. ' +
     'District courts come from services.ecourts.gov.in; Bombay High Court matters (CNR beginning HCBM) from hcservices.ecourts.gov.in. Add any other case with the search box.</div>' +
