@@ -144,7 +144,9 @@ class CourtNet {
             "mahaitgov.in",               // MAT data (uatmat.)
             "mat.maharashtra.gov.in",     // MAT site
             "ecourts.gov.in",             // hcservices. and services. (High Court and district courts)
-            "bombayhighcourt.gov.in"      // Bombay High Court's own site
+            "bombayhighcourt.gov.in",     // Bombay High Court's own site (also its PDF cause lists)
+            "dcourts.gov.in",             // District Court Nagpur site: judges, leave, cause lists (Nov 2026)
+            "cgat.gov.in"                 // CAT cause list (Nov 2026)
         )
     }
 }

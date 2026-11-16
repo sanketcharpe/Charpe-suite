@@ -1255,7 +1255,8 @@ function boardActs(iso,pfx){
          '<button class="btn bg" onclick="prtBoard(\''+iso+'\',\'print\')">&#128424; Print board</button>'+
          '<button class="btn bbl" onclick="prtBoard(\''+iso+'\',\'pdf\')">&#128196; Download PDF</button>'+
          '<button class="btn bgr" onclick="prtBoard(\''+iso+'\',\'word\')">&#128209; Download Word</button></div></details>'+
-         (can('edit')?'<button class="btn bor" onclick="adjSel(\''+iso+'\',\''+pfx+'\')">&#8631; Adjourn selected</button>':'');
+         (can('edit')?'<button class="btn bor" onclick="adjSel(\''+iso+'\',\''+pfx+'\')">&#8631; Adjourn selected</button>':'')+
+         (window.lstOpen?'<button class="btn bbl" onclick="lstOpen(\''+iso+'\')" title="Judge, designation, room, leave and serial number of each matter in the court\'s list for this date (District Court: one CAPTCHA per court; High Court, CAT, MAT: none)">&#127963; Court positions'+(window.lstHas&&lstHas(iso)?' &#10003;':'')+'</button>':'');
 }
 
 /* Screen board table. pfx namespaces the checkboxes so several
@@ -1265,7 +1266,7 @@ function boardTable(iso,pfx){
   var rows=(pfx==='cal'||pfx==='pln')?boardF(iso):boardOn(iso);
   if(!rows.length)return '<div style="color:#888;font-size:11px;padding:6px 0">No matters were listed on '+fd(iso)+'.</div>';
   var b=bf(),ncols=can('edit')?10:9;
-  var h='<div class="bwrap"><table class="board" style="font-family:'+he(b.f)+',serif;font-size:'+b.s+'px"><thead><tr>'+
+  var h=(window.lstNotes?lstNotes(iso,false):'')+'<div class="bwrap"><table class="board" style="font-family:'+he(b.f)+',serif;font-size:'+b.s+'px"><thead><tr>'+
     (can('edit')?'<th style="width:24px"><input type="checkbox" onclick="bAll(\''+pfx+'\',this.checked)"></th>':'')+
     '<th class="num">#</th>'+
     '<th>Previous date / stage</th>'+
@@ -1297,7 +1298,7 @@ function boardTable(iso,pfx){
       '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini" style="color:'+g.c+';opacity:.8">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+
         '<br><input class="jinp'+(j?' set':'')+'" value="'+he(j)+'" placeholder="Judge — type to add" '+
-        'style="color:'+g.c+'" onclick="event.stopPropagation()" onchange="setJudge(\''+c.id+'\',\''+iso+'\',this.value)"></td>'+
+        'style="color:'+g.c+'" onclick="event.stopPropagation()" onchange="setJudge(\''+c.id+'\',\''+iso+'\',this.value)">'+(window.lstCell?lstCell(c,iso,false):'')+'</td>'+
       '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+
         (c.imp&&pfx!=='dsh'?'<div style="font-size:11px;color:#8a4b00;font-style:normal;text-decoration:none;font-weight:600">&#9733; '+he(c.imp)+'</div>':'')+'</td>'+
       '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
@@ -2093,6 +2094,9 @@ function prtStyle(){
   'td{padding:.25em .3em;border:.5pt solid #bbb;vertical-align:top;line-height:1.18}'+
   'tr.ghead td{background:#1a2744;color:#fff;font-family:Arial,sans-serif;font-size:.82em;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:.2em .5em}'+
   'tr{page-break-inside:avoid}'+
+  '.lstcell{margin-top:.15em;font-size:.9em;line-height:1.2}.lstcell .sr{border:1pt solid currentColor;padding:0 .2em;font-weight:800;margin-right:.25em}'+
+  '.lstcell .lv{background:#b3261e;color:#fff;padding:0 .25em;font-weight:800;margin-right:.25em}.lstcell .rm{font-style:italic}.lstcell .bk{font-weight:500}'+
+  '.lstnotes{border:.5pt solid #888;padding:.25em .5em;margin:.2em 0 .5em;font-size:.88em}.lstnotes .ct{font-weight:800;margin-top:.2em}.lstnotes .nt{margin-left:.6em}'+
   'thead{display:table-header-group}'+
   '.par{font-style:italic;text-decoration:underline;font-weight:700}'+
   '.hcrow td{font-weight:900;-webkit-text-stroke:.3px currentColor}'+
@@ -2148,7 +2152,7 @@ function boardRowsHTML(iso){
     var sty=' style="color:'+g.c+'"';
     h+='<tr class="'+(x.g==='hc'||x.g==='sc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
       '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
-      '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(j?'<br><span class="mini">Judge: '+he(j)+'</span>':'<br><span class="mini">Judge: ______________</span>')+'</td>'+
+      '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(j?'<br><span class="mini">Judge: '+he(j)+'</span>':(window.lstJudge&&lstJudge(c,iso)?'':'<br><span class="mini">Judge: ______________</span>'))+(window.lstCell?lstCell(c,iso,true):'')+'</td>'+
       '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+'</td>'+
       '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
       '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
@@ -2161,7 +2165,7 @@ function boardRowsHTML(iso){
 function boardDoc(iso){
   var b=boardRowsHTML(iso),tt=tOn(iso);
   var body=prtHeader('Printed on '+fd(td())+(cu?' by '+he(cu.name||cu.username):''))+
-    '<h1>Board for '+fdl(iso)+' &mdash; '+b.n+' matter'+(b.n===1?'':'s')+'</h1>'+b.html+prtLegend()+
+    '<h1>Board for '+fdl(iso)+' &mdash; '+b.n+' matter'+(b.n===1?'':'s')+'</h1>'+(window.lstNotes?lstNotes(iso,true):'')+b.html+prtLegend()+
     (tt.length?'<h2>Tasks due on this date</h2><ul>'+tt.map(function(t){return '<li>'+he(t.desc)+'</li>';}).join('')+'</ul>':'')+
     '<div class="sign">_______________________<br>Advocate</div>';
   /* portrait, squeezed onto a single sheet wherever the day's list allows */
@@ -3584,6 +3588,7 @@ window.addEventListener('storage',function(e){
 <script src="mat-split.js"></script>
 <script src="tribunals.js"></script>
 <script src="bhc.js"></script>
+<script src="listing.js"></script>
 <script src="assets/shim.js"></script>
 <script src="assets/dd.js"></script>
 <script src="assets/ui-cases.js"></script>
