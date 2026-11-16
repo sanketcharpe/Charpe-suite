@@ -1096,9 +1096,25 @@ function nextOf(c,iso){var t=timeline(c);for(var i=0;i<t.length;i++)if(t[i].d>is
 function judgeOn(c,iso){return (c.jov&&c.jov[iso])||c.jd||'';}
 
 /* Board for any date - past, present or future */
+/* SAFETY NET (Nov 2026): an open case whose COURT RECORD (eCourts fetch) lists it on a date is put on
+   that day's board even if the date was never posted on the case — so no matter is ever missed. Such rows
+   carry a red warning until the date is posted. Returns the court's stage for that date, or null. */
+function ecoOn(c,iso){
+  if(c.st==='disposed'||!c.eco)return null;
+  var e=c.eco;
+  if(e.next===iso)return e.stage||'';
+  var hh=e.hh||[];
+  for(var i=0;i<hh.length;i++){if(hh[i].d===iso||hh[i].bd===iso)return hh[i].p||'';}
+  return null;
+}
+function ecoWarn(c,iso,print){
+  return '<div style="color:#b3261e;font-weight:700;font-style:normal;text-decoration:none;font-size:11px">&#9888; Court record lists this matter on '+fd(iso)+
+    ' &mdash; not posted on the case (saved next date: '+(c.nd?fd(c.nd):'none')+')'+(print?'':'. Press Post to fix.')+'</div>';
+}
 function boardOn(iso){
-  return LC().filter(function(c){return onDate(c,iso);})
-    .map(function(c){return{c:c,cur:c.nd===iso,g:courtGroup(c)};})
+  return LC().filter(function(c){return onDate(c,iso)||ecoOn(c,iso)!==null;})
+    .map(function(c){var ef=!onDate(c,iso);
+      return{c:c,cur:c.nd===iso||(ef&&iso>=td()),g:courtGroup(c),ef:ef,es:ef?ecoOn(c,iso):''};})
     .sort(function(a,b){
       var ra=GRANK[a.g],rb=GRANK[b.g];
       if(ra!==rb)return ra-rb;                                  /* High Court first, Labour Court last */
@@ -1299,9 +1315,9 @@ function boardTable(iso,pfx){
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+
         '<br><input class="jinp'+(j?' set':'')+'" value="'+he(j)+'" placeholder="Judge — type to add" '+
         'style="color:'+g.c+'" onclick="event.stopPropagation()" onchange="setJudge(\''+c.id+'\',\''+iso+'\',this.value)">'+(window.lstCell?lstCell(c,iso,false):'')+'</td>'+
-      '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+
+      '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+(x.cur?'':' <span class="mini" style="font-style:normal;text-decoration:none">(heard)</span>')+(x.ef?ecoWarn(c,iso,false):'')+
         (c.imp&&pfx!=='dsh'?'<div style="font-size:11px;color:#8a4b00;font-style:normal;text-decoration:none;font-weight:600">&#9733; '+he(c.imp)+'</div>':'')+'</td>'+
-      '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
+      '<td'+sty+'>'+he(stageOn(c,iso)||x.es||'—')+'</td>'+
       '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini" style="color:'+g.c+';opacity:.8">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
       '<td'+sty+'>'+he(c.cl||'—')+'</td>'+
       '<td'+sty+'>'+he(ln)+'</td>'+
@@ -2153,8 +2169,8 @@ function boardRowsHTML(iso){
     h+='<tr class="'+(x.g==='hc'||x.g==='sc'?'hcrow':'')+'"'+sty+'><td'+sty+'>'+n+'</td>'+
       '<td'+sty+'>'+(pv?'<b>'+fd(pv.d)+'</b>'+(pv.s?'<br><span class="mini">'+he(pv.s)+'</span>':''):'<span class="mini">First listing</span>')+'</td>'+
       '<td'+sty+'><b>'+he(c.court||'—')+'</b>'+(c.cn?'<br>'+he(c.cn):'')+(j?'<br><span class="mini">Judge: '+he(j)+'</span>':(window.lstJudge&&lstJudge(c,iso)?'':'<br><span class="mini">Judge: ______________</span>'))+(window.lstCell?lstCell(c,iso,true):'')+'</td>'+
-      '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+'</td>'+
-      '<td'+sty+'>'+he(stageOn(c,iso)||'—')+'</td>'+
+      '<td class="par"'+sty+'>'+snH(c)+he(ctit(c))+(x.ef?ecoWarn(c,iso,true):'')+'</td>'+
+      '<td'+sty+'>'+he(stageOn(c,iso)||x.es||'—')+'</td>'+
       '<td'+sty+'>'+(nx?'<b>'+fd(nx.d)+'</b>'+(nx.s?'<br><span class="mini">'+he(nx.s)+'</span>':''):'<span class="mini">Not yet posted</span>')+'</td>'+
       '<td'+sty+'>'+he(c.cl||'')+'</td>'+
       '<td'+sty+'>'+he(ln)+'</td></tr>';
@@ -2968,9 +2984,9 @@ function applyImp(){
         date:td(),by:cu?cu.name:''});
       touch(c);n++;ns++;return;
     }
-    /* NEXT-DATE RULE: a court-record date is used only if it is later than today,
+    /* NEXT-DATE RULE: a court-record date is used only if it is today or later (today allowed, Nov 2026),
        and never replaces a different future date already saved. */
-    if(!m.date||m.date<=t0){kept++;return;}
+    if(!m.date||m.date<t0){kept++;return;}
     if(c.nd===m.date){if(m.stage&&!c.ns){c.ns=m.stage;touch(c);}kept++;return;}
     if(c.nd&&c.nd>t0){
       c.notes=c.notes||[];
