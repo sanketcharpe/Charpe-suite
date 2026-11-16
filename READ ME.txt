@@ -1,4 +1,4 @@
-CHARPE HELPER  (Oct 2026)
+CHARPE HELPER  (Oct 2026; version 14 — Nov 2026)
 
 Why: the Supreme Court site turns away Google's servers, and the MAT site
 cannot be reached from them. Charpe Helper runs quietly on this PC and fetches
@@ -19,3 +19,9 @@ http://127.0.0.1:8770/ in the browser.
 
 It listens only on this computer and answers only Charpe Suite's web address.
 To remove it: double-click "Remove Charpe Helper.bat".
+
+Version 14 (Nov 2026) also fetches, for the day board's "Court positions"
+button: the District Court Nagpur site (List of Judges, Judges on Leave,
+cause lists), the High Court's PDF cause lists, the CAT cause list and the
+MAT Nagpur board. To update a PC from an older helper: double-click
+"Remove Charpe Helper.bat", then "Install Charpe Helper.bat".

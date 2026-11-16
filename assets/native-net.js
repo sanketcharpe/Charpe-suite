@@ -26,7 +26,7 @@
   var NET = window.CharpeNet;
   if (!NET || typeof NET.postMessage !== 'function') return;
 
-  var VERSION = 13;
+  var VERSION = 14;
   var ENGINE = 'android';
 
   /* ------------------------------------------------------------ the app link */
@@ -1029,6 +1029,69 @@
     return { ok: true, missing: true, msg: 'The Bombay High Court site did not give the PDF (HTTP ' + r.status + ')' };
   }
 
+  /* ================================================================ plain page fetching for the day board (v14, Nov 2026)
+     Same as the helper's wget / wpost / wdrop: fetch a court page from the phone's own connection, keep the
+     cookies between calls (one "wid" per job), and hand back the text or the bytes. Charpe Suite reads it. */
+  var WEB_HOSTS = ['dcourts.gov.in', 'bombayhighcourt.gov.in', 'cgat.gov.in', 'mahaitgov.in', 'mat.maharashtra.gov.in', 'ecourts.gov.in'];
+  var WEB = {};
+  function webOk(url) {
+    var host = hostOf(url).toLowerCase();
+    return url.indexOf('https://') === 0 && WEB_HOSTS.some(function (h) { return host === h || host.slice(-(h.length + 1)) === '.' + h; });
+  }
+  function webSess(b) {
+    var t = now();
+    Object.keys(WEB).forEach(function (k) { if (t - WEB[k].at > 1800) { dropSession(WEB[k].s); delete WEB[k]; } });
+    var id = str(b.wid);
+    if (id && WEB[id]) { WEB[id].at = t; return id; }
+    id = uid();
+    WEB[id] = { s: newSession(), at: t };
+    return id;
+  }
+  function webAnswer(id, r, bin) {
+    var o = { ok: true, wid: id, status: r.status, ctype: r.ctype || '' };
+    if (bin) o.b64 = r.b64 || ''; else o.text = r.text;
+    return o;
+  }
+  function webHeaders(b, url) {
+    var h = { Referer: str(b.referer) || url };
+    if (b.xhr) { h.Accept = 'application/json, text/javascript, */*; q=0.01'; h['X-Requested-With'] = 'XMLHttpRequest'; }
+    Object.keys(b.headers || {}).forEach(function (k) { h[k] = str(b.headers[k]); });
+    return h;
+  }
+  async function web_get(b) {
+    var url = str(b.url);
+    if (!webOk(url)) throw new Error('That address is not one the app fetches.');
+    var id = webSess(b), last = null;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        var r = await request(WEB[id].s, 'GET', url, { headers: webHeaders(b, url), bin: !!b.bin, timeout: b.timeout || 60 });
+        return webAnswer(id, r, !!b.bin);
+      } catch (e) { last = e; await sleep(1000 * (attempt + 1)); }
+    }
+    throw new Error('The site could not be reached just now (' + String(last && last.message || last).slice(0, 80) + '). Please try again.');
+  }
+  async function web_post(b) {
+    var url = str(b.url);
+    if (!webOk(url)) throw new Error('That address is not one the app fetches.');
+    var id = webSess(b), h = webHeaders(b, url), body;
+    if (b.multipart) {
+      var bd = '----CharpeForm' + uid().slice(0, 16), parts = [];
+      Object.keys(b.form || {}).forEach(function (k) { parts.push('--' + bd + '\r\nContent-Disposition: form-data; name="' + k + '"\r\n\r\n' + str(b.form[k]) + '\r\n'); });
+      parts.push('--' + bd + '--\r\n');
+      h['Content-Type'] = 'multipart/form-data; boundary=' + bd;
+      body = parts.join('');
+    } else if (Array.isArray(b.pairs)) {
+      if (!hasHeader(h, 'content-type')) h['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+      body = b.pairs.filter(function (p) { return Array.isArray(p) && p.length === 2; }).map(function (p) { return qp(str(p[0])) + '=' + qp(str(p[1])); }).join('&');
+    } else {
+      if (!hasHeader(h, 'content-type')) h['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+      body = formEncode(b.form || {});
+    }
+    var r = await request(WEB[id].s, 'POST', url, { headers: h, body: body, bin: !!b.bin, timeout: b.timeout || 90 });
+    return webAnswer(id, r, !!b.bin);
+  }
+  function web_drop(b) { var id = str(b.wid); if (WEB[id]) { dropSession(WEB[id].s); delete WEB[id]; } return { ok: true }; }
+
   /* ================================================================ the actions, as the helper names them */
   var ACTIONS = {
     sci: sci_case, scopen: sci_open, scsearch: sci_search, mat: mat_list, matdays: mat_days,
@@ -1036,6 +1099,7 @@
     xput: x_put, xlist: x_list, xget: x_get, xdel: x_del,
     dcstart: dc_start, dccaptcha: dc_captcha, dcsearch: dc_search, dcorder: dc_order, dcbiz: dc_biz,
     bhctypes: bhc_types, bhcfind: bhc_find, bhcpdf: bhc_pdf, dcopen: dc_open, dctypes: dc_types, dcfind: dc_find, dcsrch: dc_srch,
+    wget: web_get, wpost: web_post, wdrop: web_drop,
     ping: function () { return { ok: true, helper: VERSION, engine: ENGINE, phone: true }; }
   };
 
