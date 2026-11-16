@@ -5,11 +5,13 @@
      due for a check shows its own CAPTCHA. Type them, then press
      Fetch on one row or "Fetch all" for the lot.
    • Next date rules (never overwrite good data):
-       - court date later than today, your date empty or past → taken
+       - court date today or later (and after the court's last recorded
+         hearing), your date empty or past → taken   [today allowed: Nov 2026]
+       - court date today but you already posted a later date → yours kept
        - court date same as yours                              → fine
        - court date later than today but different from your
          future date                                          → flagged, you choose
-       - court date today or earlier / blank                  → "court not
+       - court date earlier than today / blank               → "court not
          updated yet", your date kept, case re-offered next time
    • Every order PDF is saved in Drive (eCourts Orders/<case>/), kept in
      this browser for instant opening, and — if you pick a folder —
@@ -663,6 +665,12 @@ function summary() {
 /* ==================================================================
    APPLYING WHAT THE COURT SHOWS
    ================================================================== */
+/* latest date on which the court recorded a hearing (business date) */
+function lastBd(e) {
+  var m = '';
+  (e.hh || []).forEach(function (h) { if (h.bd && h.bd > m) m = h.bd; });
+  return m;
+}
 function apply(cid, d) {
   var c = find(cid); if (!c) return { html: 'Case no longer exists here.' };
   var e = c.eco = c.eco || {}, t = td(), msg = [], good = '#127a4b', warn = '#a35b00', bad = '#b3261e';
@@ -696,7 +704,16 @@ function apply(cid, d) {
     e.dispFlag = true; e.pending = false; delete e.conflict;
     msg.push('<span style="color:' + warn + '">&#9888; Court shows the case as disposed' + (d.decision ? ' on ' + fd(d.decision) : '') +
       (d.disposal ? ' (' + he(d.disposal) + ')' : '') + '. Not changed here &mdash; confirm it on the case.</span>');
-  } else if (nd && nd > t) {
+  } else if (nd && nd === t && c.nd && c.nd > t) {
+    /* Court still shows today, but a later date is already posted here (today's hearing is over
+       and was posted by hand before the court updated) — keep the posted date, ask again next time. */
+    delete e.dispFlag; delete e.conflict; e.pending = true;
+    msg.push('<span style="color:' + warn + '">&#9203; Court still shows today (' + fd(nd) + '); your later date ' + fd(c.nd) +
+      ' is kept. This case will be offered again next time.</span>');
+  } else if (nd && nd >= t && nd > lastBd(e)) {
+    /* Nov 2026: a court date of TODAY is accepted too (fetches made after midnight on the hearing day
+       were being refused, and the matter went missing from the day's board). A past date is never taken,
+       and the date must be after the last hearing the court has recorded, so a stale date cannot slip in. */
     delete e.dispFlag; e.pending = false;
     if (c.nd === nd) { delete e.conflict; msg.push('<span style="color:' + good + '">&#10003; Next date ' + fd(nd) + ' already correct.</span>'); }
     else if (!c.nd || c.nd <= t) {
