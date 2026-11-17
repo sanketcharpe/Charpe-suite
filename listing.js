@@ -451,8 +451,10 @@
     return s;
   }
   function dcCauseList(cap, cx, courtV, iso, ctype, answer) {
-    var base = { service_type: 'courtComplex', est_code: cx, court: courtV, date: mdy(iso), cause_type: ctype, scid: cap.pg.scid,
-                 siwp_captcha_value: String(answer || '').trim(), es_ajax_request: '1', action: 'get_causes' };
+    /* exactly as the court's own form asks: one establishment (e.g. MHNG02), not the whole complex — a complex request comes back without the list */
+    var one = String(cx || '').indexOf(',') < 0;
+    var base = { service_type: one ? 'courtEstablishment' : 'courtComplex', est_code: cx, court: courtV, date: mdy(iso), cause_type: ctype, scid: cap.pg.scid,
+                 siwp_captcha_value: String(answer || '').trim(), es_ajax_request: '1', submit: 'Search', action: 'get_causes' };
     if (cap.pg.tokN) base[cap.pg.tokN] = cap.pg.tokV;
     return cap.job.post(DC_AJAX, base, { ref: DC_CL, xhr: true }).then(function (r) {
       var j; try { j = JSON.parse(r.text); } catch (e) { j = null; }
@@ -928,7 +930,7 @@
       var ct = (document.getElementById('lstCt' + i) || {}).value || r.ct;
       p = p.then(function () {
         var st = document.getElementById('lstSt' + i); st.textContent = 'reading the list…'; st.className = 'st';
-        return dcCauseList(r.cap, r.g.cx, r.g.opt, W.iso, ct, ans).then(function (res) {
+        return dcCauseList(r.cap, r.g.est || r.g.cx, r.g.opt, W.iso, ct, ans).then(function (res) {
           if (res.bad) { st.textContent = 'Wrong CAPTCHA — new picture'; st.className = 'st bad'; document.getElementById('lstIn' + i).value = ''; return lstPic(i).then(function () { st.textContent = 'Wrong CAPTCHA — type the new one'; st.className = 'st bad'; }); }
           if (res.err && !res.html) { st.textContent = res.err; st.className = 'st bad'; r.done = true; applyDcList(r.g, ct, null, res.err); return; }
           r.done = true;
@@ -971,9 +973,7 @@
         var it = hits[0], ix = L.items.indexOf(it); found++;
         rec.sr = it.sr; rec.list = kind; rec.stg = it.head || ''; rec.pos = ix + 1; rec.tot = L.items.length;
         rec.rem = (rec.rem || []).filter(function (x) { return !/not found in the|was not found|could be read|out of sequence|serial number could not/i.test(x); });
-        var pv = ix > 0 ? L.items[ix - 1].sr : null, nx = ix + 1 < L.items.length ? L.items[ix + 1].sr : null;
-        if ((pv != null && it.sr <= pv) || (nx != null && it.sr >= nx))
-          rec.rem = uniq(rec.rem.concat(['Sr. ' + it.sr + ' is out of sequence on the court\'s own list (it comes between Sr. ' + (pv == null ? '—' : pv) + ' and Sr. ' + (nx == null ? '—' : nx) + ') — confirm the serial number in court.']));
+        /* serials are not in order on the page: the court groups them by stage (e.g. Sr. 6 under 'Argument' after Sr. 36) */
         if (it.loose) rec.rem = uniq(rec.rem.concat(['Read from the plain text of the list (its table could not be read) — please confirm the serial number.']));
       } else if (hits.length > 1) {
         rec.rem = uniq((rec.rem || []).concat(['Several entries in the ' + kind.toLowerCase() + ' match this case number (Sr. ' + hits.map(function (h) { return h.sr; }).join(', ') + ') — please check.']));
