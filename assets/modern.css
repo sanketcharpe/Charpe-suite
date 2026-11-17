@@ -1,0 +1,331 @@
+/* Charpe Suite — Modern view (Nov 2026)
+   A second look for the Case Manager. It only restyles the existing screens: every page, button,
+   list and board works exactly as before. Switch with the "Classic view" / "Modern view" button.
+   Screen only: printouts and PDFs keep their own layout. */
+@media screen {
+
+html.ui-modern {
+  --bg: #f4f6fa;
+  --panel: #ffffff;
+  --ink: #0f1b33;
+  --ink2: #44506a;
+  --muted: #7b869c;
+  --line: #e6e9f0;
+  --line2: #d7dce6;
+  --navy: #13213f;
+  --navy2: #1d2f57;
+  --gold: #d9a72b;
+  --gold-soft: #fbf3dc;
+  --blue: #2f6fde;
+  --red: #d64545;
+  --green: #1f9d61;
+  --orange: #e2861d;
+  --r: 14px;
+  --r-sm: 9px;
+  --sh: 0 1px 2px rgba(16, 27, 51, .05), 0 6px 20px rgba(16, 27, 51, .06);
+  --sh-hi: 0 2px 4px rgba(16, 27, 51, .06), 0 14px 34px rgba(16, 27, 51, .12);
+  --side: 224px;
+}
+html.ui-modern body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------ sidebar */
+html.ui-modern header {
+  position: fixed; left: 0; top: 0; bottom: 0; width: var(--side); z-index: 450;
+  flex-direction: column; flex-wrap: nowrap; align-items: stretch; justify-content: flex-start; gap: 0;
+  padding: 20px 14px 14px; background: linear-gradient(180deg, #13213f 0%, #0d1830 100%);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, .04), 4px 0 24px rgba(10, 18, 36, .18);
+  overflow: visible;
+}
+html.ui-modern .firm { padding: 0 8px 18px; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+html.ui-modern .firm b { font-size: 14px; line-height: 1.35; color: #f3d277; letter-spacing: .1px; }
+html.ui-modern .firm small { font-size: 11px; color: #8d9bb8; margin-top: 3px; display: block; }
+
+html.ui-modern nav {
+  order: 2; flex-direction: column; flex-wrap: nowrap; flex-basis: auto; gap: 3px;
+  border: 0; padding: 6px 0; margin: 0;
+}
+html.ui-modern nav > button,
+html.ui-modern nav .dd > summary {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  background: transparent; border: 0; box-shadow: none; color: #c3cde0;
+  padding: 10px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; text-align: left;
+  transform: none;
+}
+html.ui-modern nav > button:hover,
+html.ui-modern nav .dd > summary:hover { background: rgba(255, 255, 255, .07); color: #fff; border: 0; }
+html.ui-modern nav > button.on,
+html.ui-modern nav .dd:has(.ddm button.on) > summary {
+  background: rgba(243, 210, 119, .14); color: #f6d989; border: 0;
+  box-shadow: inset 3px 0 0 #f3d277;
+}
+html.ui-modern nav > button::before,
+html.ui-modern nav .dd > summary::before {
+  content: "•"; width: 20px; text-align: center; font-size: 16px; opacity: .9; flex: none;
+}
+html.ui-modern nav > button[data-page="dash"]::before { content: "\25A6"; }
+html.ui-modern nav > button[data-page="cases"]::before { content: "\2630"; }
+html.ui-modern nav > button[data-page="unupd"]::before { content: "\26A0"; }
+html.ui-modern nav > button[data-page="unfetch"]::before { content: "\21E9"; }
+html.ui-modern nav > button[data-page="cal"]::before { content: "\1F4C5"; font-size: 14px; }
+html.ui-modern nav > button[data-page="plan"]::before { content: "\1F5D3"; font-size: 14px; }
+html.ui-modern nav > button[data-page="tasks"]::before { content: "\2714"; }
+html.ui-modern nav > button[data-page="deleted"]::before { content: "\1F5D1"; font-size: 14px; }
+html.ui-modern nav > button[data-page="reports"]::before { content: "\1F4CA"; font-size: 14px; }
+html.ui-modern nav > button[data-page="sett"]::before { content: "\2699"; }
+html.ui-modern nav #ddCourts > summary::before { content: ""; width: 0; margin-right: -11px; }
+html.ui-modern nav #ddMore > summary::before { content: "\22EF"; }
+html.ui-modern nav .dd > summary::after { margin-left: auto !important; }
+html.ui-modern nav .dd > summary .ddc { margin-left: auto; transform: rotate(-90deg); }
+html.ui-modern nav .dd[open] > summary .ddc { transform: rotate(-90deg); }
+html.ui-modern nav .navbdg {
+  margin-left: auto; font-size: 11px; padding: 1px 8px; border-radius: 20px; background: #e05555; line-height: 18px;
+}
+html.ui-modern nav .dd { display: block; width: 100%; }
+/* the grouped menus open to the right of the sidebar */
+html.ui-modern nav .ddm,
+html.ui-modern nav .ddm.r { top: -6px; left: calc(100% + 12px); right: auto; min-width: 230px; border-radius: 12px; }
+html.ui-modern nav .ddm > button { font-size: 13.5px !important; padding: 9px 12px !important; }
+html.ui-modern nav .ddm > button::before { display: none; }
+
+html.ui-modern .hright {
+  order: 3; margin-top: auto; flex-direction: column; align-items: stretch; gap: 7px;
+  padding: 14px 4px 0; border-top: 1px solid rgba(255, 255, 255, .07);
+}
+html.ui-modern .hright .btn.bo {
+  background: rgba(255, 255, 255, .06) !important; color: #e6ecf7 !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important; padding: 9px 12px !important;
+  font-size: 13px; font-weight: 600; text-align: left; border-radius: 10px;
+}
+html.ui-modern .hright .btn.bo:hover { background: rgba(255, 255, 255, .12) !important; }
+html.ui-modern .hright #uiTgl { background: rgba(243, 210, 119, .12) !important; color: #f6d989 !important; border-color: rgba(243, 210, 119, .35) !important; }
+html.ui-modern #slbl, html.ui-modern #cs2lbl { font-size: 12px !important; margin: 0 !important; padding: 2px 4px; }
+html.ui-modern .ubadge { align-self: flex-start; font-size: 11.5px; padding: 3px 10px; background: #f3d277; color: #13213f; }
+html.ui-modern .lout { font-size: 12px; padding: 7px 10px; border-radius: 10px; border-color: rgba(255, 140, 140, .45); color: #ffb4b4; }
+
+html.ui-modern #wrap { margin-left: var(--side); max-width: none; padding: 26px 32px 40px; }
+html.ui-modern #wrap > .page { max-width: 1640px; margin: 0 auto; }
+
+/* ------------------------------------------------------------------ dashboard top */
+html.ui-modern .hero {
+  background: transparent; color: var(--ink); padding: 0; border-radius: 0; margin-bottom: 18px;
+  align-items: flex-end; gap: 18px;
+}
+html.ui-modern .herodt { font-size: 26px; font-weight: 700; color: var(--ink); letter-spacing: -.3px; }
+html.ui-modern .hero > div:first-child > div:last-child { font-size: 13px !important; color: var(--muted) !important; margin-top: 2px; }
+html.ui-modern .stats { display: grid; grid-template-columns: repeat(4, minmax(118px, 1fr)); gap: 12px; flex: 1; max-width: 640px; }
+html.ui-modern .stat {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px;
+  text-align: left; min-width: 0; box-shadow: var(--sh); transition: transform .12s, box-shadow .12s;
+  position: relative; overflow: hidden;
+}
+html.ui-modern .stat::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c, var(--gold)); }
+html.ui-modern .stat:hover { background: var(--panel); transform: translateY(-1px); box-shadow: var(--sh-hi); }
+html.ui-modern .stat b { font-size: 28px; font-weight: 700; line-height: 1.1; color: var(--c, var(--ink)) !important; }
+html.ui-modern .stat small { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+html.ui-modern .stat:has(#stt) { --c: #b07d0c; }
+html.ui-modern .stat:has(#sta) { --c: var(--blue); }
+html.ui-modern .stat:has(#stov) { --c: var(--red); }
+html.ui-modern .stat:has(#stm) { --c: var(--orange); }
+
+html.ui-modern .dgrid { grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; }
+/* on laptop-size screens the tasks go under the board, so the board gets the full width */
+@media (max-width: 1560px) { html.ui-modern .dgrid { grid-template-columns: minmax(0, 1fr); } html.ui-modern .dside { position: static; } }
+/* buttons other modules place in the top strip (Sync Centre, Search Courts) */
+html.ui-modern .hero .btn.bo { background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line2) !important; }
+html.ui-modern .hero .btn.bo:hover { background: #f3f5f9 !important; }
+html.ui-modern .dside { top: 20px; }
+
+/* ------------------------------------------------------------------ cards */
+html.ui-modern .card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+  box-shadow: var(--sh); margin-bottom: 18px; overflow: visible;
+}
+html.ui-modern .card:hover { box-shadow: var(--sh); }
+html.ui-modern .ch {
+  background: transparent; color: var(--ink); padding: 15px 20px; font-size: 15.5px; font-weight: 700;
+  border-bottom: 1px solid var(--line); border-radius: var(--r) var(--r) 0 0; gap: 10px; letter-spacing: -.1px;
+}
+html.ui-modern .ch .g { color: var(--ink); }
+html.ui-modern .cb { padding: 16px 20px; }
+html.ui-modern .daylist-panel { border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--sh); }
+html.ui-modern .daylist-head { background: transparent; color: var(--ink); border-bottom: 1px solid var(--line); padding: 14px 18px; border-radius: var(--r) var(--r) 0 0; }
+html.ui-modern .daylist-body { padding: 16px 18px; }
+
+/* ------------------------------------------------------------------ buttons */
+html.ui-modern .btn {
+  border-radius: 9px; padding: 7px 13px; font-size: 12.5px; font-weight: 600; box-shadow: none;
+  transition: background .12s, border-color .12s, color .12s, box-shadow .12s;
+}
+html.ui-modern .btn:hover { box-shadow: 0 2px 8px rgba(16, 27, 51, .12); }
+html.ui-modern .bn { background: var(--navy); color: #fff; }
+html.ui-modern .bn:hover { background: var(--navy2); }
+html.ui-modern .bg { background: #f3c84b; color: #2d2200; }
+html.ui-modern .bg:hover { background: #f6d470; }
+html.ui-modern .bo { background: #fff; color: var(--ink); border: 1px solid var(--line2); }
+html.ui-modern .bo:hover { background: #f3f5f9; color: var(--ink); border-color: #c4cbd8; }
+html.ui-modern .br { background: var(--red); }
+html.ui-modern .bgr { background: var(--green); }
+html.ui-modern .bbl { background: var(--blue); }
+html.ui-modern .bor { background: var(--orange); }
+html.ui-modern .ch .btn, html.ui-modern .daylist-head .btn { font-size: 12.5px; }
+html.ui-modern .dd > summary.btn, html.ui-modern #todacts .dd > summary, html.ui-modern #casesacts .dd > summary { border-radius: 9px; }
+
+/* ------------------------------------------------------------------ alerts */
+html.ui-modern .wbar, html.ui-modern .okbar, html.ui-modern .undn, html.ui-modern .fetchbar {
+  border-radius: 12px; padding: 12px 16px; font-size: 13.5px; margin: 0 0 16px;
+}
+html.ui-modern .wbar { background: #fff3f2; border: 1px solid #f6c9c5; }
+html.ui-modern .okbar { background: #eefaf3; border: 1px solid #bfe8d0; }
+
+/* ------------------------------------------------------------------ inputs */
+html.ui-modern .sinp, html.ui-modern .calsel, html.ui-modern .fg input, html.ui-modern .fg select, html.ui-modern .fg textarea {
+  border: 1px solid var(--line2); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; background: #fff; color: var(--ink);
+}
+html.ui-modern .sinp:focus, html.ui-modern .fg input:focus, html.ui-modern .fg select:focus, html.ui-modern .fg textarea:focus {
+  border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47, 111, 222, .14); outline: none;
+}
+html.ui-modern .fg label { font-size: 11.5px; color: var(--ink2); letter-spacing: .3px; margin-bottom: 4px; }
+html.ui-modern .srow { gap: 8px; margin-bottom: 14px; }
+
+/* ------------------------------------------------------------------ the day board */
+html.ui-modern .bwrap { border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+html.ui-modern table.board { border-collapse: separate; border-spacing: 0; }
+html.ui-modern table.board th {
+  background: #f6f8fb; color: var(--ink2); font-size: 11.5px; letter-spacing: .5px; padding: 11px 12px;
+  border-bottom: 1px solid var(--line); font-weight: 700;
+}
+html.ui-modern table.board td { padding: 10px 10px; border-bottom: 1px solid #eef0f5; line-height: 1.45; }
+html.ui-modern table.board tr.brow:nth-child(even) td { background: #fbfcfe; }
+html.ui-modern table.board tr.brow:hover td { background: #fff9e8; }
+html.ui-modern table.board tr.ghead td {
+  background: #eef2f9 !important; color: var(--navy) !important; font-size: 12px; letter-spacing: .8px;
+  padding: 9px 12px; border-bottom: 1px solid #dde4f0; border-top: 1px solid #dde4f0;
+}
+html.ui-modern table.board tr.ghead .gdot { width: 11px; height: 11px; border: 0; box-shadow: 0 0 0 3px rgba(255, 255, 255, .9); }
+html.ui-modern table.board th.act { background: #f6f8fb; }
+html.ui-modern table.board td.act { background: #fff; box-shadow: -8px 0 12px -10px rgba(16, 27, 51, .25); padding: 8px; }
+html.ui-modern table.board tr.brow:nth-child(even) td.act { background: #fbfcfe; }
+html.ui-modern table.board tr.brow:hover td.act { background: #fff9e8; }
+html.ui-modern table.board td.act .btn { border-radius: 8px; font-size: 11.5px; padding: 5px 6px; }
+html.ui-modern tr.qprow td { background: #fffbf0 !important; }
+html.ui-modern .qpi { border-radius: 8px; border-color: var(--line2); padding: 6px 9px; font-size: 13px; }
+html.ui-modern .fontctl { background: #f1f4f9; border-radius: 8px; padding: 3px 8px; }
+html.ui-modern .fontctl span { color: var(--ink2); }
+html.ui-modern .fontctl select { background: #fff; border: 1px solid var(--line2); border-radius: 6px; font-size: 11px; }
+/* court positions under each matter */
+html.ui-modern .lstcell { margin-top: 6px; padding: 6px 9px; background: #f6f8fc; border-radius: 8px; border-left: 3px solid #c9d5ea; line-height: 1.45; }
+html.ui-modern .lstcell .sr { border-radius: 6px; padding: 0 6px; }
+html.ui-modern .legend { font-size: 12px; gap: 14px; margin-top: 10px; color: var(--ink2); }
+
+/* ------------------------------------------------------------------ case rows */
+html.ui-modern .crow { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 9px; background: #fff; transition: box-shadow .12s, border-color .12s; }
+html.ui-modern .crow:hover { border-color: #cfd6e3; box-shadow: var(--sh); }
+html.ui-modern .crow-head { background: #fff; border-radius: 12px; padding: 12px 14px; gap: 12px; }
+html.ui-modern .crow.open { box-shadow: var(--sh-hi); border-color: #cfd6e3; }
+html.ui-modern .crow.open .crow-head { border-radius: 12px 12px 0 0; background: #f8fafd; border-bottom: 1px solid var(--line); }
+html.ui-modern .crow-title { font-size: 14px; font-weight: 650; }
+html.ui-modern .crow-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+html.ui-modern .crow-body { border-top: 0; padding: 14px 16px; }
+html.ui-modern .rowacts { border-left-color: var(--line); padding-left: 10px; gap: 5px; }
+html.ui-modern .rowacts .btn { font-size: 11.5px; padding: 5px 10px; }
+html.ui-modern .df label { font-size: 11px; color: var(--muted); letter-spacing: .4px; }
+html.ui-modern .df span { font-size: 13.5px; }
+html.ui-modern .dg { gap: 10px 18px; margin-bottom: 12px; }
+html.ui-modern .nbox { border-radius: 10px; padding: 9px 12px; font-size: 13px; background: #fffaf0; border-color: #f2dda0; }
+html.ui-modern .hiitem { border-radius: 10px; padding: 9px 12px; font-size: 13px; background: #fafbfd; border-color: var(--line); }
+
+/* badges become soft pills */
+html.ui-modern .dbdg, html.ui-modern .ndbdg, html.ui-modern .ovbdg, html.ui-modern .pbdg, html.ui-modern .caselink {
+  font-size: 11.5px; padding: 3px 9px; border-radius: 20px; font-weight: 600;
+}
+html.ui-modern .dbdg { background: #e9eefb; color: #1d3a7a; }
+html.ui-modern .ndbdg { background: #fdecec; color: #b42f2f; }
+html.ui-modern .ovbdg { background: var(--red); }
+html.ui-modern .pbdg { background: #eef4fb; color: #295a8c; }
+html.ui-modern .caselink { background: #e9eefb; color: #1d3a7a; }
+html.ui-modern .stbdg { font-size: 10px; padding: 2px 8px; border-radius: 20px; letter-spacing: .3px; }
+html.ui-modern .prbdg { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+
+/* ------------------------------------------------------------------ tasks */
+html.ui-modern .dtk, html.ui-modern .titem { border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; margin-bottom: 10px; background: #fff; }
+html.ui-modern .dtk.late, html.ui-modern .titem.late { border-color: #f3c3c3; background: #fff8f8; }
+html.ui-modern .dtk.st-other { border-color: #f2cf9a; background: #fffaf2; }
+html.ui-modern .dtk .d { font-size: 13.5px; margin-bottom: 6px; }
+html.ui-modern .dtk .m { font-size: 11.5px; gap: 6px; }
+html.ui-modern .tsb button { border-radius: 8px; border-color: var(--line2); padding: 6px 4px; font-size: 12px; }
+html.ui-modern .tsr { border-radius: 8px; border-color: var(--line2); padding: 7px 9px; font-size: 12.5px; }
+html.ui-modern .dtl { max-height: calc(100vh - 170px); }
+html.ui-modern .mbub { border-radius: 10px; padding: 10px 12px; font-size: 13px; border-left-width: 4px; background: #f1f6fd; }
+
+/* ------------------------------------------------------------------ calendar & planner */
+html.ui-modern .calgrid, html.ui-modern .plgrid { gap: 6px; }
+html.ui-modern .caldh { font-size: 11.5px; color: var(--muted); padding: 4px 0; letter-spacing: .5px; text-transform: uppercase; }
+html.ui-modern .cald, html.ui-modern .plcell { border: 1px solid var(--line); border-radius: 10px; padding: 6px; min-height: 74px; font-size: 12px; transition: background .1s, border-color .1s; }
+html.ui-modern .plcell { min-height: 96px; }
+html.ui-modern .cald:hover, html.ui-modern .plcell:hover { background: #f7f9fc; border-color: #c9d2e1; }
+html.ui-modern .cald.tod, html.ui-modern .plcell.tod { border-color: var(--gold); background: var(--gold-soft); box-shadow: inset 0 0 0 1px var(--gold); }
+html.ui-modern .cald.sel, html.ui-modern .plcell.sel { background: var(--navy); border-color: var(--navy); }
+html.ui-modern .caldn, html.ui-modern .plnum { font-size: 13px; }
+html.ui-modern .calbdg { font-size: 10.5px; border-radius: 20px; padding: 1px 7px; }
+html.ui-modern .plchip { font-size: 10.5px; border-radius: 6px; padding: 2px 5px; margin-bottom: 2px; }
+html.ui-modern .plpchip { font-size: 10px; border-radius: 6px; padding: 1px 4px; }
+html.ui-modern .cfbtn { border-radius: 20px; padding: 7px 14px; font-size: 12.5px; box-shadow: none; border-color: var(--line2); }
+html.ui-modern .cfbtn:hover { background: #f3f5f9; }
+html.ui-modern .cfbtn.on { background: var(--navy); border-color: var(--navy); box-shadow: none; }
+
+/* ------------------------------------------------------------------ tabs, modals, search, toast */
+html.ui-modern .tabs { border-bottom: 1px solid var(--line); gap: 4px; margin-bottom: 16px; }
+html.ui-modern .tbt { font-size: 13.5px; padding: 9px 14px; color: var(--muted); border-bottom-width: 3px; margin-bottom: -1px; }
+html.ui-modern .tbt.on { color: var(--ink); border-bottom-color: var(--gold); font-weight: 700; }
+html.ui-modern .ov { background: rgba(12, 20, 40, .45); backdrop-filter: blur(3px); }
+html.ui-modern .modal { border-radius: 18px; box-shadow: 0 30px 80px rgba(10, 18, 36, .35); }
+html.ui-modern .mh { background: #fff; color: var(--ink); border-bottom: 1px solid var(--line); border-radius: 18px 18px 0 0; padding: 16px 20px; font-size: 15.5px; font-weight: 700; }
+html.ui-modern .mh .g { color: var(--ink); }
+html.ui-modern .mx { color: var(--muted); font-size: 22px; width: 34px; height: 34px; border-radius: 10px; }
+html.ui-modern .mx:hover { background: #f1f3f7; color: var(--ink); }
+html.ui-modern .mb { padding: 18px 20px; }
+html.ui-modern .fgr { gap: 12px 16px; }
+html.ui-modern .fa { gap: 9px; margin-top: 16px; }
+html.ui-modern .qspanel { border-radius: 16px; box-shadow: 0 30px 80px rgba(10, 18, 36, .35); }
+html.ui-modern .qspanel input { font-size: 16px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+html.ui-modern .qsitem { padding: 11px 18px; font-size: 13px; border-bottom-color: #f0f2f6; }
+html.ui-modern .qsitem:hover, html.ui-modern .qsitem.sel { background: #f3f6fc; }
+html.ui-modern #toast { border-radius: 12px; padding: 12px 18px; font-size: 13px; background: var(--navy); box-shadow: var(--sh-hi); border-left-width: 5px; }
+
+/* ------------------------------------------------------------------ login */
+html.ui-modern .lscreen { background: radial-gradient(1200px 600px at 20% 0%, #24386a 0%, #13213f 55%, #0b1428 100%); }
+html.ui-modern .lbox { border-radius: 20px; padding: 34px 36px; width: 360px; box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
+html.ui-modern .lbox h2 { font-size: 14px; }
+html.ui-modern .lbox h3 { font-size: 20px; border-bottom: 0; padding-bottom: 4px; }
+html.ui-modern .lbox .btn { width: 100%; padding: 10px; font-size: 14px; }
+
+/* ------------------------------------------------------------------ narrow screens: sidebar becomes a top bar */
+@media (max-width: 920px) {
+  html.ui-modern header { position: sticky; top: 0; bottom: auto; width: auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 12px; gap: 8px; }
+  html.ui-modern .firm { border: 0; padding: 0; margin: 0; }
+  html.ui-modern nav { order: 3; flex-direction: row; flex-basis: 100%; overflow-x: auto; gap: 4px; padding: 4px 0 2px; }
+  html.ui-modern nav > button, html.ui-modern nav .dd > summary { width: auto; white-space: nowrap; padding: 8px 12px; font-size: 13px; }
+  html.ui-modern nav .dd { width: auto; }
+  html.ui-modern nav .ddm, html.ui-modern nav .ddm.r { top: calc(100% + 6px); left: 0; }
+  html.ui-modern nav > button.on, html.ui-modern nav .dd:has(.ddm button.on) > summary { box-shadow: inset 0 -3px 0 #f3d277; }
+  html.ui-modern .hright { order: 2; margin: 0 0 0 auto; flex-direction: row; flex-wrap: wrap; padding: 0; border: 0; }
+  html.ui-modern .hright .btn.bo { padding: 6px 10px !important; }
+  html.ui-modern #wrap { margin-left: 0; padding: 16px 12px 30px; }
+  html.ui-modern .stats { grid-template-columns: repeat(2, 1fr); max-width: none; }
+  html.ui-modern .herodt { font-size: 21px; }
+  html.ui-modern .hero { flex-direction: column; align-items: stretch; }
+  html.ui-modern .stats { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  html.ui-modern .stat { padding: 9px 10px; }
+  html.ui-modern .stat b { font-size: 22px; }
+  html.ui-modern .ch > * { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+  html.ui-modern .cb { padding: 12px; }
+  html.ui-modern .dgrid { grid-template-columns: minmax(0, 1fr); }
+  html.ui-modern .dmain { min-width: 0; }
+}
+}
