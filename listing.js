@@ -1143,8 +1143,8 @@
     if (r.f === 'dc') {
       var j = [r.judge, r.des].filter(Boolean).join(', ');
       if (j || r.room) out.push(esc(j) + (r.room ? ' &middot; <b>Room ' + esc(r.room) + '</b>' : ''));
-      if (r.sr) out.push('<span class="sr">Sr. ' + esc(r.sr) + '</span>' + esc(r.list || '') + (r.stg ? ' &middot; ' + esc(r.stg) : '') + (r.tot ? ' &middot; ' + r.pos + ' of ' + r.tot : ''));
-      if (r.sr && C && C.bk && C.bk.length > 1) out.push('<span class="bk">' + bkText(C, r.list) + '</span>');
+      /* District and other subordinate courts: serial number and stage only — the stage-wise ranges and "x of y" are for High Court, CAT and MAT */
+      if (r.sr) out.push('<span class="sr">Sr. ' + esc(r.sr) + '</span>' + esc(r.list || '') + (r.stg ? ' &middot; ' + esc(r.stg) : ''));
     } else {
       if (r.sr || r.court || r.stg) out.push((r.sr ? '<span class="sr">Sr. ' + esc(r.sr) + '</span>' : '') + [r.court, r.list].filter(Boolean).map(esc).join(' &middot; ') + (r.stg ? ' &middot; <b>' + esc(r.stg) + '</b>' : ''));
       if (r.coram && !print) out.push(esc(r.coram));
