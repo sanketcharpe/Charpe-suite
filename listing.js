@@ -51,6 +51,8 @@
   function str(x) { return x == null ? '' : String(x); }
   function z2(n) { n = parseInt(n, 10); return (n < 10 ? '0' : '') + n; }
   function dmy(iso, sep) { var p = String(iso).split('-'); return p[2] + (sep || '/') + p[1] + (sep || '/') + p[0]; }
+  /* the District Court site's date picker and its server read MM/DD/YYYY (its own page sends 11/17/2026 for 17 Nov) */
+  function mdy(iso) { var p = String(iso).split('-'); return p[1] + '/' + p[2] + '/' + p[0]; }
   function isoOf(s) { var m = String(s || '').match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/); return m ? m[3] + '-' + z2(m[2]) + '-' + z2(m[1]) : ''; }
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   var TA = null;
@@ -449,7 +451,7 @@
     return s;
   }
   function dcCauseList(cap, cx, courtV, iso, ctype, answer) {
-    var base = { service_type: 'courtComplex', est_code: cx, court: courtV, date: dmy(iso), cause_type: ctype, scid: cap.pg.scid,
+    var base = { service_type: 'courtComplex', est_code: cx, court: courtV, date: mdy(iso), cause_type: ctype, scid: cap.pg.scid,
                  siwp_captcha_value: String(answer || '').trim(), es_ajax_request: '1', action: 'get_causes' };
     if (cap.pg.tokN) base[cap.pg.tokN] = cap.pg.tokV;
     return cap.job.post(DC_AJAX, base, { ref: DC_CL, xhr: true }).then(function (r) {
@@ -514,7 +516,8 @@
         items.push({ sr: h.sr, text: body, cnr: (body.match(/\b(MH[A-Z]{2}\d{14})\b/) || [])[1] || '', head: '', refs: refs(body), loose: true });
       });
     }
-    return { items: items, notes: notes, heads: heads, flat: flat };
+    var lo = flat.match(/Listed\s+on\s*:?\s*(\d{1,2})[\-\/.](\d{1,2})[\-\/.](\d{4})/i);
+    return { items: items, notes: notes, heads: heads, flat: flat, listedOn: lo ? lo[3] + '-' + z2(lo[2]) + '-' + z2(lo[1]) : '' };
   }
 
   /* judge / designation / room / leave for one district case on one date */
@@ -949,8 +952,10 @@
       C.total = (C.total || 0) + L.items.length;
       addNotes(C, L.notes);
     }
+    var wrongDay = L && L.listedOn && L.listedOn !== W.iso;
     g.cases.forEach(function (c) {
       var rec = D.cases[c.id] = D.cases[c.id] || { f: 'dc', rem: [] };
+      if (wrongDay) rec.rem = uniq((rec.rem || []).concat(['The court site sent the list for ' + dmy(L.listedOn) + ', not ' + dmy(W.iso) + ' — please check the list by hand.']));
       if (rec.sr && rec.list && rec.list !== kind) return;           /* already found in the other list */
       if (!L) { if (err) rec.rem = uniq((rec.rem || []).concat([kind + ': ' + err])); return; }
       var cnr = str(c.cnr).toUpperCase().replace(/[^A-Z0-9]/g, ''), mine = caseRefsOf(c);
