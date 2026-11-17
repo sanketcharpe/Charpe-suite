@@ -434,6 +434,20 @@
       });
     });
   }
+  /* the site's answer may be plain HTML, an object, or HTML wrapped again as a JSON string
+     (then every </td> arrives as <\/td> and no table can be seen) — always get plain HTML out */
+  function listHtml(d, depth) {
+    depth = depth || 0;
+    if (d == null || depth > 5) return '';
+    if (typeof d === 'object') {
+      return (Array.isArray(d) ? d : Object.keys(d).map(function (k) { return d[k]; }))
+        .map(function (x) { return listHtml(x, depth + 1); }).filter(Boolean).join('\n');
+    }
+    var s = String(d), t = s.trim();
+    if (/^[\[{"]/.test(t)) { try { var o = JSON.parse(t); if (typeof o !== 'number' && typeof o !== 'boolean') return listHtml(o, depth + 1); } catch (e) {} }
+    if (/<\\\//.test(s)) s = s.replace(/\\\//g, '/').replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, ' ');
+    return s;
+  }
   function dcCauseList(cap, cx, courtV, iso, ctype, answer) {
     var base = { service_type: 'courtComplex', est_code: cx, court: courtV, date: dmy(iso), cause_type: ctype, scid: cap.pg.scid,
                  siwp_captcha_value: String(answer || '').trim(), es_ajax_request: '1', action: 'get_causes' };
@@ -446,7 +460,7 @@
         if (/captcha|security code|invalid code/i.test(msg)) return { bad: true, err: msg || 'Wrong CAPTCHA' };
         return { none: true, err: msg || 'Nothing found' };
       }
-      var html = String(j.data || ''), pages = [html], guard = 0;
+      var html = listHtml(j.data), pages = [html], guard = 0;
       /* "load more": the site gives a long list in parts */
       function more(h) {
         var nm = h.match(/data-next-page=["'](\d+)["']/);
@@ -456,8 +470,9 @@
         return cap.job.post(DC_AJAX, f, { ref: DC_CL, xhr: true }).then(function (x) {
           var jj; try { jj = JSON.parse(x.text); } catch (e) { jj = null; }
           if (!jj || !jj.success || !jj.data) return;
-          pages.push(String(jj.data));
-          if (String(jj.data).length > 50) return more(String(jj.data));
+          var nx = listHtml(jj.data);
+          pages.push(nx);
+          if (nx.length > 50) return more(nx);
         }).catch(function () {});
       }
       return more(html).then(function () { return { html: pages.join('\n') }; });
@@ -489,7 +504,17 @@
         items.push({ sr: +sr[1], text: txt.slice(1).join(' | '), cnr: cnr, head: head, refs: refs(txt.slice(1).join(' ')) });
       });
     });
-    return { items: items, notes: notes, heads: heads };
+    var flat = one(strip(html));
+    /* no table could be read: read the plain text instead — "serial  Type/No/Year  parties  advocate" */
+    if (!items.length) {
+      var rx = /(?:^|\s)(\d{1,4})\s+([A-Z][A-Za-z.()\s]{0,30}?\/\s*(?:ST\.?\s*)?\d{1,6}\s*\/\s*\d{2,4})(?!\d)/g, hs = [], m;
+      while ((m = rx.exec(flat))) hs.push({ i: m.index, sr: +m[1] });
+      hs.forEach(function (h, k) {
+        var body = flat.slice(h.i, k + 1 < hs.length ? hs[k + 1].i : flat.length).replace(/^\s*\d+\s+/, '');
+        items.push({ sr: h.sr, text: body, cnr: (body.match(/\b(MH[A-Z]{2}\d{14})\b/) || [])[1] || '', head: '', refs: refs(body), loose: true });
+      });
+    }
+    return { items: items, notes: notes, heads: heads, flat: flat };
   }
 
   /* judge / designation / room / leave for one district case on one date */
@@ -904,6 +929,7 @@
           if (res.bad) { st.textContent = 'Wrong CAPTCHA — new picture'; st.className = 'st bad'; document.getElementById('lstIn' + i).value = ''; return lstPic(i).then(function () { st.textContent = 'Wrong CAPTCHA — type the new one'; st.className = 'st bad'; }); }
           if (res.err && !res.html) { st.textContent = res.err; st.className = 'st bad'; r.done = true; applyDcList(r.g, ct, null, res.err); return; }
           r.done = true;
+          try { localStorage.setItem('lstRaw:' + W.iso + ':' + r.g.key + ':' + ct, String(res.html).slice(0, 300000)); } catch (e) {}
           var L = parseDcList(res.html);
           var n = applyDcList(r.g, ct, L, '');
           st.textContent = L.items.length + ' items read; ' + n + ' of your matter' + (n === 1 ? '' : 's') + ' found'; st.className = 'st ok';
@@ -931,14 +957,25 @@
       var hits = L.items.filter(function (it) { return cnr && it.cnr && it.cnr === cnr; });
       if (!hits.length) hits = L.items.filter(function (it) { return refHit(mine, it.refs); });
       if (hits.length > 1) { var ex = hits.filter(function (it) { var h = refHit(mine, it.refs); return h && h.exact; }); if (ex.length) hits = ex; }
+      if (!L.items.length) {
+        rec.rem = uniq((rec.rem || []).filter(function (x) { return !/not found in the|was not found/i.test(x); }).concat([
+          'The ' + kind.toLowerCase() + ' of this court came from the site, but no entries could be read from it — this matter may well be listed; please check the list by hand.']));
+        return;
+      }
       if (hits.length === 1) {
-        var it = hits[0]; found++;
-        rec.sr = it.sr; rec.list = kind; rec.stg = it.head || ''; rec.pos = L.items.indexOf(it) + 1; rec.tot = L.items.length;
-        rec.rem = (rec.rem || []).filter(function (x) { return !/not found in the|was not found/i.test(x); });
+        var it = hits[0], ix = L.items.indexOf(it); found++;
+        rec.sr = it.sr; rec.list = kind; rec.stg = it.head || ''; rec.pos = ix + 1; rec.tot = L.items.length;
+        rec.rem = (rec.rem || []).filter(function (x) { return !/not found in the|was not found|could be read|out of sequence|serial number could not/i.test(x); });
+        var pv = ix > 0 ? L.items[ix - 1].sr : null, nx = ix + 1 < L.items.length ? L.items[ix + 1].sr : null;
+        if ((pv != null && it.sr <= pv) || (nx != null && it.sr >= nx))
+          rec.rem = uniq(rec.rem.concat(['Sr. ' + it.sr + ' is out of sequence on the court\'s own list (it comes between Sr. ' + (pv == null ? '—' : pv) + ' and Sr. ' + (nx == null ? '—' : nx) + ') — confirm the serial number in court.']));
+        if (it.loose) rec.rem = uniq(rec.rem.concat(['Read from the plain text of the list (its table could not be read) — please confirm the serial number.']));
       } else if (hits.length > 1) {
         rec.rem = uniq((rec.rem || []).concat(['Several entries in the ' + kind.toLowerCase() + ' match this case number (Sr. ' + hits.map(function (h) { return h.sr; }).join(', ') + ') — please check.']));
       } else if (!rec.sr) {
-        rec.rem = uniq((rec.rem || []).concat([c.cn ? c.cn + ' was not found in the ' + kind.toLowerCase() + ' of this court.' : 'Case number not recorded, so it could not be looked up in the list.']));
+        var seen = mine.filter(function (r) { return new RegExp('(^|[^\\d])' + r.no + '\\s*\\/\\s*' + r.year + '(?!\\d)').test(L.flat || ''); });
+        if (seen.length) rec.rem = uniq((rec.rem || []).concat(['Case number ' + seen[0].no + '/' + seen[0].year + ' does appear in the ' + kind.toLowerCase() + ', but its serial number could not be read — please check the list by hand.']));
+        else rec.rem = uniq((rec.rem || []).concat([c.cn ? c.cn + (c.eco && c.eco.reg && c.eco.reg !== c.cn ? ' (eCourts No. ' + c.eco.reg + ')' : '') + ' was not found in the ' + kind.toLowerCase() + ' of this court (' + L.items.length + ' entries read).' : 'Case number not recorded, so it could not be looked up in the list.']));
       }
     });
     return found;
