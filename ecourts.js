@@ -422,6 +422,8 @@ window.ecoClose = function () {
 /* step 1 — choose the cases */
 window.ecoOpenBatch = function (ids) {
   if (!cu) return;
+  /* only "Fetch next dates of all" (Unupdated) carries a next lot; any other opening starts clean */
+  var keep = window.ECO_KEEP; window.ECO_KEEP = 0; if (!keep) window.ECO_NEXT = null;
   /* a batch never includes disposed cases; one case opened on its own can still be fetched (Nov 2026) */
   if (ids && ids.length > 1) {
     ids = ids.filter(function (id) { var x = find(id); return x && isOpen(x); });
@@ -525,6 +527,8 @@ function loadCaptchas(ids) {
       ECO.skipped.map(function (c) { return '<b>' + he(label(c)) + '</b>'; }).join('; ') + '. Add the CNR in Edit, or find the case in Search Courts.</div>' : '') +
     '<div id="ecorows"></div>',
     '<button class="btn bg" id="ecoAllBtn" onclick="ecoFetchAll()" title="Fetch every row whose CAPTCHA you have typed, one after another">&#9654; Go &mdash; fetch all typed</button>' +
+    (window.ECO_NEXT && window.ECO_NEXT.length ? '<button class="btn bbl" onclick="ecoNextLot()" title="Open the CAPTCHAs of the next cases of the same list">Next ' + Math.min(ECO_MAX, window.ECO_NEXT.length) + ' cases &#8250;</button>' : '') +
+    '<button class="btn bo" onclick="capKbdShow&&capKbdShow()" title="Show the small on-screen keyboard for typing the CAPTCHAs">&#9000; Keyboard</button>' +
     '<button class="btn bo" onclick="ecoOpenBatch()">&#8249; Change cases</button>' +
     '<span id="ecoprog" style="font-size:11px;color:#555;margin-left:auto"></span>');
   paintRows();
@@ -612,6 +616,14 @@ window.ecoKey = function (e, i) {
     if (f && !f.disabled) { f.focus(); return; }
   }
   var b = document.getElementById('ecoAllBtn'); if (b) b.focus();
+};
+/* the next lot of a long list (Fetch next dates of all): typed-but-not-fetched rows are fetched first */
+window.ecoNextLot = function () {
+  var nx = window.ECO_NEXT || []; if (!nx.length) return;
+  var left = ECO.rows.filter(function (r) { return r.st !== 'done' && (r.cap || '').trim(); }).length;
+  if (left && !confirm(left + ' CAPTCHA' + (left === 1 ? ' is' : 's are') + ' typed but not fetched yet.\n\nPress Cancel, then Go, to fetch them first — or OK to move on without them.')) return;
+  window.ECO_NEXT = nx.slice(ECO_MAX);
+  loadCaptchas(nx.slice(0, ECO_MAX));
 };
 window.ecoNewImg = function (i) {
   var r = ECO.rows[i]; if (!r || r.st === 'busy') return;

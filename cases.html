@@ -1408,7 +1408,7 @@ function renderDash(){
   document.getElementById('casesacts').innerHTML=(can('edit')?'<button class="btn bg" onclick="openAdd(\'\')">+ Add case</button>':'')+
     (can('exp')?'<button class="btn bo" onclick="expCSV()">&#8595; CSV</button>':'');
   document.getElementById('unupdacts').innerHTML=
-    '<button class="btn bg" onclick="fetchUnupd()" title="Fetch the status, next date and orders of these subordinate-court cases from eCourts: one CAPTCHA each, up to 60 on one screen">&#9878; Fetch these from eCourts</button>'+
+    '<button class="btn bg" onclick="fetchUnupd()" title="Fetch the next dates of ALL these cases at one go: every CAPTCHA on one screen (60 at a time if there are more)">&#9878; Fetch next dates of all &mdash; at one go</button>'+
     (can('edit')?'<button class="btn bbl" onclick="openDateImport()">&#8681; Update dates from backup file</button>':'')+
     boardUnupdActs();
   bkReminder();
@@ -1490,9 +1490,9 @@ function renderUnupd(){
   window.__unupdRow=true;
   try{
   el.innerHTML=(grp==='chk'?'<div class="note" style="margin-bottom:8px">Fetched from the court after the date passed; the court site has no newer date yet (or shows the case disposed). Post the date by hand when you know it, or mark the case disposed.</div>':
-    '<div class="fetchbar"><button class="btn bg" onclick="fetchUnupd()" title="The first 50 of these that have a CNR, one CAPTCHA each, all on one screen">&#9878; Fetch '+Math.min(50,nC)+' of these &mdash; one CAPTCHA each</button>'+
+    '<div class="fetchbar"><button class="btn bg" style="font-size:13px;padding:8px 14px" onclick="fetchUnupd()" title="Every case of this list that has a CNR: all the CAPTCHAs on one screen, then one Go">&#9878; Fetch next dates of all '+nC+' at one go &mdash; all CAPTCHAs on one screen</button>'+
     (nN?'<button class="btn bbl" onclick="findCnrs()" title="Cases with no CNR: each is found on eCourts by its number (one CAPTCHA each), its CNR saved, and then fetched">&#9878; Find the CNR of the '+nN+' without one</button>':'')+
-    '<span>'+nC+' of '+all.length+' have a CNR and can be fetched now'+(nN?'; '+nN+' need their CNR found first':'')+'. A case leaves this list only when a future date is on record. Or press <b>&#9878; Fetch</b> on any one case.</span></div>'+chkNote)+
+    '<span>'+nC+' of '+all.length+' have a CNR and can be fetched now'+(nN?'; '+nN+' need their CNR found first':'')+(nC>60?' (60 on the screen at a time: when those are done, press <b>Next '+Math.min(60,nC-60)+' cases</b> there)':'')+'. A case leaves this list only when a future date is on record. Or press <b>&#9878; Fetch</b> on any one case.</span></div>'+chkNote)+
     unupdSect(grp==='chk'?'Fetched &mdash; court shows no newer date':'District Courts, Industrial Courts &amp; Labour Courts',shown,'#1a2744',all.length)+moreBtn('u',shown.length,all.length,'renderUnupd');
   }finally{window.__unupdRow=false;}
 }
@@ -1551,10 +1551,13 @@ function findCnrs(list){
   if(window.cnrQueue)cnrQueue(ids);
 }
 /* Unupdated → ⚖ Fetch these from eCourts: only these subordinate-court cases, one CAPTCHA each */
+/* Nov 2026: ALL of them at one go — every CAPTCHA on one screen; past 60 (the pictures stay valid about 20 minutes)
+   the screen offers the next lot with one click */
 function fetchUnupd(){
   var ids=unupdated().filter(canEco).map(function(c){return c.id;});
   if(!ids.length){toast('None of these has a CNR yet — press “Find the CNR”, or ⚖ Fetch on a case.','err');return;}
-  ecoOpenBatch(ids.slice(0,50));
+  var MAX=60;window.ECO_KEEP=1;window.ECO_NEXT=ids.slice(MAX);window.ECO_NEXT_TOTAL=ids.length;
+  ecoOpenBatch(ids.slice(0,MAX));
 }
 function fetchUnfetched(){
   var ids=unfetched().filter(canEco).map(function(c){return c.id;});
@@ -3624,5 +3627,6 @@ window.addEventListener('storage',function(e){
 <script src="assets/shim.js"></script>
 <script src="assets/dd.js"></script>
 <script src="assets/ui-cases.js"></script>
+<script src="assets/cap-kbd.js"></script>
 </body>
 </html>
