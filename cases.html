@@ -249,7 +249,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
   <nav id="nav">
     <button data-page="dash" onclick="go('dash')" class="on">Dashboard</button>
     <button data-page="cases" onclick="go('cases')">All Cases</button>
-    <button data-page="unupd" onclick="go('unupd')" title="Subordinate courts whose next date has passed or was never entered">Unupdated<span class="navbdg" id="nbUn"></span></button>
+    <button data-page="unupd" onclick="go('unupd')" title="District, Industrial and Labour Court cases with no future date on record">Unupdated<span class="navbdg" id="nbUn"></span></button>
     <button data-page="unfetch" onclick="go('unfetch')" title="Subordinate-court cases never fetched from the court, or whose orders / order sheets are not downloaded">Unfetched<span class="navbdg" id="nbUf"></span></button>
     <button data-page="cal" onclick="go('cal')">Calendar</button>
     <button data-page="plan" onclick="go('plan')">Planner</button>
@@ -336,14 +336,15 @@ table.board td.act .btn:last-child{margin-bottom:0}
 <!-- UNUPDATED CASES -->
 <div id="punupd" class="page">
   <div class="card">
-    <div class="ch"><span class="g">Unupdated cases &mdash; subordinate courts, no future date on record</span>
+    <div class="ch"><span class="g">Unupdated cases &mdash; District, Industrial &amp; Labour Courts, no future date on record</span>
       <div style="display:flex;gap:4px;flex-wrap:wrap" id="unupdacts"></div>
     </div>
     <div class="cb">
       <div style="background:#fffbe8;border:1px solid #e8c96a;border-radius:5px;padding:8px 11px;font-size:11px;line-height:1.6;margin-bottom:10px">
-        Subordinate courts only (civil judges, district &amp; sessions courts, school / revenue / college tribunals, labour &amp; industrial courts):
-        open matters whose next date has <b>passed</b> or was <b>never entered</b>, and which have <b>not been fetched from the court since</b>.
-        Post the date, or press <b>&#9878; Fetch</b> &mdash; either way the case leaves this list. Click a case name to open the case.
+        District Courts (Civil Judge Sr. Dn. / Jr. Dn., JMFC, CJM, ACJM, District &amp; Sessions Judge and other subordinate courts), Industrial Courts and Labour Courts only &mdash;
+        High Court, Supreme Court, CAT, MAT and School / Revenue / College Tribunals are not shown here.
+        Open matters whose next date has <b>passed</b> or was <b>never entered</b>, including those fetched from the court without a new date.
+        The case leaves this list as soon as a <b>future date</b> is on record (posted by hand or fetched). Click a case name to open the case.
       </div>
       <div class="srow">
         <input class="sinp" id="usq" oninput="renderUnupd()" placeholder="Search within unupdated cases...">
@@ -1155,12 +1156,25 @@ function unfetched(){
       return String(a.court||'').localeCompare(String(b.court||''))||ctit(a).localeCompare(ctit(b));
     });
 }
-function unupdAll(){var t=td();return LC().filter(function(c){return isOpen(c)&&isSub(c)&&(!c.nd||c.nd<t);});}
+/* Nov 2026 (3): "Unupdated" is ONLY District-type courts (Civil Judge Sr./Jr. Dn., JMFC, CJM, ACJM, District &
+   Sessions and any other subordinate COURT such as Family or Co-operative Court), Industrial Courts and Labour Courts.
+   School / Revenue / College Tribunals, authorities and officers never appear. A case stays on the list as long as no
+   future date is on record — being fetched from the court without bringing a new date does not take it off. */
+function isUnupdCourt(c){
+  if(!isSub(c))return false;
+  var g=courtGroup(c);
+  if(g==='dist'||g==='ind'||g==='lab')return true;
+  if(g==='oth'){var r=String(c.court||'').toLowerCase();return /court|judge|magistrate|nyayalaya|न्यायालय/.test(r)&&!/tribunal/.test(r);}
+  return false;
+}
+function unupdAll(){var t=td();return LC().filter(function(c){return isOpen(c)&&isUnupdCourt(c)&&(!c.nd||c.nd<t);});}
 function unupdated(){
-  return unupdAll().filter(function(c){return !checkedSince(c);})
+  return unupdAll()
     .sort(function(a,b){
       var ra=GRANK[courtGroup(a)],rb=GRANK[courtGroup(b)];
       if(ra!==rb)return ra-rb;                          /* the usual court sequence */
+      var ka=checkedSince(a)?1:0,kb=checkedSince(b)?1:0;
+      if(ka!==kb)return ka-kb;                          /* not yet fetched ahead of fetched-but-no-new-date */
       var ga=a.nd?1:0,gb=b.nd?1:0;
       if(ga!==gb)return ga-gb;                          /* never-dated ahead of overdue */
       return (a.nd||'').localeCompare(b.nd||'');        /* oldest neglect first */
@@ -1211,7 +1225,7 @@ function bldRow(c,ctxDate){
   return '<div class="crow" id="cr-'+c.id+'">'+
     '<div class="crow-head" onclick="togRow(\''+c.id+'\')">'+
       '<div style="flex:1">'+
-        '<div class="crow-title">'+snH(c)+'<a href="#" class="cslink" onclick="event.preventDefault();event.stopPropagation();csOpen(\''+c.id+'\')" title="Open this case" style="color:'+gm.c+';font-style:italic;text-decoration:underline;font-weight:'+(gm.bold?'800':'700')+';font-size:12px">'+he(ctit(c))+'</a>'+(window.__ufRow?ufBadge(c):'')+(tasks.length?' <span class="caselink">'+tasks.length+' task'+(tasks.length>1?'s':'')+'</span>':'')+'</div>'+
+        '<div class="crow-title">'+snH(c)+'<a href="#" class="cslink" onclick="event.preventDefault();event.stopPropagation();csOpen(\''+c.id+'\')" title="Open this case" style="color:'+gm.c+';font-style:italic;text-decoration:underline;font-weight:'+(gm.bold?'800':'700')+';font-size:12px">'+he(ctit(c))+'</a>'+(window.__ufRow?ufBadge(c):'')+(window.__unupdRow&&checkedSince(c)?' <span class="ovbdg" title="Fetched from the court on '+fd(fetchedOn(c))+' but the court site gave no future date">&#9888; Fetched '+fd(fetchedOn(c))+', no new date</span>':'')+(tasks.length?' <span class="caselink">'+tasks.length+' task'+(tasks.length>1?'s':'')+'</span>':'')+'</div>'+
         '<div class="crow-sub">'+
           (c.pd?'<b>Prev:</b> '+fd(c.pd)+(c.ps?' ['+he(c.ps)+']':'')+' &nbsp;':'')+
           '<b>Court:</b> '+he(c.court||'—')+(c.cn?' &middot; '+he(c.cn):'')+(c.jd?' &middot; <i>'+he(c.jd)+'</i>':'')+
@@ -1469,8 +1483,8 @@ function renderUnupd(){
     return true;
   });
   var nChk=grp==='chk'?0:unupdChecked().length;
-  var chkNote=nChk?'<div class="mini" style="margin:4px 0 8px;color:#555">'+nChk+' more case'+(nChk===1?' was':'s were')+' fetched from the court after the date passed, but the court site shows no newer date (or shows the case disposed) &mdash; left out as already updated. <a href="#" onclick="document.getElementById(\'ufilter\').value=\'chk\';renderUnupd();return false">See them</a></div>':'';
-  if(!all.length){el.innerHTML=chkNote+'<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing pending &mdash; every open subordinate-court matter has a future date or has been fetched from the court.</span></div>';return;}
+  var chkNote=nChk?'<div class="mini" style="margin:4px 0 8px;color:#555">'+nChk+' of these '+(nChk===1?'was':'were')+' fetched from the court after the date passed, but the court site gave no future date (or shows the case disposed) &mdash; they stay here, marked <b>&#9888; Fetched, no new date</b>. <a href="#" onclick="document.getElementById(\'ufilter\').value=\'chk\';renderUnupd();return false">Show only these</a></div>':'';
+  if(!all.length){el.innerHTML='<div class="okbar"><span style="color:#1e8449;font-weight:600">&#10003; Nothing pending &mdash; every open District, Industrial and Labour Court matter has a future date.</span></div>';return;}
   var nC=all.filter(canEco).length,nN=all.length-nC;
   var shown=all.slice(0,UL.u);
   window.__unupdRow=true;
@@ -1478,8 +1492,8 @@ function renderUnupd(){
   el.innerHTML=(grp==='chk'?'<div class="note" style="margin-bottom:8px">Fetched from the court after the date passed; the court site has no newer date yet (or shows the case disposed). Post the date by hand when you know it, or mark the case disposed.</div>':
     '<div class="fetchbar"><button class="btn bg" onclick="fetchUnupd()" title="The first 50 of these that have a CNR, one CAPTCHA each, all on one screen">&#9878; Fetch '+Math.min(50,nC)+' of these &mdash; one CAPTCHA each</button>'+
     (nN?'<button class="btn bbl" onclick="findCnrs()" title="Cases with no CNR: each is found on eCourts by its number (one CAPTCHA each), its CNR saved, and then fetched">&#9878; Find the CNR of the '+nN+' without one</button>':'')+
-    '<span>'+nC+' of '+all.length+' have a CNR and can be fetched now'+(nN?'; '+nN+' need their CNR found first':'')+'. A fetched case leaves this list. Or press <b>&#9878; Fetch</b> on any one case.</span></div>'+chkNote)+
-    unupdSect(grp==='chk'?'Fetched &mdash; court shows no newer date':'Subordinate courts, tribunals, labour &amp; industrial courts',shown,'#1a2744',all.length)+moreBtn('u',shown.length,all.length,'renderUnupd');
+    '<span>'+nC+' of '+all.length+' have a CNR and can be fetched now'+(nN?'; '+nN+' need their CNR found first':'')+'. A case leaves this list only when a future date is on record. Or press <b>&#9878; Fetch</b> on any one case.</span></div>'+chkNote)+
+    unupdSect(grp==='chk'?'Fetched &mdash; court shows no newer date':'District Courts, Industrial Courts &amp; Labour Courts',shown,'#1a2744',all.length)+moreBtn('u',shown.length,all.length,'renderUnupd');
   }finally{window.__unupdRow=false;}
 }
 /* Unfetched: subordinate-court cases never fetched from eCourts, or whose orders / order sheets are not downloaded */
