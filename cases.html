@@ -213,6 +213,22 @@ table.board td.act .btn:last-child{margin-bottom:0}
 .jinp.set{border-color:#d4c9a8;background:transparent;border-style:solid}
 .mini{font-size:9px;color:#666}
 .grpttl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;color:#1a2744}
+button.dashpick{background:none;border:1px dashed rgba(232,201,106,.55);border-radius:7px;padding:2px 9px;color:inherit;font:inherit;cursor:pointer}
+button.dashpick:hover{background:rgba(255,255,255,.08);border-style:solid}
+.dashnav{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle}.dashnav .btn{padding:2px 8px;font-size:11px}
+#dcalov{position:fixed;inset:0;background:rgba(10,20,50,.5);z-index:9000;display:flex;align-items:flex-start;justify-content:center;padding:70px 10px}
+.dcal{background:#fff;border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.35);width:min(380px,100%);padding:10px 12px;color:#1a2744}
+.dcalh{display:flex;align-items:center;gap:8px;margin-bottom:8px}.dcalh b{flex:1;text-align:center;font-size:14px}.dcalh .dcx{margin-left:4px}
+.dcalg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dcalg i{font-style:normal;font-size:10px;font-weight:700;text-align:center;color:#667}.dcalg i.su{color:#b3261e}
+.dcd{position:relative;height:46px;border:1px solid #dde3ee;border-radius:7px;background:#f8fafd;cursor:pointer;font-family:inherit;padding:3px 0 0;color:#1a2744}
+.dcd b{display:block;font-size:13px}.dcd.su b{color:#b3261e}
+.dcd em{display:inline-block;font-style:normal;font-size:10px;font-weight:700;background:#1a2744;color:#e8c96a;border-radius:8px;padding:0 6px;margin-top:2px}
+.dcd u{position:absolute;top:1px;right:3px;text-decoration:none;font-size:9px}
+.dcd.has{background:#fff8e3;border-color:#e8c96a}.dcd.tdy{outline:2px solid #1668e3}.dcd.sel{background:#1a2744;border-color:#1a2744}.dcd.sel b{color:#fff}
+.dcd:hover{border-color:#1668e3}
+.dcalf{display:flex;align-items:center;justify-content:space-between;margin-top:9px;font-size:10px;color:#556}
+.dcalf em{font-style:normal;font-weight:700;background:#1a2744;color:#e8c96a;border-radius:8px;padding:0 5px}.dcalf u{text-decoration:none}
 #toast{position:fixed;bottom:14px;right:14px;background:#1a2744;color:#fff;padding:8px 14px;border-radius:5px;font-size:11px;font-weight:600;z-index:9999;display:none;border-left:4px solid #b8932a;max-width:320px}
 #toast.err{border-left-color:#c0392b}
 #qsbox{position:fixed;inset:0;background:rgba(10,20,50,.55);z-index:800;display:none;align-items:flex-start;justify-content:center;padding-top:70px}
@@ -272,7 +288,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
 <!-- DASHBOARD -->
 <div id="pdash" class="page on">
   <div class="hero">
-    <div><div class="herodt" id="todlbl"></div><div style="font-size:10px;color:#aab">Today's cause list</div></div>
+    <div><button type="button" class="herodt dashpick" id="todlbl" onclick="dashCalOpen()" title="Pick a date: its board (and court positions) open here"></button><div style="font-size:10px;color:#aab" id="todsub">Today's cause list &middot; tap the date to pick another day</div></div>
     <div class="stats">
       <div class="stat" onclick="go('dash')"><b id="stt" style="color:#e8c96a">0</b><small>Today</small></div>
       <div class="stat" onclick="go('cases')"><b id="sta" style="color:#7af">0</b><small>Active</small></div>
@@ -288,7 +304,7 @@ table.board td.act .btn:last-child{margin-bottom:0}
   <div class="dgrid">
   <div class="dmain">
   <div class="card">
-    <div class="ch"><span class="g">Today's board &mdash; <span id="tbdate"></span></span>
+    <div class="ch"><span class="g"><span id="tbttl">Today's board</span> &mdash; <span id="tbdate"></span> <span id="tbnav"></span></span>
       <div style="display:flex;gap:4px;flex-wrap:wrap" id="todacts"></div>
     </div>
     <div class="cb" id="todlist"></div>
@@ -1390,25 +1406,70 @@ function buildDayPanel(iso,containerId,pfx){
 /* ===========================================================
    DASHBOARD
    =========================================================== */
+/* ---------- the dashboard board can show any date (Nov 2026) ----------
+   Tap the date (top left, or "Change date" on the board): a month calendar opens, each day showing how many
+   matters are on it. The chosen day's board, its Court positions button and the positions already fetched for it
+   all show right here. "Today" brings back today's board. */
+var dashDay='';
+function dashIso(){return dashDay||td();}
+window.dashIso=dashIso;
+function dashGo(iso){dashDay=(iso&&iso!==td())?iso:'';renderDash();
+  var b=document.getElementById('todlist');if(b&&iso)try{b.parentNode.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}}
+function dashShift(iso,n){var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]+n);return d.getFullYear()+'-'+zz(d.getMonth()+1)+'-'+zz(d.getDate());}
+function dashNavH(iso,isT){
+  return '<span class="dashnav">'+
+    '<button class="btn bo" onclick="dashGo(\''+dashShift(iso,-1)+'\')" title="Previous day">&#8249;</button>'+
+    '<button class="btn bg" onclick="dashCalOpen()" title="Pick any date from a calendar">&#128197; Change date</button>'+
+    '<button class="btn bo" onclick="dashGo(\''+dashShift(iso,1)+'\')" title="Next day">&#8250;</button>'+
+    (isT?'':'<button class="btn bbl" onclick="dashGo(\'\')">Today</button>')+'</span>';
+}
+var DCAL={y:0,m:0};
+function dashCalOpen(){var p=dashIso().split('-');DCAL.y=+p[0];DCAL.m=+p[1]-1;dashCalDraw();}
+function dashCalMove(n){DCAL.m+=n;if(DCAL.m<0){DCAL.m=11;DCAL.y--;}if(DCAL.m>11){DCAL.m=0;DCAL.y++;}dashCalDraw();}
+function dashCalDraw(){
+  var o=document.getElementById('dcalov');
+  if(!o){o=document.createElement('div');o.id='dcalov';o.onclick=function(e){if(e.target===o)o.remove();};document.body.appendChild(o);}
+  var MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var y=DCAL.y,m=DCAL.m,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),t=td(),sel=dashIso();
+  var h='<div class="dcal"><div class="dcalh"><button class="btn bo" onclick="dashCalMove(-1)" title="Previous month">&#8249;</button>'+
+    '<b>'+MN[m]+' '+y+'</b><button class="btn bo" onclick="dashCalMove(1)" title="Next month">&#8250;</button>'+
+    '<button class="btn bo dcx" onclick="document.getElementById(\'dcalov\').remove()" title="Close">&#10005;</button></div>'+
+    '<div class="dcalg">'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(w,i){return '<i'+(i===0?' class="su"':'')+'>'+w+'</i>';}).join('');
+  for(var k=0;k<first;k++)h+='<span></span>';
+  for(var d=1;d<=days;d++){
+    var iso=y+'-'+zz(m+1)+'-'+zz(d),n=boardOn(iso).length,wd=(first+d-1)%7,pos=window.lstHas&&lstHas(iso);
+    h+='<button class="dcd'+(iso===t?' tdy':'')+(iso===sel?' sel':'')+(wd===0?' su':'')+(n?' has':'')+'" onclick="document.getElementById(\'dcalov\').remove();dashGo(\''+iso+'\')" title="'+fdl(iso)+': '+(n?n+' matter'+(n===1?'':'s'):'nothing listed')+(pos?' · court positions fetched':'')+'">'+
+      '<b>'+d+'</b>'+(n?'<em>'+n+'</em>':'')+(pos?'<u title="Court positions fetched">&#127963;</u>':'')+'</button>';
+  }
+  h+='</div><div class="dcalf"><span><em>3</em> matters listed &nbsp; <u>&#127963;</u> positions fetched</span>'+
+    '<button class="btn bg" onclick="document.getElementById(\'dcalov\').remove();dashGo(\'\')">Today</button></div></div>';
+  o.innerHTML=h;
+}
 function renderDash(){
   if(!document.getElementById('stt'))return;
   var t=td(),un=unupdated();
   var over=un.filter(function(c){return c.nd;}),none=un.filter(function(c){return !c.nd;});
-  document.getElementById('stt').textContent=boardOn(t).filter(function(x){return x.cur;}).length;
+  var dd=dashIso(),isT=dd===t;
+  document.getElementById('stt').textContent=boardOn(dd).filter(function(x){return isT?x.cur:true;}).length;
+  var sl=document.querySelector('#stt+small');if(sl)sl.textContent=isT?'Today':fd(dd).slice(0,5);
   document.getElementById('sta').textContent=LC().filter(isOpen).length;
   document.getElementById('stov').textContent=over.length;
   document.getElementById('stm').textContent=none.length;
-  var n=new Date();
-  document.getElementById('todlbl').textContent=zz(n.getDate())+'/'+zz(n.getMonth()+1)+'/'+n.getFullYear()+' — '+WD[n.getDay()];
-  document.getElementById('tbdate').textContent=fdl(t);
-  document.getElementById('todacts').innerHTML=boardActs(t,'dsh');
-  document.getElementById('todlist').innerHTML=boardTable(t,'dsh');
+  var dp=dd.split('-'),dn=new Date(+dp[0],+dp[1]-1,+dp[2]);
+  document.getElementById('todlbl').innerHTML='&#128197; '+fd(dd)+' &mdash; '+WD[dn.getDay()]+' <span style="font-size:.7em;opacity:.75">&#9662;</span>';
+  var ts=document.getElementById('todsub');if(ts)ts.innerHTML=isT?'Today\'s cause list &middot; tap the date to pick another day':'<b style="color:#e8c96a">Board of a selected date</b> &middot; <a href="#" style="color:#9cf" onclick="dashGo(\'\');return false">back to today</a>';
+  document.getElementById('tbttl').textContent=isT?'Today\'s board':(dd<t?'Past board':'Board');
+  document.getElementById('tbdate').textContent=fdl(dd);
+  document.getElementById('tbnav').innerHTML=dashNavH(dd,isT);
+  document.getElementById('todacts').innerHTML=boardActs(dd,'dsh');
+  document.getElementById('todlist').innerHTML=boardTable(dd,'dsh');
   var wb=document.getElementById('wbar');
   if(un.length){wb.style.display='flex';document.getElementById('missn').textContent=un.length;}else wb.style.display='none';
   document.getElementById('casesacts').innerHTML=(can('edit')?'<button class="btn bg" onclick="openAdd(\'\')">+ Add case</button>':'')+
     (can('exp')?'<button class="btn bo" onclick="expCSV()">&#8595; CSV</button>':'');
   document.getElementById('unupdacts').innerHTML=
     '<button class="btn bg" onclick="fetchUnupd()" title="Fetch the next dates of ALL these cases at one go: every CAPTCHA on one screen (60 at a time if there are more)">&#9878; Fetch next dates of all &mdash; at one go</button>'+
+    (window.apiMenu?apiMenu('unupd'):'')+
     (can('edit')?'<button class="btn bbl" onclick="openDateImport()">&#8681; Update dates from backup file</button>':'')+
     boardUnupdActs();
   bkReminder();

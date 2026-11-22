@@ -142,19 +142,178 @@ window.scNext = function (again) {
   ecoOpenBatch(list.slice(0, 50).map(function (c) { return c.id; }));
 };
 
-/* ---------------- eCourtsIndia API: manual only ---------------- */
+/* ---------------- eCourtsIndia API: manual only (rebuilt Nov 2026) ----------------
+   One window for every eCourtsIndia run — from the Sync Centre, the Unupdated list, any day's board, the CAPTCHA
+   screen or a single case. You choose WHAT to fetch (next dates / orders & order sheets / everything) and, where it
+   makes sense, WHICH cases (skip those that already have a future date).
+   Date rule, always on: the NEWER date wins. A date from the API is kept only if it is later than the date already in
+   the tool; an older or equal date never replaces yours. If your date has already passed and the API has nothing
+   newer, the case simply stays in (or goes to) the Unupdated list.                                                  */
 var API = { run: false, stop: false };
+window.API = API;
+var WHAT = {
+  dates:  { t: 'Next dates only', d: 'Next date, stage, status and the hearing history from the court record. Quickest; no PDFs.' },
+  orders: { t: 'Orders & order sheets only', d: 'The court\'s list of every order, judgment and daily order sheet for the case. Each PDF is downloaded only when you open it (&#8377;3.75 each).' },
+  both:   { t: 'Everything at once', d: 'Next dates and the orders & order sheets together, in one run.' }
+};
+function apiIds(scope, iso) {
+  if (scope === 'unupd') return unupdated().map(function (c) { return c.id; });
+  if (scope === 'board') return boardOn(iso || td()).filter(function (x) { return isOpen(x.c); }).map(function (x) { return x.c.id; });
+  if (scope === 'eco') return (window.ECO && ECO.rows ? ECO.rows : []).map(function (r) { return r.cid; });
+  if (scope === 'one') return [iso];
+  return LC().filter(isOpen).map(function (c) { return c.id; });
+}
+function apiLabel(scope, iso) {
+  if (scope === 'unupd') return 'the Unupdated list';
+  if (scope === 'board') return 'the board of ' + fd(iso || td());
+  if (scope === 'eco') return 'the cases on this CAPTCHA screen';
+  if (scope === 'one') { var c = find(iso); return c ? ctit(c) : 'this case'; }
+  return 'all open cases';
+}
+var APIDLG = { scope: 'all', iso: '', what: 'dates', skip: true };
+/* the window */
+window.apiDialog = function (scope, iso, what) {
+  if (API.run) { toast('An eCourtsIndia run is still going — see its window.'); apiPanel(); return; }
+  var cfg = cs2Cfg(); if (!cfg.url) { toast('Set up Drive sync first: Settings → Online sync. The eCourtsIndia API is reached through it.', 'err'); return; }
+  APIDLG.scope = scope || 'all'; APIDLG.iso = iso || ''; if (what) APIDLG.what = what;
+  APIDLG.skip = APIDLG.scope === 'all';
+  apiDlgDraw();
+};
+function apiPick() {
+  var ids = apiIds(APIDLG.scope, APIDLG.iso), t = td(), all = ids.map(find).filter(Boolean);
+  var cnr = all.filter(function (c) { return c.cnr; });
+  var showSkip = APIDLG.scope === 'all' || APIDLG.scope === 'board';
+  var go = (showSkip && APIDLG.skip && APIDLG.what !== 'orders') ? cnr.filter(function (c) { return !c.nd || c.nd < t; }) : cnr;
+  return { all: all, cnr: cnr, go: go, showSkip: showSkip };
+}
+function apiDlgDraw() {
+  var o = document.getElementById('apiDlg');
+  if (!o) { o = document.createElement('div'); o.id = 'apiDlg'; o.onclick = function (e) { if (e.target === o) o.remove(); }; document.body.appendChild(o); }
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,50,.5);z-index:9400;display:flex;align-items:flex-start;justify-content:center;padding:60px 10px;overflow:auto';
+  var p = apiPick(), noCnr = p.all.length - p.cnr.length;
+  var opt = function (k) {
+    var on = APIDLG.what === k;
+    return '<label style="display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border:1.5px solid ' + (on ? '#1668e3' : '#dde3ee') + ';border-radius:8px;margin-bottom:6px;cursor:pointer;background:' + (on ? '#f1f6ff' : '#fff') + '">' +
+      '<input type="radio" name="apiw" style="margin-top:2px" ' + (on ? 'checked' : '') + ' onchange="APIDLG_set(\'what\',\'' + k + '\')">' +
+      '<span><b style="font-size:12.5px">' + WHAT[k].t + '</b><br><span style="font-size:11px;color:#556">' + WHAT[k].d + '</span></span></label>';
+  };
+  o.innerHTML = '<div style="background:#fff;border-radius:10px;width:min(520px,100%);box-shadow:0 14px 40px rgba(0,0,0,.35);color:#1a2744;font-size:12px">' +
+    '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1a2744;color:#fff;border-radius:10px 10px 0 0"><b style="flex:1">&#127760; eCourtsIndia API &mdash; ' + he(apiLabel(APIDLG.scope, APIDLG.iso)) + '</b>' +
+    '<button class="btn bo" style="padding:2px 8px" onclick="document.getElementById(\'apiDlg\').remove()">&#10005;</button></div>' +
+    '<div style="padding:12px 14px">' +
+    '<div style="font-weight:700;margin-bottom:6px">1. What to fetch</div>' + opt('dates') + opt('orders') + opt('both') +
+    '<div style="font-size:10.5px;color:#667;margin:-1px 0 10px">The API gives orders and daily order sheets as one list, so they come together; each is labelled by its type in the case.</div>' +
+    (p.showSkip && APIDLG.what !== 'orders' ? '<div style="font-weight:700;margin-bottom:6px">2. Which cases</div>' +
+      '<label style="display:flex;gap:8px;align-items:center;margin-bottom:10px;cursor:pointer"><input type="checkbox" ' + (APIDLG.skip ? 'checked' : '') + ' onchange="APIDLG_set(\'skip\',this.checked)"> Only cases with <b>no future date</b> (skip those already up to date)</label>' : '') +
+    '<div style="background:#fff8e3;border:1px solid #e8c96a;border-radius:7px;padding:7px 10px;font-size:11px;line-height:1.5;margin-bottom:10px">' +
+    '<b>Newer date wins.</b> A date from the API is taken only if it is <b>later</b> than the date already in the tool. An older or equal date never replaces yours; ' +
+    'if your date has passed and the API has nothing newer, the case stays in <b>Unupdated</b>.</div>' +
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+    '<span style="flex:1;font-size:11.5px"><b>' + p.go.length + '</b> case' + (p.go.length === 1 ? '' : 's') + ' will be checked' +
+    (p.cnr.length > p.go.length ? ' &middot; ' + (p.cnr.length - p.go.length) + (p.cnr.length - p.go.length === 1 ? ' already has' : ' already have') + ' a future date' : '') +
+    (noCnr ? ' &middot; <span style="color:#b3261e">' + noCnr + ' without a CNR left out</span>' : '') + '. No CAPTCHA; uses your paid subscription.</span>' +
+    '<button class="btn bo" onclick="document.getElementById(\'apiDlg\').remove()">Cancel</button>' +
+    '<button class="btn bg" ' + (p.go.length ? '' : 'disabled') + ' onclick="apiStart()">&#9654; Start</button></div></div></div>';
+}
+window.APIDLG_set = function (k, v) { APIDLG[k] = v; apiDlgDraw(); };
+window.apiStart = function () {
+  var p = apiPick(); if (!p.go.length) return;
+  var d = document.getElementById('apiDlg'); if (d) d.remove();
+  apiRun(APIDLG.what, p.go.map(function (c) { return c.id; }), apiLabel(APIDLG.scope, APIDLG.iso));
+};
+/* the run itself */
+function apiRun(what, ids, label) {
+  if (API.run) return;
+  var list = ids.map(find).filter(function (c) { return c && c.cnr; });
+  if (!list.length) return;
+  var before = {}; list.forEach(function (c) { before[c.id] = { nd: c.nd || '', ns: c.ns || '' }; });
+  API.run = true; API.stop = false; API.log = ''; API.sum = '';
+  var i = 0, ok = 0, bad = 0;
+  if (document.getElementById('scApi')) scApi();
+  apiPanel();
+  function logl(t) {
+    API.log = t + '\n' + API.log;
+    ['scApiLog', 'apiLog'].forEach(function (k) { var e = document.getElementById(k); if (e) { e.style.display = 'block'; e.textContent = API.log; } });
+    var pr = document.getElementById('apiProg'); if (pr) pr.textContent = API.run ? 'Working: ' + i + ' of ' + list.length + ' — ' + ok + ' done, ' + bad + ' failed' : 'Finished.';
+  }
+  function next() {
+    if (API.stop || i >= list.length) {
+      logl((API.stop ? 'Stopped' : 'Finished') + ': ' + ok + ' checked, ' + bad + ' failed. Bringing the results in…');
+      cs2Cycle().then(function () { settle(); }, function () { settle(); });
+      return;
+    }
+    var c = list[i++], body = { action: 'fetchCase', cnr: c.cnr };
+    if (what === 'dates' || what === 'orders') body.what = what;
+    cs2Post(cs2Cfg(), body)
+      .then(function (r) { ok++; logl(i + '/' + list.length + '  ' + ctit(c).slice(0, 50) + ' — ' + (r.msg || 'checked')); })
+      .catch(function (e) { bad++; logl(i + '/' + list.length + '  ' + ctit(c).slice(0, 50) + ' — failed: ' + (e.message || e)); })
+      .then(function () { setTimeout(next, 400); });
+  }
+  /* after the results are in: enforce "newer date wins", then report */
+  function settle() {
+    var t = td(), gotNew = 0, kept = 0, toUnupd = 0, choose = 0, fixed = 0;
+    list.forEach(function (c0) {
+      var c = find(c0.id); if (!c) return;
+      var b = before[c.id], nd = c.nd || '';
+      if (b.nd && nd && nd < b.nd) {                     /* an older date slipped in: put the newer one back */
+        c.hist = c.hist || [];
+        c.hist.push({ dt: t, pd: c.pd, ps: c.ps, nd: nd, ns: c.ns, note: 'eCourtsIndia API gave ' + fd(nd) + ', older than ' + fd(b.nd) + ' already recorded — the newer date was kept', by: cu ? cu.name : '' });
+        c.nd = b.nd; c.ns = b.ns; if (c.eci) c.eci.stale = true; touch(c); fixed++; nd = b.nd;
+      }
+      if (nd && nd > b.nd && nd !== b.nd) gotNew++;
+      else if (c.eci && c.eci.conflict) choose++;
+      else { kept++; if (isOpen(c) && (!nd || nd < t)) toUnupd++; }
+    });
+    if (fixed) saveAll();
+    API.run = false;
+    API.sum = (what === 'orders' ? '' :
+      '&#10003; <b>' + gotNew + '</b> got a newer date<br>' +
+      '&#8226; <b>' + kept + '</b> unchanged (the API had nothing newer) &mdash; <b>' + toUnupd + '</b> now in <a href="#" onclick="go(\'unupd\');return false">Unupdated</a><br>' +
+      (choose ? '&#9888; <b>' + choose + '</b> show a different date &mdash; open the case to choose <i>Use court date</i> or <i>Keep mine</i><br>' : '') +
+      (fixed ? '&#8617; <b>' + fixed + '</b> older date' + (fixed === 1 ? '' : 's') + ' from the API refused (newer date kept)<br>' : '')) +
+      (what !== 'dates' ? '&#128196; Orders & order sheets: open a case &rarr; <i>Orders (n)</i><br>' : '') +
+      (bad ? '<span style="color:#b3261e">&#10007; <b>' + bad + '</b> could not be checked (see the list)</span>' : '');
+    refresh(); if (document.getElementById('scApi')) scApi(); apiPanel();
+  }
+  logl('Starting: ' + WHAT[what].t.toLowerCase() + ' — ' + list.length + ' case' + (list.length === 1 ? '' : 's') + (label ? ' (' + label + ')' : '') + '…');
+  cs2Cycle().then(next, next);
+}
+window.scApiRun = function (what, ids, label) { if (ids) apiRun(what || 'dates', ids, label); else apiDialog('all', '', what); };
+/* progress / result window, so a run can be watched and stopped from any page */
+function apiPanel() {
+  var d = document.getElementById('apiPan');
+  if (!d) {
+    d = document.createElement('div'); d.id = 'apiPan';
+    d.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:9500;width:min(440px,94vw);background:#fff;border:1px solid #b9cdee;border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:11px;color:#1a2744';
+    document.body.appendChild(d);
+  }
+  d.innerHTML = '<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:#1a2744;color:#fff;border-radius:9px 9px 0 0"><b style="flex:1">&#127760; eCourtsIndia API</b>' +
+    (API.run ? '<button class="btn br" style="padding:2px 9px" onclick="API.stop=true">Stop</button>' : '') +
+    '<button class="btn bo" style="padding:2px 8px" onclick="document.getElementById(\'apiPan\').remove()" title="Close this window (a run carries on)">&#10005;</button></div>' +
+    '<div style="padding:8px 10px"><div id="apiProg" style="font-weight:700;margin-bottom:5px">' + (API.run ? 'Starting…' : 'Finished.') + '</div>' +
+    (!API.run && API.sum ? '<div style="line-height:1.7;margin-bottom:6px">' + API.sum + '</div>' : '') +
+    '<div id="apiLog" style="max-height:170px;overflow:auto;white-space:pre-wrap;font:10.5px/1.45 Consolas,monospace;background:#f6f8fb;border:1px solid #e1e6ef;border-radius:5px;padding:5px">' + he(API.log || '') + '</div></div>';
+}
+window.apiPanel = apiPanel;
+/* one button wherever the API is offered */
+window.apiMenu = function (scope, iso) {
+  return '<button class="btn bn" onclick="apiDialog(\'' + scope + '\',\'' + (iso || '') + '\')" title="Paid eCourtsIndia service: no CAPTCHA, works on any device (iPad too). Choose next dates, orders & order sheets, or everything.">&#127760; eCourtsIndia API&hellip;</button>';
+};
+window.scApiOne = function (id, what) { apiDialog('one', id, what); };
+/* Sync Centre tab */
 window.scApi = function () {
   var el = document.getElementById('scApi'); if (!el) return;
   var cfg = cs2Cfg(), n = LC().filter(function (c) { return isOpen(c) && c.cnr; }).length;
   el.innerHTML = '<p style="font-size:11px;color:#555;margin-bottom:8px">The paid eCourtsIndia service, kept separate from the CAPTCHA fetch. ' +
-    '<b>Nothing here runs by itself</b> &mdash; only when you press a button. A next date earlier than today never replaces a date you entered.</p>' +
+    '<b>Nothing here runs by itself</b> &mdash; only when you press a button. <b>Newer date wins:</b> an older date from the API never replaces a date in the tool.</p>' +
     (cfg.url ? '' : '<div class="wbar" style="margin-bottom:8px"><span style="font-size:11px">Drive sync is not set up on this computer, so the API cannot be reached. Settings &rarr; Online sync.</span></div>') +
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
-    '<button class="btn bg" onclick="scApiRun(\'dates\')">&#8635; Update next dates &mdash; all ' + n + ' open cases</button>' +
-    '<button class="btn bn" onclick="scApiRun(\'orders\')">&#8595; Fetch orders &mdash; all ' + n + ' open cases</button>' +
-    '<button class="btn br" onclick="API.stop=true" ' + (API.run ? '' : 'disabled') + '>Stop</button></div>' +
-    '<div style="font-size:11px;color:#555;margin-bottom:6px">For one case: open it and press <b>eCourtsIndia API: next date</b> or <b>eCourtsIndia API: orders</b>.</div>' +
+    '<button class="btn bg" onclick="apiDialog(\'all\',\'\',\'dates\')">&#8635; Next dates&hellip;</button>' +
+    '<button class="btn bn" onclick="apiDialog(\'all\',\'\',\'orders\')">&#8595; Orders &amp; order sheets&hellip;</button>' +
+    '<button class="btn bbl" onclick="apiDialog(\'all\',\'\',\'both\')">Everything at once&hellip;</button>' +
+    '<button class="btn br" onclick="API.stop=true" ' + (API.run ? '' : 'disabled') + '>Stop</button>' +
+    '<span style="font-size:11px;color:#555;align-self:center">' + n + ' open cases have a CNR</span></div>' +
+    '<div style="font-size:11px;color:#555;margin-bottom:6px">Also on the Unupdated list, on every day\'s board, on the CAPTCHA screen and on each case: <b>&#127760; eCourtsIndia API&hellip;</b></div>' +
     '<div id="scApiLog" class="nbox" style="display:' + (API.log ? 'block' : 'none') + ';max-height:220px;overflow:auto;white-space:pre-wrap;font:11px/1.5 Consolas,monospace">' + he(API.log || '') + '</div>' +
     '<details style="margin-top:10px;font-size:11px"><summary style="cursor:pointer;font-weight:600">Switch off the automatic run on Google\'s side (one time)</summary>' +
     '<ol style="margin:8px 0 0 18px;line-height:1.7">' +
@@ -163,45 +322,12 @@ window.scApi = function () {
     '<li>For every row of type <b>Time-driven</b>, click the <b>three dots &rarr; Delete trigger</b>.</li>' +
     '<li>Nothing else changes: sync keeps working, and the API runs only from these buttons.</li></ol></details>';
 };
-window.API = API;
-window.scApiRun = function (what) {
-  if (API.run) return;
-  var cfg = cs2Cfg(); if (!cfg.url) { toast('Set up Drive sync first.', 'err'); return; }
-  var list = LC().filter(function (c) { return isOpen(c) && c.cnr; });
-  if (!confirm('Ask eCourtsIndia about ' + list.length + ' open cases now?\n\nThis uses your eCourtsIndia subscription.')) return;
-  API.run = true; API.stop = false; API.log = ''; scApi();
-  var i = 0, ok = 0, bad = 0;
-  function logl(t) { API.log = t + '\n' + API.log; var e = document.getElementById('scApiLog'); if (e) { e.style.display = 'block'; e.textContent = API.log; } }
-  function next() {
-    if (API.stop || i >= list.length) {
-      API.run = false; logl('Finished: ' + ok + ' checked, ' + bad + ' failed' + (API.stop ? ' (stopped)' : '') + '.');
-      cs2Cycle().then(function () { refresh(); scApi(); }); return;
-    }
-    var c = list[i++];
-    cs2Post(cs2Cfg(), { action: 'fetchCase', cnr: c.cnr, what: what })
-      .then(function (r) { ok++; logl(i + '/' + list.length + '  ' + ctit(c).slice(0, 50) + ' — ' + (r.msg || 'checked')); })
-      .catch(function (e) { bad++; logl(i + '/' + list.length + '  ' + ctit(c).slice(0, 50) + ' — failed: ' + (e.message || e)); })
-      .then(function () { setTimeout(next, 400); });
-  }
-  logl('Starting ' + (what === 'orders' ? 'orders' : 'next dates') + ' for ' + list.length + ' cases…');
-  cs2Cycle().then(next);
-};
-/* the per-case buttons: two clear ones in place of the old "Fetch from court" */
-window.scApiOne = function (id, what) {
-  var c = find(id); if (!c || !c.cnr) return;
-  var cfg = cs2Cfg(); if (!cfg.url) { toast('Set up Drive sync first.', 'err'); return; }
-  toast('Asking eCourtsIndia about ' + ctit(c) + '…');
-  cs2Cycle().then(function () { return cs2Post(cs2Cfg(), { action: 'fetchCase', cnr: c.cnr, what: what }); })
-    .then(function (r) { toast(r.msg || 'Checked.'); return cs2Cycle(); })
-    .catch(function (e) { toast('Could not check: ' + (e.message || e), 'err'); });
-};
 var _bld = window.bldRow;
 window.bldRow = bldRow = function (c) {
   var h = _bld.apply(this, arguments);
   var old = '<button class="btn bn" onclick="event.stopPropagation();cs2FetchCase(\'' + c.id + '\')" title="Check this case on eCourtsIndia now">&#8635; Fetch from court</button>';
   if (h.indexOf(old) >= 0) h = h.replace(old,
-    '<button class="btn bn" onclick="event.stopPropagation();scApiOne(\'' + c.id + '\',\'dates\')" title="Paid eCourtsIndia service — runs only when pressed">eCourtsIndia API: next date</button>' +
-    '<button class="btn bn" onclick="event.stopPropagation();scApiOne(\'' + c.id + '\',\'orders\')" title="Paid eCourtsIndia service — runs only when pressed">eCourtsIndia API: orders</button>');
+    '<button class="btn bn" onclick="event.stopPropagation();apiDialog(\'one\',\'' + c.id + '\')" title="Paid eCourtsIndia service — choose next date, orders & order sheets, or everything">&#127760; eCourtsIndia API&hellip;</button>');
   return h;
 };
 

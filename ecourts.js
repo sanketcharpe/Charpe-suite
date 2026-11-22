@@ -529,6 +529,7 @@ function loadCaptchas(ids) {
     '<button class="btn bg" id="ecoAllBtn" onclick="ecoFetchAll()" title="Fetch every row whose CAPTCHA you have typed, one after another">&#9654; Go &mdash; fetch all typed</button>' +
     (window.ECO_NEXT && window.ECO_NEXT.length ? '<button class="btn bbl" onclick="ecoNextLot()" title="Open the CAPTCHAs of the next cases of the same list">Next ' + Math.min(ECO_MAX, window.ECO_NEXT.length) + ' cases &#8250;</button>' : '') +
     '<button class="btn bo" onclick="capKbdShow&&capKbdShow()" title="Show the small on-screen keyboard for typing the CAPTCHAs">&#9000; Keyboard</button>' +
+    (window.apiMenu ? apiMenu('eco') : '') +
     '<button class="btn bo" onclick="ecoOpenBatch()">&#8249; Change cases</button>' +
     '<span id="ecoprog" style="font-size:11px;color:#555;margin-left:auto"></span>');
   paintRows();

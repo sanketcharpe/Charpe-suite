@@ -110,13 +110,14 @@ function statusBar(iso) {
     '<button class="btn bn" style="font-size:12px;padding:7px 16px" onclick="ofcUpdateStatus(\'' + iso + '\')">&#8635; Update status</button>' +
     '<span style="font-size:11px;color:#333">One CAPTCHA per case, then <b>Fetch all</b>. ' + n + ' of ' + rows.length + ' matter' + (rows.length === 1 ? '' : 's') +
     ' on this board ' + (n === 1 ? 'has' : 'have') + ' a CNR' + (t ? '; ' + t + ' Supreme Court / CAT / MAT matter' + (t === 1 ? ' is' : 's are') + ' fetched without a CAPTCHA' : '') +
-    (n + t < rows.length ? ' &mdash; the rest need a CNR added (Edit) first' : '') + '.</span></div>';
+    (n + t < rows.length ? ' &mdash; the rest need a CNR added (Edit) first' : '') + '.</span>' +
+    (window.apiMenu ? '<span style="margin-left:auto">' + apiMenu('board', iso) + '</span>' : '') + '</div>';
 }
 var _rd = window.renderDash;
 window.renderDash = renderDash = function () {
   _rd.apply(this, arguments);
   var el = document.getElementById('todlist');
-  if (el) el.insertAdjacentHTML('beforeend', statusBar(td()));
+  if (el) el.insertAdjacentHTML('beforeend', statusBar(window.dashIso ? dashIso() : td()));
   var hero = document.querySelector('#pdash .hero');
   if (hero && !document.getElementById('ofcSync')) {
     hero.insertAdjacentHTML('beforeend', '<div id="ofcSync" style="display:flex;gap:5px;flex-wrap:wrap">' +
